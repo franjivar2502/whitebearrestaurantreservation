@@ -17,10 +17,13 @@ import json
 import os
 import re
 import threading
+import time
 import uuid
 from datetime import datetime, date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
+
+import notifications
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
@@ -87,6 +90,7 @@ RESTAURANT = {
 }
 
 VALID_STATUSES = {"pending", "confirmed", "seated", "completed", "cancelled"}
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def _hours_for_date(d):
@@ -154,6 +158,7 @@ def _validate_reservation(payload):
 
     name = (payload.get("name") or "").strip()
     phone = (payload.get("phone") or "").strip()
+    email = (payload.get("email") or "").strip()
     res_date = (payload.get("date") or "").strip()
     res_time = (payload.get("time") or "").strip()
     party_size = payload.get("partySize")
@@ -166,6 +171,8 @@ def _validate_reservation(payload):
         errors.append("El nombre es obligatorio.")
     if not phone or len(re.sub(r"\D", "", phone)) < 7:
         errors.append("Ingresa un teléfono válido.")
+    if email and not EMAIL_RE.match(email):
+        errors.append("El correo electrónico no es válido.")
 
     try:
         parsed_date = datetime.strptime(res_date, "%Y-%m-%d").date()
@@ -207,6 +214,7 @@ def _validate_reservation(payload):
     return {
         "name": name,
         "phone": phone,
+        "email": email,
         "date": res_date,
         "time": res_time,
         "partySize": party_size,
@@ -306,12 +314,16 @@ class Handler(BaseHTTPRequestHandler):
                 "id": uuid.uuid4().hex[:8],
                 "status": "pending",
                 "createdAt": datetime.now().isoformat(timespec="seconds"),
+                "reminderSent": False,
                 **clean,
             }
             with _lock:
                 reservations = _read_reservations()
                 reservations.append(reservation)
                 _write_reservations(reservations)
+            threading.Thread(
+                target=notifications.notify_confirmation, args=(reservation,), daemon=True
+            ).start()
             self._send_json(reservation, status=201)
             return
         self.send_response(404)
@@ -368,6 +380,40 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
 
+REMINDER_MINUTES_BEFORE = 15
+
+
+def _check_and_send_reminders():
+    now = datetime.now()
+    with _lock:
+        reservations = _read_reservations()
+        due = []
+        for r in reservations:
+            if r.get("status") == "cancelled" or r.get("reminderSent"):
+                continue
+            try:
+                res_dt = datetime.strptime(f"{r['date']} {r['time']}", "%Y-%m-%d %H:%M")
+            except (ValueError, KeyError):
+                continue
+            minutes_until = (res_dt - now).total_seconds() / 60
+            if 0 <= minutes_until <= REMINDER_MINUTES_BEFORE:
+                r["reminderSent"] = True
+                due.append(r)
+        if due:
+            _write_reservations(reservations)
+    for r in due:
+        notifications.notify_reminder(r)
+
+
+def _reminder_loop():
+    while True:
+        time.sleep(60)
+        try:
+            _check_and_send_reminders()
+        except Exception:  # noqa: BLE001 - el hilo de fondo no debe morir por un error puntual
+            pass
+
+
 def main():
     import sys
 
@@ -381,10 +427,15 @@ def main():
     else:
         port = 8000
     _ensure_data_file()
+    threading.Thread(target=_reminder_loop, daemon=True).start()
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     print(f"White Bear Restaurant - servidor de reservaciones")
     print(f"  Sitio de clientes:  http://localhost:{port}/")
     print(f"  Panel para tablet:  http://localhost:{port}/tablet.html")
+    print(
+        f"  Notificaciones: correo {'ACTIVO' if notifications.email_enabled() else 'modo prueba (dry-run)'}, "
+        f"SMS {'ACTIVO' if notifications.sms_enabled() else 'modo prueba (dry-run)'}"
+    )
     print(f"Presiona Ctrl+C para detener.")
     try:
         server.serve_forever()

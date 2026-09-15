@@ -61,6 +61,12 @@
       <div class="field">
         <label for="phone">Teléfono *</label>
         <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="(518) 555-0123" />
+        <span class="hint">Te enviaremos por aquí la confirmación y un aviso cuando tu mesa esté lista.</span>
+      </div>
+      <div class="field full">
+        <label for="email">Correo electrónico (opcional)</label>
+        <input type="email" id="email" name="email" autocomplete="email" />
+        <span class="hint">Déjanos tu correo para recibir también ahí la confirmación y el aviso de mesa lista. Además, nos permite pedirte tu opinión sobre tu visita después de la reservación.</span>
       </div>
       <div class="field">
         <label for="date">Fecha *</label>
@@ -109,7 +115,7 @@
   <div class="confirmation card" id="confirmation">
     <div class="check">✓</div>
     <h2>¡Reservación recibida!</h2>
-    <p style="color:var(--text-muted)">Te esperamos en White Bear Restaurant.</p>
+    <p style="color:var(--text-muted)">Te esperamos en White Bear Restaurant. Te enviamos la confirmación por teléfono/correo, y te avisaremos 15 minutos antes de tu hora cuando la mesa esté lista.</p>
     <dl class="details" id="confirmation-details"></dl>
     <button class="btn btn-primary" id="new-reservation-btn" style="max-width:260px;margin:0 auto">Hacer otra reservación</button>
   </div>

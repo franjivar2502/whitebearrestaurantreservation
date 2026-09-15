@@ -219,6 +219,7 @@
     const payload = {
       name: form.name.value,
       phone: form.phone.value,
+      email: form.email.value,
       date: form.date.value,
       time: form.time.value,
       partySize: form.partySize.value,
@@ -253,6 +254,7 @@
         <dt>Hora</dt><dd>${escapeHtml(formatTime(data.time))}</dd>
         <dt>Personas</dt><dd>${escapeHtml(String(data.partySize))}</dd>
         <dt>Teléfono</dt><dd>${escapeHtml(data.phone)}</dd>
+        ${data.email ? `<dt>Correo</dt><dd>${escapeHtml(data.email)}</dd>` : ""}
         <dt>Código</dt><dd>#${escapeHtml(data.id)}</dd>
         ${
           data.preOrder && data.preOrder.length

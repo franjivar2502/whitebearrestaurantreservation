@@ -170,6 +170,7 @@
           </div>
           <div class="res-sub">
             <span>📞 ${escapeHtml(r.phone)}</span>
+            ${r.email ? `<span>✉️ ${escapeHtml(r.email)}</span>` : ""}
             <span>#${escapeHtml(r.id)}</span>
           </div>
           ${r.notes ? `<div class="res-notes">📝 ${escapeHtml(r.notes)}</div>` : ""}

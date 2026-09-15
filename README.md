@@ -7,7 +7,7 @@ tablet del restaurante.
 ## Qué incluye
 
 - **`public/index.html`** — página para que los clientes reserven mesa (nombre,
-  teléfono, fecha, hora, número de personas, ocasión y notas).
+  teléfono, correo opcional, fecha, hora, número de personas, ocasión y notas).
 - **`public/tablet.html`** — panel para el staff, optimizado para tablet:
   se actualiza solo cada 5 segundos, agrupa por Hoy / Próximas / Todas,
   filtra por estado (pendiente, confirmada, etc.) y permite avanzar cada
@@ -17,6 +17,51 @@ tablet del restaurante.
   pasada) y las guarda en `data/reservations.json`. Como cliente y tablet
   hablan con el mismo servidor, cualquier reservación nueva aparece en la
   tablet automáticamente, sin recargar la página.
+- **`notifications.py`** — envía el mensaje de confirmación al crear la
+  reservación y un recordatorio automático 15 minutos antes de la hora
+  reservada, por SMS y/o correo. Ver sección de abajo.
+
+## Confirmación y recordatorio automático (SMS / correo)
+
+Al crear una reservación se envía un mensaje de confirmación por SMS (al
+teléfono, siempre) y por correo (si el cliente lo dejó). Un proceso en
+segundo plano revisa cada minuto las reservaciones próximas y, 15 minutos
+antes de la hora reservada, envía un aviso de "tu mesa está casi lista" por
+los mismos canales. Cada reservación se recuerda solo una vez
+(`reminderSent` en el registro evita duplicados), y las reservaciones
+canceladas no reciben recordatorio.
+
+**Mientras no configures credenciales reales, el envío funciona en modo de
+prueba ("dry-run"):** los mensajes no salen de verdad, pero se registran en
+`data/notifications_log.txt` y en la consola del servidor, para que puedas
+ver exactamente qué se habría enviado y a quién. Así puedes probar todo el
+flujo (crear reservación → confirmación → recordatorio) sin depender de
+ningún proveedor.
+
+Para activar el envío real, define estas variables de entorno antes de
+correr `server.py` (por ejemplo con `export VARIABLE=valor` en la terminal,
+o configurándolas en el panel de tu hosting cuando lo despliegues):
+
+**Correo (cualquier proveedor SMTP; ejemplo con Gmail y una "contraseña de
+aplicación", no la contraseña normal de la cuenta):**
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=turestaurante@gmail.com
+SMTP_PASSWORD=xxxxxxxxxxxxxxxx
+SMTP_FROM=turestaurante@gmail.com
+```
+
+**SMS (requiere una cuenta gratuita/de prueba en [twilio.com](https://twilio.com)):**
+```
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_FROM_NUMBER=+15005550006
+```
+
+No hace falta configurar los dos — puedes activar solo correo, solo SMS, o
+ambos. Al arrancar, el servidor imprime en consola si cada canal está
+ACTIVO o en modo prueba.
 
 ## Cómo ejecutarlo
 
