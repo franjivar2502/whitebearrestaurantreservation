@@ -4,6 +4,39 @@ Sitio de reservaciones online para White Bear Restaurant (2793 Wilmington Rd,
 Lake Placid, NY), con un panel en tiempo real pensado para mostrarse en una
 tablet del restaurante.
 
+## 📍 Estado del proyecto (para retomarlo en cualquier momento)
+
+**Ubicación permanente del proyecto:**
+`/Users/mgabriella98/WhiteBearRest.PROYECT./white-bear-reservations`
+
+**Para arrancarlo:**
+```bash
+cd "/Users/mgabriella98/WhiteBearRest.PROYECT./white-bear-reservations"
+python3 server.py 8123
+```
+Luego abre `http://localhost:8123/` (clientes) o `http://localhost:8123/tablet.html`
+(staff). Desde el celular en la misma red Wi-Fi, usa la IP de esta Mac en vez
+de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
+
+**✅ Ya construido y probado:**
+- Formulario de reservaciones con validación de horario por día y tamaño de grupo.
+- Panel de tablet en tiempo real (se actualiza solo, sin recargar).
+- Preorden para grupos de 20+ personas (menú aún placeholder, ver más abajo).
+- Confirmación y recordatorio automático por SMS/correo (modo prueba, sin credenciales reales todavía).
+- Ventana emergente de confirmación de asistencia (24h o 30 min antes).
+- Paleta de colores verde/marrón/vinotinto (la real del restaurante) + sección "Información del lugar" con accesibilidad, estacionamiento, mascotas, etc.
+- Idiomas: sitio de clientes en EN/ES/FR (inglés por defecto); panel de tablet en EN/ES/SR (inglés por defecto).
+- Repositorio Git local con todo el historial de cambios (7 commits al día de hoy).
+
+**⏳ Pendiente para que el proyecto esté 100% terminado:**
+1. **Publicarlo en internet** — está listo para Render.com (ver sección más abajo), solo falta crear la cuenta de GitHub/Render y hacer el push (yo no puedo crear esas cuentas, pero sí ejecutar los comandos si me das la URL del repo).
+2. **Menú real para el preorden de grupos grandes** — hoy son 3 platillos placeholder.
+3. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
+4. **Almacenamiento persistente** antes de recibir reservaciones reales de producción (ver advertencia sobre Render más abajo).
+5. Decidir si el panel de tablet necesita más idiomas o queda así.
+
+Dime en qué de esto quieres que sigamos y retomamos justo ahí.
+
 ## Qué incluye
 
 - **`public/index.html`** — página para que los clientes reserven mesa (nombre,
