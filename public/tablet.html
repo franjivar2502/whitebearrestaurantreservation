@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>White Bear Restaurant — Panel de Reservaciones</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/tablet.css" />
+</head>
+<body class="tablet-body">
+
+<header class="tablet-header">
+  <div class="tablet-header-left">
+    <div class="brand-icon">🐻‍❄️</div>
+    <div>
+      <h1>White Bear Restaurant</h1>
+      <div id="clock" class="clock">--:--</div>
+    </div>
+  </div>
+  <div class="tablet-header-right">
+    <div class="stat">
+      <span class="stat-value" id="stat-total">0</span>
+      <span class="stat-label">reservaciones</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" id="stat-guests">0</span>
+      <span class="stat-label">comensales</span>
+    </div>
+    <button class="btn btn-refresh" id="refresh-btn" title="Actualizar ahora">⟳</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-filter="today">Hoy</button>
+  <button class="tab" data-filter="upcoming">Próximas</button>
+  <button class="tab" data-filter="all">Todas</button>
+  <div class="tab-spacer"></div>
+  <button class="tab status-tab" data-status="pending">Pendientes</button>
+  <button class="tab status-tab" data-status="confirmed">Confirmadas</button>
+  <button class="tab status-tab active" data-status="active">Sin finalizar</button>
+</nav>
+
+<main id="list-container" class="list-container">
+  <div class="empty-state" id="empty-state">
+    <div class="empty-icon">🍽️</div>
+    <p>No hay reservaciones para mostrar.</p>
+  </div>
+  <div id="reservation-list"></div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/tablet.js"></script>
+</body>
+</html>

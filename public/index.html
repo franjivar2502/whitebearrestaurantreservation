@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>White Bear Restaurant — Reservaciones</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="brand-row">
+      <div class="brand-icon">🐻‍❄️</div>
+      <div>
+        <h1>White Bear Restaurant</h1>
+        <div class="hero-meta">
+          <span>⭐ 4.2 (243 reseñas)</span>
+          <span>·</span>
+          <span>$20-30 por persona</span>
+          <span>·</span>
+          <span>Restaurante</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-details">
+      <span>📍 2793 Wilmington Rd, Lake Placid, NY 12946</span>
+      <span>📞 (518) 302-5235</span>
+    </div>
+    <div class="hero-hours" id="hero-hours"></div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <p class="section-title">Sobre nosotros</p>
+    <p style="margin:0;color:var(--text-muted)">
+      Consumo en el lugar · Para llevar · Entrega a domicilio. Comensales destacan
+      porciones generosas, gran variedad en el menú, personal amable y un ambiente
+      excelente.
+    </p>
+    <div class="highlights">
+      <span class="highlight-chip">Crispy Calamari with Marinara Sauce</span>
+      <span class="highlight-chip">Tortellini</span>
+      <span class="highlight-chip">Chicken Caesar Salad</span>
+      <span class="highlight-chip">Eggplant Parmigiana</span>
+    </div>
+  </div>
+
+  <form id="reservation-form" novalidate>
+    <p class="section-title">Reserva tu mesa</p>
+
+    <div id="form-alert"></div>
+
+    <div class="form-grid">
+      <div class="field">
+        <label for="name">Nombre completo *</label>
+        <input type="text" id="name" name="name" required autocomplete="name" />
+      </div>
+      <div class="field">
+        <label for="phone">Teléfono *</label>
+        <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="(518) 555-0123" />
+      </div>
+      <div class="field">
+        <label for="date">Fecha *</label>
+        <input type="date" id="date" name="date" required />
+      </div>
+      <div class="field">
+        <label for="time">Hora *</label>
+        <input type="time" id="time" name="time" required min="11:00" max="21:00" step="900" />
+        <span class="hint" id="time-hint">Reservaciones de 11:00 a.m. a 9:00 p.m.</span>
+      </div>
+      <div class="field">
+        <label for="partySize">Número de personas *</label>
+        <input type="number" id="partySize" name="partySize" min="1" max="40" value="2" required />
+        <span class="hint" id="party-size-hint">Grupos de más de 40: llama al (518) 302-5235.</span>
+      </div>
+      <div class="field">
+        <label for="occasion">Ocasión (opcional)</label>
+        <select id="occasion" name="occasion">
+          <option value="">Ninguna</option>
+          <option value="Cumpleaños">Cumpleaños</option>
+          <option value="Aniversario">Aniversario</option>
+          <option value="Cita de negocios">Cita de negocios</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label for="notes">Notas o solicitudes especiales</label>
+        <textarea id="notes" name="notes" placeholder="Alergias, silla para bebé, mesa afuera, etc."></textarea>
+      </div>
+    </div>
+
+    <div class="group-menu" id="group-menu-section" hidden>
+      <p class="section-title" style="margin-bottom:4px">Preorden para grupos grandes</p>
+      <p class="hint" id="group-menu-note" style="margin-bottom:14px"></p>
+      <div id="group-menu-items"></div>
+      <div class="field full" style="margin-top:14px">
+        <label for="preOrderNotes">Notas del pedido (alergias, restricciones, etc.)</label>
+        <textarea id="preOrderNotes" name="preOrderNotes" placeholder="Ej. 3 personas son vegetarianas"></textarea>
+      </div>
+      <p class="hint">Puedes dejarlo en blanco y ordenar al llegar; llenarlo por adelantado solo nos ayuda a tener todo listo antes.</p>
+    </div>
+
+    <button type="submit" class="btn btn-primary" id="submit-btn">Reservar mesa</button>
+  </form>
+
+  <div class="confirmation card" id="confirmation">
+    <div class="check">✓</div>
+    <h2>¡Reservación recibida!</h2>
+    <p style="color:var(--text-muted)">Te esperamos en White Bear Restaurant.</p>
+    <dl class="details" id="confirmation-details"></dl>
+    <button class="btn btn-primary" id="new-reservation-btn" style="max-width:260px;margin:0 auto">Hacer otra reservación</button>
+  </div>
+
+</div>
+
+<footer class="site-footer">
+  White Bear Restaurant · 2793 Wilmington Rd, Lake Placid, NY 12946 · (518) 302-5235<br/>
+  ¿Eres del staff? <a href="tablet.html">Abrir panel de reservaciones</a>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
