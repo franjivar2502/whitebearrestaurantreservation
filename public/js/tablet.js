@@ -6,6 +6,7 @@
   const clockEl = document.getElementById("clock");
   const toastEl = document.getElementById("toast");
   const refreshBtn = document.getElementById("refresh-btn");
+  const langSwitcher = document.getElementById("lang-switcher");
 
   const dateTabs = document.querySelectorAll(".tab[data-filter]");
   const statusTabs = document.querySelectorAll(".tab[data-status]");
@@ -17,13 +18,18 @@
   let lastSeenIds = new Set();
   let firstLoad = true;
 
-  const STATUS_LABELS = {
-    pending: "Pendiente",
-    confirmed: "Confirmada",
-    seated: "Sentados",
-    completed: "Finalizada",
-    cancelled: "Cancelada",
-  };
+  tabletI18n.applyStaticTranslations();
+
+  langSwitcher.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-lang]");
+    if (!btn) return;
+    tabletI18n.setLang(btn.getAttribute("data-lang"));
+  });
+
+  document.addEventListener("tablet-languagechange", () => {
+    updateClock();
+    render();
+  });
 
   function todayIso() {
     const d = new Date();
@@ -33,28 +39,21 @@
   function updateClock() {
     const now = new Date();
     clockEl.textContent =
-      now.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }) +
+      now.toLocaleDateString(tabletI18n.locale(), { weekday: "long", day: "numeric", month: "long" }) +
       " · " +
-      now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-  }
-
-  function formatTime(hhmm) {
-    const [h, m] = hhmm.split(":").map(Number);
-    const d = new Date();
-    d.setHours(h, m, 0, 0);
-    return d.toLocaleTimeString("es-ES", { hour: "numeric", minute: "2-digit" });
+      now.toLocaleTimeString(tabletI18n.locale(), { hour: "2-digit", minute: "2-digit" });
   }
 
   function formatDayHeading(iso) {
     const [y, m, d] = iso.split("-").map(Number);
     const date = new Date(y, m - 1, d);
     const isToday = iso === todayIso();
-    const label = date.toLocaleDateString("es-ES", {
+    const label = date.toLocaleDateString(tabletI18n.locale(), {
       weekday: "long",
       day: "numeric",
       month: "long",
     });
-    return isToday ? `Hoy · ${label}` : label;
+    return isToday ? `${tabletI18n.t("today")} · ${label}` : label;
   }
 
   function escapeHtml(str) {
@@ -80,8 +79,8 @@
         if (newOnes.length > 0) {
           showToast(
             newOnes.length === 1
-              ? `Nueva reservación: ${newOnes[0].name}`
-              : `${newOnes.length} nuevas reservaciones`
+              ? tabletI18n.t("toast.newReservation", { name: newOnes[0].name })
+              : tabletI18n.t("toast.newReservations", { count: newOnes.length })
           );
         }
       }
@@ -149,36 +148,36 @@
 
   function renderAttendanceLine(r) {
     if (r.attendanceConfirmed === true) {
-      return `<div class="res-attendance res-attendance-ok">✅ Asistencia confirmada por el cliente</div>`;
+      return `<div class="res-attendance res-attendance-ok">${escapeHtml(tabletI18n.t("attendance.confirmed"))}</div>`;
     }
     if (r.attendanceReminderSent && r.attendanceConfirmed === null && !["completed", "cancelled"].includes(r.status)) {
-      return `<div class="res-attendance res-attendance-pending">⏳ Esperando confirmación — si no responde, hay que llamarle</div>`;
+      return `<div class="res-attendance res-attendance-pending">${escapeHtml(tabletI18n.t("attendance.waiting"))}</div>`;
     }
     return "";
   }
 
   function renderCard(r) {
     const badgeClass = `badge-${r.status}`;
-    const badgeLabel = STATUS_LABELS[r.status] || r.status;
+    const badgeLabel = tabletI18n.t(`status.${r.status}`);
 
     let actions = "";
     if (r.status === "pending") {
-      actions += `<button class="action-btn action-confirm" data-id="${r.id}" data-status="confirmed">Confirmar</button>`;
+      actions += `<button class="action-btn action-confirm" data-id="${r.id}" data-status="confirmed">${escapeHtml(tabletI18n.t("actions.confirm"))}</button>`;
     }
     if (r.status === "confirmed") {
-      actions += `<button class="action-btn action-seat" data-id="${r.id}" data-status="seated">Sentar</button>`;
+      actions += `<button class="action-btn action-seat" data-id="${r.id}" data-status="seated">${escapeHtml(tabletI18n.t("actions.seat"))}</button>`;
     }
     if (r.status === "seated") {
-      actions += `<button class="action-btn action-complete" data-id="${r.id}" data-status="completed">Finalizar</button>`;
+      actions += `<button class="action-btn action-complete" data-id="${r.id}" data-status="completed">${escapeHtml(tabletI18n.t("actions.complete"))}</button>`;
     }
     if (!["completed", "cancelled"].includes(r.status)) {
-      actions += `<button class="action-btn action-cancel" data-id="${r.id}" data-status="cancelled">Cancelar</button>`;
+      actions += `<button class="action-btn action-cancel" data-id="${r.id}" data-status="cancelled">${escapeHtml(tabletI18n.t("actions.cancel"))}</button>`;
     }
 
     return `
       <div class="res-card" data-id="${r.id}">
         <div class="res-time">
-          <span class="t">${escapeHtml(formatTime(r.time))}</span>
+          <span class="t">${escapeHtml(tabletI18n.formatTime(r.time))}</span>
           <span class="party">👥 ${escapeHtml(String(r.partySize))}</span>
         </div>
         <div class="res-info">
@@ -193,7 +192,7 @@
           ${r.notes ? `<div class="res-notes">📝 ${escapeHtml(r.notes)}</div>` : ""}
           ${
             r.preOrder && r.preOrder.length
-              ? `<div class="res-preorder">🍽️ Preorden: ${r.preOrder
+              ? `<div class="res-preorder">🍽️ ${r.preOrder
                   .map((i) => `${i.quantity}× ${escapeHtml(i.name)}`)
                   .join(", ")}</div>`
               : ""
@@ -219,7 +218,7 @@
       if (idx !== -1) reservations[idx] = updated;
       render();
     } catch (err) {
-      showToast("No se pudo actualizar la reservación.");
+      showToast(tabletI18n.t("toast.updateFailed"));
     }
   }
 

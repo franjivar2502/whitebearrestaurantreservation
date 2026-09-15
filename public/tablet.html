@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>White Bear Restaurant — Panel de Reservaciones</title>
+<title>White Bear Restaurant — Reservations Panel</title>
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/tablet.css" />
 </head>
@@ -18,39 +18,45 @@
     </div>
   </div>
   <div class="tablet-header-right">
+    <div class="lang-switcher" id="lang-switcher">
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="es">ES</button>
+      <button type="button" data-lang="sr">SR</button>
+    </div>
     <div class="stat">
       <span class="stat-value" id="stat-total">0</span>
-      <span class="stat-label">reservaciones</span>
+      <span class="stat-label" data-i18n="header.reservations">reservations</span>
     </div>
     <div class="stat">
       <span class="stat-value" id="stat-guests">0</span>
-      <span class="stat-label">comensales</span>
+      <span class="stat-label" data-i18n="header.guests">guests</span>
     </div>
-    <button class="btn btn-refresh" id="refresh-btn" title="Actualizar ahora">⟳</button>
+    <button class="btn btn-refresh" id="refresh-btn" data-i18n-title="header.refresh" title="Refresh now">⟳</button>
   </div>
 </header>
 
 <nav class="tabs">
-  <button class="tab active" data-filter="today">Hoy</button>
-  <button class="tab" data-filter="upcoming">Próximas</button>
-  <button class="tab" data-filter="all">Todas</button>
+  <button class="tab active" data-filter="today" data-i18n="tabs.today">Today</button>
+  <button class="tab" data-filter="upcoming" data-i18n="tabs.upcoming">Upcoming</button>
+  <button class="tab" data-filter="all" data-i18n="tabs.all">All</button>
   <div class="tab-spacer"></div>
-  <button class="tab status-tab" data-status="pending">Pendientes</button>
-  <button class="tab status-tab" data-status="confirmed">Confirmadas</button>
-  <button class="tab status-tab active" data-status="active">Sin finalizar</button>
-  <button class="tab status-tab" data-status="needs-call">⏳ Por confirmar</button>
+  <button class="tab status-tab" data-status="pending" data-i18n="tabs.pending">Pending</button>
+  <button class="tab status-tab" data-status="confirmed" data-i18n="tabs.confirmed">Confirmed</button>
+  <button class="tab status-tab active" data-status="active" data-i18n="tabs.active">Unfinished</button>
+  <button class="tab status-tab" data-status="needs-call" data-i18n="tabs.needsCall">⏳ Needs confirmation</button>
 </nav>
 
 <main id="list-container" class="list-container">
   <div class="empty-state" id="empty-state">
     <div class="empty-icon">🍽️</div>
-    <p>No hay reservaciones para mostrar.</p>
+    <p data-i18n="emptyState">No reservations to show.</p>
   </div>
   <div id="reservation-list"></div>
 </main>
 
 <div class="toast" id="toast"></div>
 
+<script src="js/tablet-i18n.js"></script>
 <script src="js/tablet.js"></script>
 </body>
 </html>
