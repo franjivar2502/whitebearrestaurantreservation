@@ -14,6 +14,15 @@
   const groupMenuNote = document.getElementById("group-menu-note");
   const groupMenuItemsEl = document.getElementById("group-menu-items");
   const preOrderNotesInput = document.getElementById("preOrderNotes");
+  const infoToggleBtn = document.getElementById("info-toggle-btn");
+  const infoContent = document.getElementById("info-content");
+
+  infoToggleBtn.addEventListener("click", () => {
+    const expanded = infoToggleBtn.getAttribute("aria-expanded") === "true";
+    infoToggleBtn.setAttribute("aria-expanded", String(!expanded));
+    infoContent.hidden = expanded;
+    infoToggleBtn.textContent = expanded ? "Ver todo ▾" : "Ver menos ▴";
+  });
 
   // No permitir seleccionar fechas pasadas
   const today = new Date();
