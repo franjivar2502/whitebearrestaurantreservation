@@ -10,19 +10,50 @@
   const timeHint = document.getElementById("time-hint");
   const heroHours = document.getElementById("hero-hours");
   const partySizeInput = document.getElementById("partySize");
+  const partySizeHint = document.getElementById("party-size-hint");
   const groupMenuSection = document.getElementById("group-menu-section");
   const groupMenuNote = document.getElementById("group-menu-note");
   const groupMenuItemsEl = document.getElementById("group-menu-items");
   const preOrderNotesInput = document.getElementById("preOrderNotes");
   const infoToggleBtn = document.getElementById("info-toggle-btn");
   const infoContent = document.getElementById("info-content");
+  const langSwitcher = document.getElementById("lang-switcher");
 
-  infoToggleBtn.addEventListener("click", () => {
-    const expanded = infoToggleBtn.getAttribute("aria-expanded") === "true";
-    infoToggleBtn.setAttribute("aria-expanded", String(!expanded));
-    infoContent.hidden = expanded;
-    infoToggleBtn.textContent = expanded ? "Ver todo ▾" : "Ver menos ▴";
+  const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+  i18n.applyStaticTranslations();
+
+  langSwitcher.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-lang]");
+    if (!btn) return;
+    i18n.setLang(btn.getAttribute("data-lang"));
   });
+
+  let infoExpanded = false;
+  function renderInfoToggleLabel() {
+    infoToggleBtn.textContent = i18n.t(infoExpanded ? "info.seeLess" : "info.seeAll");
+  }
+  infoToggleBtn.addEventListener("click", () => {
+    infoExpanded = !infoExpanded;
+    infoToggleBtn.setAttribute("aria-expanded", String(infoExpanded));
+    infoContent.hidden = !infoExpanded;
+    renderInfoToggleLabel();
+  });
+
+  function renderInfoSection() {
+    const groups = i18n.getInfoGroups();
+    infoContent.innerHTML = Object.values(groups)
+      .map(
+        (group) => `
+        <div>
+          <p class="info-group-title">${escapeHtml(group.title)}</p>
+          <div class="info-chips">
+            ${group.items.map((item) => `<span class="highlight-chip">${escapeHtml(item)}</span>`).join("")}
+          </div>
+        </div>`
+      )
+      .join("");
+  }
 
   // No permitir seleccionar fechas pasadas
   const today = new Date();
@@ -31,17 +62,6 @@
   const dd = String(today.getDate()).padStart(2, "0");
   dateInput.min = `${yyyy}-${mm}-${dd}`;
   if (!dateInput.value) dateInput.value = `${yyyy}-${mm}-${dd}`;
-
-  const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-  const DAY_LABELS = {
-    mon: "Lunes",
-    tue: "Martes",
-    wed: "Miércoles",
-    thu: "Jueves",
-    fri: "Viernes",
-    sat: "Sábado",
-    sun: "Domingo",
-  };
 
   // Respaldo por si /api/restaurant no responde.
   let restaurantInfo = {
@@ -55,13 +75,19 @@
       sun: { open: "11:00", close: "21:00" },
     },
     lastSeatingBufferMinutes: 30,
-    groupMenu: { threshold: 20, note: "", items: [] },
+    maxPartySize: 40,
+    phone: "(518) 302-5235",
+    groupMenu: { threshold: 20, items: [] },
   };
 
   const menuQuantities = {}; // itemId -> cantidad
 
-  function showAlert(messages) {
+  function showAlert(errors) {
     alertBox.innerHTML = "";
+    const messages = (errors || [{ code: "GENERIC" }]).map((err) => {
+      if (typeof err === "string") return err; // por si el servidor devuelve texto plano
+      return i18n.t(`errors.${err.code}`, err.params);
+    });
     const div = document.createElement("div");
     div.className = "alert alert-error";
     div.innerHTML = messages.map((m) => `• ${escapeHtml(m)}`).join("<br/>");
@@ -75,33 +101,8 @@
 
   function escapeHtml(str) {
     const d = document.createElement("div");
-    d.textContent = str;
+    d.textContent = str == null ? "" : str;
     return d.innerHTML;
-  }
-
-  function formatDate(iso) {
-    const [y, m, d] = iso.split("-").map(Number);
-    const date = new Date(y, m - 1, d);
-    return date.toLocaleDateString("es-ES", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }
-
-  function formatTime(hhmm) {
-    const [h, m] = hhmm.split(":").map(Number);
-    const period = h < 12 ? "a.m." : "p.m.";
-    let h12 = h % 12;
-    if (h12 === 0) h12 = 12;
-    return `${h12}:${String(m).padStart(2, "0")} ${period}`;
-  }
-
-  function dayKeyForDate(iso) {
-    const [y, m, d] = iso.split("-").map(Number);
-    const date = new Date(y, m - 1, d);
-    return DAY_ORDER[(date.getDay() + 6) % 7]; // getDay(): dom=0..sáb=6 -> lun=0..dom=6
   }
 
   function subtractMinutes(hhmm, minutes) {
@@ -127,13 +128,13 @@
     const lines = groups.map((g) => {
       let label;
       if (g.days.length === 1) {
-        label = DAY_LABELS[g.days[0]];
+        label = i18n.dayName(g.days[0]);
       } else if (g.days.length === 2) {
-        label = `${DAY_LABELS[g.days[0]]} y ${DAY_LABELS[g.days[1]]}`;
+        label = `${i18n.dayName(g.days[0])} ${i18n.joinWord("pair")} ${i18n.dayName(g.days[1])}`;
       } else {
-        label = `${DAY_LABELS[g.days[0]]} a ${DAY_LABELS[g.days[g.days.length - 1]]}`;
+        label = `${i18n.dayName(g.days[0])} ${i18n.joinWord("range")} ${i18n.dayName(g.days[g.days.length - 1])}`;
       }
-      return `${label}: ${formatTime(g.open)} – ${formatTime(g.close)}`;
+      return `${label}: ${i18n.formatTime(g.open)} – ${i18n.formatTime(g.close)}`;
     });
     heroHours.innerHTML = lines
       .map((line, i) => `<span>${i === 0 ? "🕒 " : "&nbsp;&nbsp;&nbsp;&nbsp;"}${escapeHtml(line)}</span>`)
@@ -141,22 +142,26 @@
   }
 
   function updateTimeConstraints() {
-    const dayKey = dayKeyForDate(dateInput.value);
+    const dayKey = i18n.dayKeyForDate(dateInput.value);
     const dayHours = restaurantInfo.hours[dayKey];
     const lastSeating = subtractMinutes(dayHours.close, restaurantInfo.lastSeatingBufferMinutes);
     timeInput.min = dayHours.open;
     timeInput.max = lastSeating;
-    timeHint.textContent = `${DAY_LABELS[dayKey]}: reservaciones de ${formatTime(dayHours.open)} a ${formatTime(lastSeating)}`;
+    timeHint.textContent = i18n.t("form.timeHint", {
+      day: i18n.dayName(dayKey),
+      open: i18n.formatTime(dayHours.open),
+      close: i18n.formatTime(lastSeating),
+    });
   }
 
   dateInput.addEventListener("change", updateTimeConstraints);
 
   function renderGroupMenu() {
     const menu = restaurantInfo.groupMenu;
-    groupMenuNote.textContent = menu.note || "";
+    groupMenuNote.textContent = i18n.t("groupMenu.note", { threshold: menu.threshold });
 
     if (!menu.items.length) {
-      groupMenuItemsEl.innerHTML = `<p class="hint">El menú de grupo aún no está disponible; el staff te ayudará a definir el pedido al llegar.</p>`;
+      groupMenuItemsEl.innerHTML = `<p class="hint">${escapeHtml(i18n.t("groupMenu.emptyMenu"))}</p>`;
       return;
     }
 
@@ -169,9 +174,9 @@
             ${item.description ? `<div class="menu-item-desc">${escapeHtml(item.description)}</div>` : ""}
           </div>
           <div class="qty-stepper">
-            <button type="button" class="qty-btn" data-action="dec" aria-label="Quitar uno">−</button>
+            <button type="button" class="qty-btn" data-action="dec">−</button>
             <span class="qty-value" data-qty-value>${menuQuantities[item.id] || 0}</span>
-            <button type="button" class="qty-btn" data-action="inc" aria-label="Agregar uno">+</button>
+            <button type="button" class="qty-btn" data-action="inc">+</button>
           </div>
         </div>`
       )
@@ -198,7 +203,26 @@
     groupMenuSection.hidden = !shouldShow;
   }
 
+  function renderPartySizeHint() {
+    partySizeHint.textContent = i18n.t("form.partySizeHint", {
+      max: restaurantInfo.maxPartySize,
+      phone: restaurantInfo.phone,
+    });
+  }
+
   partySizeInput.addEventListener("input", updateGroupMenuVisibility);
+
+  function renderAll() {
+    renderInfoSection();
+    renderInfoToggleLabel();
+    renderHeroHours();
+    updateTimeConstraints();
+    renderPartySizeHint();
+    renderGroupMenu();
+    updateGroupMenuVisibility();
+  }
+
+  document.addEventListener("languagechange", renderAll);
 
   fetch("/api/restaurant")
     .then((res) => res.json())
@@ -206,18 +230,13 @@
       if (data && data.hours) restaurantInfo = data;
     })
     .catch(() => {})
-    .finally(() => {
-      renderHeroHours();
-      updateTimeConstraints();
-      renderGroupMenu();
-      updateGroupMenuVisibility();
-    });
+    .finally(renderAll);
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearAlert();
     submitBtn.disabled = true;
-    submitBtn.textContent = "Enviando...";
+    submitBtn.textContent = i18n.t("form.submitting");
 
     const preOrder = groupMenuSection.hidden
       ? []
@@ -232,10 +251,7 @@
       date: form.date.value,
       time: form.time.value,
       partySize: form.partySize.value,
-      notes: [
-        form.occasion.value ? `Ocasión: ${form.occasion.value}.` : "",
-        form.notes.value.trim(),
-      ]
+      notes: [form.occasion.value ? `Occasion: ${form.occasion.value}.` : "", form.notes.value.trim()]
         .filter(Boolean)
         .join(" "),
       preOrder,
@@ -251,23 +267,23 @@
       const data = await res.json();
 
       if (!res.ok) {
-        showAlert(data.errors || ["Ocurrió un error. Intenta de nuevo."]);
+        showAlert(data.errors);
         submitBtn.disabled = false;
-        submitBtn.textContent = "Reservar mesa";
+        submitBtn.textContent = i18n.t("form.submit");
         return;
       }
 
       confirmationDetails.innerHTML = `
-        <dt>Nombre</dt><dd>${escapeHtml(data.name)}</dd>
-        <dt>Fecha</dt><dd>${escapeHtml(formatDate(data.date))}</dd>
-        <dt>Hora</dt><dd>${escapeHtml(formatTime(data.time))}</dd>
-        <dt>Personas</dt><dd>${escapeHtml(String(data.partySize))}</dd>
-        <dt>Teléfono</dt><dd>${escapeHtml(data.phone)}</dd>
-        ${data.email ? `<dt>Correo</dt><dd>${escapeHtml(data.email)}</dd>` : ""}
-        <dt>Código</dt><dd>#${escapeHtml(data.id)}</dd>
+        <dt>${i18n.t("confirmation.name")}</dt><dd>${escapeHtml(data.name)}</dd>
+        <dt>${i18n.t("confirmation.date")}</dt><dd>${escapeHtml(i18n.formatDateLong(data.date))}</dd>
+        <dt>${i18n.t("confirmation.time")}</dt><dd>${escapeHtml(i18n.formatTime(data.time))}</dd>
+        <dt>${i18n.t("confirmation.partySize")}</dt><dd>${escapeHtml(String(data.partySize))}</dd>
+        <dt>${i18n.t("confirmation.phone")}</dt><dd>${escapeHtml(data.phone)}</dd>
+        ${data.email ? `<dt>${i18n.t("confirmation.email")}</dt><dd>${escapeHtml(data.email)}</dd>` : ""}
+        <dt>${i18n.t("confirmation.code")}</dt><dd>#${escapeHtml(data.id)}</dd>
         ${
           data.preOrder && data.preOrder.length
-            ? `<dt>Preorden</dt><dd>${data.preOrder
+            ? `<dt>${i18n.t("confirmation.preorder")}</dt><dd>${data.preOrder
                 .map((i) => `${i.quantity}× ${escapeHtml(i.name)}`)
                 .join(", ")}</dd>`
             : ""
@@ -277,10 +293,10 @@
       confirmation.style.display = "block";
       confirmation.scrollIntoView({ behavior: "smooth" });
     } catch (err) {
-      showAlert(["No se pudo conectar con el servidor. Intenta de nuevo."]);
+      showAlert([{ code: "NETWORK" }]);
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = "Reservar mesa";
+      submitBtn.textContent = i18n.t("form.submit");
     }
   });
 

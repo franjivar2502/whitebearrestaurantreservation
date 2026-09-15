@@ -125,6 +125,44 @@ header.hero h1 {
   line-height: 1.2;
 }
 
+.lang-switcher {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.lang-switcher button {
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--on-brand);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 11px;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.lang-switcher button.active {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--brand-dark);
+  opacity: 1;
+}
+
+@media (max-width: 560px) {
+  .brand-row {
+    flex-wrap: wrap;
+  }
+  .lang-switcher {
+    margin-left: 0;
+  }
+}
+
 .hero-meta {
   margin-top: 4px;
   font-size: 0.88rem;
@@ -216,6 +254,10 @@ header.hero h1 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px 28px;
+}
+
+.info-grid[hidden] {
+  display: none;
 }
 
 .info-group-title {

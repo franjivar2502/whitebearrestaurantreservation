@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>White Bear Restaurant — Reservaciones</title>
+<title>White Bear Restaurant — Reservations</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -15,12 +15,17 @@
       <div>
         <h1>White Bear Restaurant</h1>
         <div class="hero-meta">
-          <span>⭐ 4.2 (243 reseñas)</span>
+          <span>⭐ 4.2 (243 <span data-i18n="hero.reviews">reviews</span>)</span>
           <span>·</span>
-          <span>$20-30 por persona</span>
+          <span>$20-30 <span data-i18n="hero.perPerson">per person</span></span>
           <span>·</span>
-          <span>Restaurante</span>
+          <span data-i18n="hero.category">Restaurant</span>
         </div>
+      </div>
+      <div class="lang-switcher" id="lang-switcher">
+        <button type="button" data-lang="en">EN</button>
+        <button type="button" data-lang="es">ES</button>
+        <button type="button" data-lang="fr">FR</button>
       </div>
     </div>
     <div class="hero-details">
@@ -34,11 +39,9 @@
 <div class="container">
 
   <div class="card">
-    <p class="section-title">Sobre nosotros</p>
-    <p style="margin:0;color:var(--text-muted)">
-      Consumo en el lugar · Para llevar · Entrega a domicilio. Comensales destacan
-      porciones generosas, gran variedad en el menú, personal amable y un ambiente
-      excelente.
+    <p class="section-title" data-i18n="about.title">About us</p>
+    <p style="margin:0;color:var(--text-muted)" data-i18n="about.description">
+      Dine-in · Takeout · Delivery. Guests highlight generous portions, a great variety on the menu, friendly staff and a wonderful atmosphere.
     </p>
     <div class="highlights">
       <span class="highlight-chip">Crispy Calamari with Marinara Sauce</span>
@@ -50,208 +53,93 @@
 
   <div class="card">
     <div class="info-header" id="info-header">
-      <p class="section-title" style="margin:0">Información del lugar</p>
-      <button type="button" class="info-toggle-btn" id="info-toggle-btn" aria-expanded="false" aria-controls="info-content">Ver todo ▾</button>
+      <p class="section-title" style="margin:0" data-i18n="info.title">Venue information</p>
+      <button type="button" class="info-toggle-btn" id="info-toggle-btn" aria-expanded="false" aria-controls="info-content">See all ▾</button>
     </div>
 
-    <div class="info-grid" id="info-content" hidden>
-      <div>
-        <p class="info-group-title">♿ Accesibilidad</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Espacio accesible para personas en silla de ruedas</span>
-          <span class="highlight-chip">Estacionamiento accesible para personas en silla de ruedas</span>
-          <span class="highlight-chip">Sanitarios accesibles para personas en silla de ruedas</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">🍽️ Opciones de servicio</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Asientos al aire libre</span>
-          <span class="highlight-chip">Para llevar</span>
-          <span class="highlight-chip">Consumo en el lugar</span>
-          <span class="highlight-chip">Entrega a domicilio</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">⭐ Aspectos destacados</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Atención rápida</span>
-          <span class="highlight-chip">Buenos cócteles</span>
-          <span class="highlight-chip">Deliciosos postres</span>
-          <span class="highlight-chip">Ofrece especialidades de la región</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">🔥 Popular por</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Almuerzo</span>
-          <span class="highlight-chip">Cena</span>
-          <span class="highlight-chip">Cena en solitario</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">🍷 Qué ofrece</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Alcohol</span>
-          <span class="highlight-chip">Aperitivos</span>
-          <span class="highlight-chip">Bebidas fuertes</span>
-          <span class="highlight-chip">Café</span>
-          <span class="highlight-chip">Cerveza</span>
-          <span class="highlight-chip">Cócteles</span>
-          <span class="highlight-chip">Comida casera</span>
-          <span class="highlight-chip">Vino</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">🏠 Opciones del local</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Almuerzo</span>
-          <span class="highlight-chip">Cena</span>
-          <span class="highlight-chip">Postres</span>
-          <span class="highlight-chip">Espacio con asientos</span>
-          <span class="highlight-chip">Servicio a la mesa</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">🧰 Servicios</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Sanitario</span>
-          <span class="highlight-chip">Tiene bar</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">✨ Ambiente</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Agradable</span>
-          <span class="highlight-chip">Informal</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">👥 Público usual</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Grupos</span>
-          <span class="highlight-chip">Turistas</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">📅 Planificación</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Se aceptan reservas</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">💳 Pagos</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Tarjetas de crédito</span>
-          <span class="highlight-chip">Tarjetas de débito</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">👶 Menores</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Ideal para ir con niños</span>
-          <span class="highlight-chip">Menú para niños</span>
-          <span class="highlight-chip">Sillas altas</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">🅿️ Estacionamiento</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Hay suficiente espacio</span>
-          <span class="highlight-chip">Estacionamiento en el lugar</span>
-          <span class="highlight-chip">Estacionamiento gratuito</span>
-          <span class="highlight-chip">Estacionamiento gratuito en la calle</span>
-          <span class="highlight-chip">Estacionamiento pagado</span>
-        </div>
-      </div>
-      <div>
-        <p class="info-group-title">🐾 Mascotas</p>
-        <div class="info-chips">
-          <span class="highlight-chip">Se permiten perros afuera</span>
-        </div>
-      </div>
-    </div>
+    <div class="info-grid" id="info-content" hidden></div>
   </div>
 
   <form id="reservation-form" novalidate>
-    <p class="section-title">Reserva tu mesa</p>
+    <p class="section-title" data-i18n="form.title">Reserve your table</p>
 
     <div id="form-alert"></div>
 
     <div class="form-grid">
       <div class="field">
-        <label for="name">Nombre completo *</label>
+        <label for="name" data-i18n="form.name">Full name *</label>
         <input type="text" id="name" name="name" required autocomplete="name" />
       </div>
       <div class="field">
-        <label for="phone">Teléfono *</label>
+        <label for="phone" data-i18n="form.phone">Phone *</label>
         <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="(518) 555-0123" />
-        <span class="hint">Te enviaremos por aquí la confirmación y un aviso cuando tu mesa esté lista.</span>
+        <span class="hint" data-i18n="form.phoneHint">We'll send your confirmation and a table-ready alert here.</span>
       </div>
       <div class="field full">
-        <label for="email">Correo electrónico (opcional)</label>
+        <label for="email" data-i18n="form.email">Email (optional)</label>
         <input type="email" id="email" name="email" autocomplete="email" />
-        <span class="hint">Déjanos tu correo para recibir también ahí la confirmación y el aviso de mesa lista. Además, nos permite pedirte tu opinión sobre tu visita después de la reservación.</span>
+        <span class="hint" data-i18n="form.emailHint">Leave your email to also get the confirmation and table-ready alert there. It also lets us ask for your feedback after your visit.</span>
       </div>
       <div class="field">
-        <label for="date">Fecha *</label>
+        <label for="date" data-i18n="form.date">Date *</label>
         <input type="date" id="date" name="date" required />
       </div>
       <div class="field">
-        <label for="time">Hora *</label>
+        <label for="time" data-i18n="form.time">Time *</label>
         <input type="time" id="time" name="time" required min="11:00" max="21:00" step="900" />
-        <span class="hint" id="time-hint">Reservaciones de 11:00 a.m. a 9:00 p.m.</span>
+        <span class="hint" id="time-hint">Reservations from 11:00 AM to 9:00 PM.</span>
       </div>
       <div class="field">
-        <label for="partySize">Número de personas *</label>
+        <label for="partySize" data-i18n="form.partySize">Party size *</label>
         <input type="number" id="partySize" name="partySize" min="1" max="40" value="2" required />
-        <span class="hint" id="party-size-hint">Grupos de más de 40: llama al (518) 302-5235.</span>
+        <span class="hint" id="party-size-hint">Groups larger than 40: call (518) 302-5235.</span>
       </div>
       <div class="field">
-        <label for="occasion">Ocasión (opcional)</label>
+        <label for="occasion" data-i18n="form.occasion">Occasion (optional)</label>
         <select id="occasion" name="occasion">
-          <option value="">Ninguna</option>
-          <option value="Cumpleaños">Cumpleaños</option>
-          <option value="Aniversario">Aniversario</option>
-          <option value="Cita de negocios">Cita de negocios</option>
-          <option value="Otro">Otro</option>
+          <option value="" data-i18n="form.occasionNone">None</option>
+          <option value="Birthday" data-i18n="form.occasionBirthday">Birthday</option>
+          <option value="Anniversary" data-i18n="form.occasionAnniversary">Anniversary</option>
+          <option value="Business meeting" data-i18n="form.occasionBusiness">Business meeting</option>
+          <option value="Other" data-i18n="form.occasionOther">Other</option>
         </select>
       </div>
       <div class="field full">
-        <label for="notes">Notas o solicitudes especiales</label>
-        <textarea id="notes" name="notes" placeholder="Alergias, silla para bebé, mesa afuera, etc."></textarea>
+        <label for="notes" data-i18n="form.notes">Notes or special requests</label>
+        <textarea id="notes" name="notes" data-i18n-placeholder="form.notesPlaceholder" placeholder="Allergies, high chair, outdoor table, etc."></textarea>
       </div>
     </div>
 
     <div class="group-menu" id="group-menu-section" hidden>
-      <p class="section-title" style="margin-bottom:4px">Preorden para grupos grandes</p>
+      <p class="section-title" style="margin-bottom:4px" data-i18n="groupMenu.title">Large group pre-order</p>
       <p class="hint" id="group-menu-note" style="margin-bottom:14px"></p>
       <div id="group-menu-items"></div>
       <div class="field full" style="margin-top:14px">
-        <label for="preOrderNotes">Notas del pedido (alergias, restricciones, etc.)</label>
-        <textarea id="preOrderNotes" name="preOrderNotes" placeholder="Ej. 3 personas son vegetarianas"></textarea>
+        <label for="preOrderNotes" data-i18n="groupMenu.notesLabel">Order notes (allergies, restrictions, etc.)</label>
+        <textarea id="preOrderNotes" name="preOrderNotes" data-i18n-placeholder="groupMenu.notesPlaceholder" placeholder="E.g. 3 people are vegetarian"></textarea>
       </div>
-      <p class="hint">Puedes dejarlo en blanco y ordenar al llegar; llenarlo por adelantado solo nos ayuda a tener todo listo antes.</p>
+      <p class="hint" data-i18n="groupMenu.hint">You can leave this blank and order when you arrive; filling it in ahead just helps us have everything ready sooner.</p>
     </div>
 
-    <button type="submit" class="btn btn-primary" id="submit-btn">Reservar mesa</button>
+    <button type="submit" class="btn btn-primary" id="submit-btn" data-i18n="form.submit">Book table</button>
   </form>
 
   <div class="confirmation card" id="confirmation">
     <div class="check">✓</div>
-    <h2>¡Reservación recibida!</h2>
-    <p style="color:var(--text-muted)">Te esperamos en White Bear Restaurant. Te enviamos la confirmación por teléfono/correo, y te avisaremos 15 minutos antes de tu hora cuando la mesa esté lista.</p>
+    <h2 data-i18n="confirmation.title">Reservation received!</h2>
+    <p style="color:var(--text-muted)" data-i18n="confirmation.subtitle">We look forward to seeing you at White Bear Restaurant. We've sent your confirmation by phone/email, and we'll let you know 15 minutes before your time when your table is ready.</p>
     <dl class="details" id="confirmation-details"></dl>
-    <button class="btn btn-primary" id="new-reservation-btn" style="max-width:260px;margin:0 auto">Hacer otra reservación</button>
+    <button class="btn btn-primary" id="new-reservation-btn" style="max-width:260px;margin:0 auto" data-i18n="confirmation.newReservation">Make another reservation</button>
   </div>
 
 </div>
 
 <footer class="site-footer">
   White Bear Restaurant · 2793 Wilmington Rd, Lake Placid, NY 12946 · (518) 302-5235<br/>
-  ¿Eres del staff? <a href="tablet.html">Abrir panel de reservaciones</a>
+  <span data-i18n="footer.staffQuestion">Are you staff?</span> <a href="tablet.html" data-i18n="footer.staffLinkText">Open the reservations panel</a>
 </footer>
 
+<script src="js/i18n.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

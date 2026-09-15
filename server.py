@@ -137,7 +137,7 @@ def _validate_preorder(raw_pre_order):
     if not raw_pre_order:
         return [], []
     if not isinstance(raw_pre_order, list):
-        return [], ["El preorden del grupo no es válido."]
+        return [], [{"code": "PREORDER_INVALID"}]
 
     menu_by_id = {item["id"]: item for item in RESTAURANT["groupMenu"]["items"]}
     cleaned = []
@@ -159,6 +159,13 @@ def _validate_preorder(raw_pre_order):
 
 
 def _validate_reservation(payload):
+    """
+    Devuelve (datos_limpios, errores). Cada error es un dict {"code": ...,
+    "params": {...}} en vez de un mensaje ya traducido: el frontend decide
+    el idioma (inglés/español/francés) con su propio diccionario (i18n.js),
+    usando "code" como llave y "params" para rellenar valores como horarios
+    o el máximo de personas.
+    """
     errors = []
 
     name = (payload.get("name") or "").strip()
@@ -173,44 +180,51 @@ def _validate_reservation(payload):
     errors.extend(pre_order_errors)
 
     if not name or len(name) < 2:
-        errors.append("El nombre es obligatorio.")
+        errors.append({"code": "NAME_REQUIRED"})
     if not phone or len(re.sub(r"\D", "", phone)) < 7:
-        errors.append("Ingresa un teléfono válido.")
+        errors.append({"code": "PHONE_INVALID"})
     if email and not EMAIL_RE.match(email):
-        errors.append("El correo electrónico no es válido.")
+        errors.append({"code": "EMAIL_INVALID"})
 
     try:
         parsed_date = datetime.strptime(res_date, "%Y-%m-%d").date()
     except (ValueError, TypeError):
         parsed_date = None
-        errors.append("Selecciona una fecha válida.")
+        errors.append({"code": "DATE_INVALID"})
 
     if parsed_date and parsed_date < date.today():
-        errors.append("La fecha no puede ser en el pasado.")
+        errors.append({"code": "DATE_PAST"})
 
     try:
         parsed_time = datetime.strptime(res_time, "%H:%M").time()
     except (ValueError, TypeError):
         parsed_time = None
-        errors.append("Selecciona una hora válida.")
+        errors.append({"code": "TIME_INVALID"})
 
     if parsed_date and parsed_time:
         open_t, _close_t, last_t = _hours_for_date(parsed_date)
         if not (open_t <= parsed_time <= last_t):
             errors.append(
-                f"Ese día recibimos reservaciones entre las "
-                f"{open_t.strftime('%H:%M')} y las {last_t.strftime('%H:%M')}."
+                {
+                    "code": "TIME_OUT_OF_HOURS",
+                    "params": {
+                        "open": open_t.strftime("%H:%M"),
+                        "close": last_t.strftime("%H:%M"),
+                    },
+                }
             )
 
     try:
         party_size = int(party_size)
         if not (1 <= party_size <= RESTAURANT["maxPartySize"]):
             errors.append(
-                f"El número de personas debe ser entre 1 y {RESTAURANT['maxPartySize']}. "
-                f"Para grupos más grandes, llama al {RESTAURANT['phone']}."
+                {
+                    "code": "PARTY_SIZE_OUT_OF_RANGE",
+                    "params": {"max": RESTAURANT["maxPartySize"], "phone": RESTAURANT["phone"]},
+                }
             )
     except (TypeError, ValueError):
-        errors.append("Ingresa un número de personas válido.")
+        errors.append({"code": "PARTY_SIZE_INVALID"})
         party_size = None
 
     if errors:

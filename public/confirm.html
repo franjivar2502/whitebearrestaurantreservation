@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Confirma tu asistencia — White Bear Restaurant</title>
+<title data-i18n="confirmPage.pageTitle">Confirm your attendance — White Bear Restaurant</title>
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/confirm.css" />
 </head>
@@ -12,34 +12,35 @@
 <div class="confirm-backdrop">
   <div class="confirm-popup" id="confirm-popup">
 
+    <div class="lang-switcher confirm-lang-switcher" id="lang-switcher">
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="es">ES</button>
+      <button type="button" data-lang="fr">FR</button>
+    </div>
+
     <div id="confirm-loading">
       <div class="brand-icon" style="margin:0 auto 14px">🐻‍❄️</div>
-      <p>Cargando tu reservación…</p>
+      <p data-i18n="confirmPage.loading">Loading your reservation…</p>
     </div>
 
     <div id="confirm-error" hidden>
       <div class="check" style="background:color-mix(in srgb, var(--danger) 18%, var(--surface));color:var(--danger)">✕</div>
-      <h2>No encontramos esa reservación</h2>
-      <p style="color:var(--text-muted)">
-        Revisa el link que te enviamos, o llama al restaurante al
-        <strong>(518) 302-5235</strong> para confirmar directamente.
-      </p>
+      <h2 data-i18n="confirmPage.notFoundTitle">We couldn't find that reservation</h2>
+      <p style="color:var(--text-muted)" id="confirm-error-text"></p>
     </div>
 
     <div id="confirm-question" hidden>
       <div class="brand-icon" style="margin:0 auto 14px">🐻‍❄️</div>
-      <h2>¿Confirmas tu asistencia?</h2>
-      <p style="color:var(--text-muted);margin-bottom:18px">
-        White Bear Restaurant te espera:
+      <h2 data-i18n="confirmPage.question">Will you be joining us?</h2>
+      <p style="color:var(--text-muted);margin-bottom:18px" data-i18n="confirmPage.expecting">
+        White Bear Restaurant is expecting you:
       </p>
       <dl class="details" id="confirm-details"></dl>
       <div class="confirm-actions">
-        <button class="btn btn-primary" id="confirm-yes-btn">✅ Sí, confirmo mi asistencia</button>
-        <button class="btn btn-secondary" id="confirm-no-btn">No podré asistir</button>
+        <button class="btn btn-primary" id="confirm-yes-btn" data-i18n="confirmPage.yes">✅ Yes, I'll be there</button>
+        <button class="btn btn-secondary" id="confirm-no-btn" data-i18n="confirmPage.no">I can't make it</button>
       </div>
-      <p class="hint" style="margin-top:16px">
-        Si tienes dudas, llama al restaurante al (518) 302-5235.
-      </p>
+      <p class="hint" style="margin-top:16px" id="confirm-call-hint"></p>
     </div>
 
     <div id="confirm-result" hidden>
@@ -51,6 +52,7 @@
   </div>
 </div>
 
+<script src="js/i18n.js"></script>
 <script src="js/confirm.js"></script>
 </body>
 </html>

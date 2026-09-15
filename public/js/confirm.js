@@ -1,38 +1,32 @@
 (function () {
   const loadingEl = document.getElementById("confirm-loading");
   const errorEl = document.getElementById("confirm-error");
+  const errorText = document.getElementById("confirm-error-text");
   const questionEl = document.getElementById("confirm-question");
   const detailsEl = document.getElementById("confirm-details");
   const resultEl = document.getElementById("confirm-result");
   const resultIcon = document.getElementById("confirm-result-icon");
   const resultTitle = document.getElementById("confirm-result-title");
   const resultText = document.getElementById("confirm-result-text");
+  const callHint = document.getElementById("confirm-call-hint");
   const yesBtn = document.getElementById("confirm-yes-btn");
   const noBtn = document.getElementById("confirm-no-btn");
+  const langSwitcher = document.getElementById("lang-switcher");
+
+  const PHONE = "(518) 302-5235";
+
+  i18n.applyStaticTranslations();
+
+  langSwitcher.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-lang]");
+    if (!btn) return;
+    i18n.setLang(btn.getAttribute("data-lang"));
+  });
 
   function escapeHtml(str) {
     const d = document.createElement("div");
     d.textContent = str == null ? "" : str;
     return d.innerHTML;
-  }
-
-  function formatDate(iso) {
-    const [y, m, d] = iso.split("-").map(Number);
-    const date = new Date(y, m - 1, d);
-    return date.toLocaleDateString("es-ES", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }
-
-  function formatTime(hhmm) {
-    const [h, m] = hhmm.split(":").map(Number);
-    const period = h < 12 ? "a.m." : "p.m.";
-    let h12 = h % 12;
-    if (h12 === 0) h12 = 12;
-    return `${h12}:${String(m).padStart(2, "0")} ${period}`;
   }
 
   function showOnly(el) {
@@ -45,47 +39,110 @@
   const reservationId = params.get("id");
 
   let reservation = null;
+  let currentView = "loading"; // loading | notfound | question | already-cancelled | already-confirmed | confirmed | declined | send-error
+
+  function render() {
+    if (currentView === "loading") {
+      showOnly(loadingEl);
+      return;
+    }
+    if (currentView === "notfound") {
+      errorText.textContent = i18n.t("confirmPage.notFoundText", { phone: PHONE });
+      showOnly(errorEl);
+      return;
+    }
+    if (currentView === "question" && reservation) {
+      detailsEl.innerHTML = `
+        <dt>${i18n.t("common.name")}</dt><dd>${escapeHtml(reservation.name)}</dd>
+        <dt>${i18n.t("common.date")}</dt><dd>${escapeHtml(i18n.formatDateLong(reservation.date))}</dd>
+        <dt>${i18n.t("common.time")}</dt><dd>${escapeHtml(i18n.formatTime(reservation.time))}</dd>
+        <dt>${i18n.t("common.partySize")}</dt><dd>${escapeHtml(String(reservation.partySize))}</dd>
+      `;
+      callHint.textContent = i18n.t("confirmPage.callHint", { phone: PHONE });
+      showOnly(questionEl);
+      return;
+    }
+    if (currentView === "already-cancelled") {
+      resultIcon.textContent = "ℹ️";
+      resultIcon.style.background = "var(--surface-alt)";
+      resultIcon.style.color = "var(--text-muted)";
+      resultTitle.textContent = i18n.t("confirmPage.alreadyCancelledTitle");
+      resultText.textContent = i18n.t("confirmPage.alreadyCancelledText", { phone: PHONE });
+      showOnly(resultEl);
+      return;
+    }
+    if (currentView === "already-confirmed" && reservation) {
+      resultIcon.textContent = "✓";
+      resultIcon.style.background = "color-mix(in srgb, var(--accent) 18%, var(--surface))";
+      resultIcon.style.color = "var(--accent)";
+      resultTitle.textContent = i18n.t("confirmPage.alreadyConfirmedTitle");
+      resultText.textContent = i18n.t("confirmPage.seeYou", {
+        date: i18n.formatDateLong(reservation.date),
+        time: i18n.formatTime(reservation.time),
+      });
+      showOnly(resultEl);
+      return;
+    }
+    if (currentView === "confirmed" && reservation) {
+      resultIcon.textContent = "✓";
+      resultIcon.style.background = "color-mix(in srgb, var(--accent) 18%, var(--surface))";
+      resultIcon.style.color = "var(--accent)";
+      resultTitle.textContent = i18n.t("confirmPage.confirmedTitle");
+      resultText.textContent = i18n.t("confirmPage.confirmedText", {
+        date: i18n.formatDateLong(reservation.date),
+        time: i18n.formatTime(reservation.time),
+      });
+      showOnly(resultEl);
+      return;
+    }
+    if (currentView === "declined") {
+      resultIcon.textContent = "✕";
+      resultIcon.style.background = "color-mix(in srgb, var(--danger) 18%, var(--surface))";
+      resultIcon.style.color = "var(--danger)";
+      resultTitle.textContent = i18n.t("confirmPage.declinedTitle");
+      resultText.textContent = i18n.t("confirmPage.declinedText");
+      showOnly(resultEl);
+      return;
+    }
+    if (currentView === "send-error") {
+      resultIcon.textContent = "✕";
+      resultIcon.style.background = "color-mix(in srgb, var(--danger) 18%, var(--surface))";
+      resultIcon.style.color = "var(--danger)";
+      resultTitle.textContent = i18n.t("confirmPage.sendErrorTitle");
+      resultText.textContent = i18n.t("confirmPage.sendErrorText", { phone: PHONE });
+      showOnly(resultEl);
+      return;
+    }
+  }
+
+  document.addEventListener("languagechange", render);
 
   async function loadReservation() {
     if (!reservationId) {
-      showOnly(errorEl);
+      currentView = "notfound";
+      render();
       return;
     }
     try {
       const res = await fetch(`/api/reservations/${reservationId}`, { cache: "no-store" });
       if (!res.ok) {
-        showOnly(errorEl);
+        currentView = "notfound";
+        render();
         return;
       }
       reservation = await res.json();
 
       if (reservation.status === "cancelled") {
-        resultIcon.textContent = "ℹ️";
-        resultIcon.style.background = "var(--surface-alt)";
-        resultIcon.style.color = "var(--text-muted)";
-        resultTitle.textContent = "Esta reservación ya está cancelada";
-        resultText.textContent = `Si fue un error, llama al restaurante al (518) 302-5235.`;
-        showOnly(resultEl);
-        return;
+        currentView = "already-cancelled";
+      } else if (reservation.attendanceConfirmed === true) {
+        currentView = "already-confirmed";
+      } else {
+        currentView = "question";
       }
-
-      if (reservation.attendanceConfirmed === true) {
-        resultIcon.textContent = "✓";
-        resultTitle.textContent = "¡Ya habías confirmado tu asistencia!";
-        resultText.textContent = `Te esperamos el ${formatDate(reservation.date)} a las ${formatTime(reservation.time)}`;
-        showOnly(resultEl);
-        return;
-      }
-
-      detailsEl.innerHTML = `
-        <dt>Nombre</dt><dd>${escapeHtml(reservation.name)}</dd>
-        <dt>Fecha</dt><dd>${escapeHtml(formatDate(reservation.date))}</dd>
-        <dt>Hora</dt><dd>${escapeHtml(formatTime(reservation.time))}</dd>
-        <dt>Personas</dt><dd>${escapeHtml(String(reservation.partySize))}</dd>
-      `;
-      showOnly(questionEl);
+      render();
     } catch (err) {
-      showOnly(errorEl);
+      currentView = "notfound";
+      render();
     }
   }
 
@@ -99,26 +156,11 @@
         body: JSON.stringify({ confirmed }),
       });
       if (!res.ok) throw new Error("failed");
-
-      if (confirmed) {
-        resultIcon.textContent = "✓";
-        resultIcon.style.background = "color-mix(in srgb, var(--accent) 18%, var(--surface))";
-        resultIcon.style.color = "var(--accent)";
-        resultTitle.textContent = "¡Asistencia confirmada!";
-        resultText.textContent = `Te esperamos el ${formatDate(reservation.date)} a las ${formatTime(reservation.time)}, gracias por confirmar.`;
-      } else {
-        resultIcon.textContent = "✕";
-        resultIcon.style.background = "color-mix(in srgb, var(--danger) 18%, var(--surface))";
-        resultIcon.style.color = "var(--danger)";
-        resultTitle.textContent = "Reservación cancelada";
-        resultText.textContent = "Gracias por avisarnos. Esperamos verte en otra ocasión.";
-      }
-      showOnly(resultEl);
+      currentView = confirmed ? "confirmed" : "declined";
+      render();
     } catch (err) {
-      resultIcon.textContent = "✕";
-      resultTitle.textContent = "No se pudo enviar tu respuesta";
-      resultText.textContent = `Intenta de nuevo, o llama al restaurante al (518) 302-5235.`;
-      showOnly(resultEl);
+      currentView = "send-error";
+      render();
     } finally {
       yesBtn.disabled = false;
       noBtn.disabled = false;

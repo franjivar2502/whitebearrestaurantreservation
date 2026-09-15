@@ -39,6 +39,27 @@ body.confirm-body {
   }
 }
 
+.confirm-popup {
+  position: relative;
+}
+
+.confirm-lang-switcher {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  margin-left: 0;
+  background: var(--surface-alt);
+}
+
+.confirm-lang-switcher button {
+  color: var(--text-muted);
+}
+
+.confirm-lang-switcher button.active {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
 .confirm-popup .brand-icon {
   width: 56px;
   height: 56px;
