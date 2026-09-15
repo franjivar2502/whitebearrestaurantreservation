@@ -105,6 +105,13 @@
 
     filtered = filtered.filter((r) => {
       if (statusFilter === "active") return !["completed", "cancelled"].includes(r.status);
+      if (statusFilter === "needs-call") {
+        return (
+          r.attendanceReminderSent &&
+          r.attendanceConfirmed === null &&
+          !["completed", "cancelled"].includes(r.status)
+        );
+      }
       return r.status === statusFilter;
     });
 
@@ -138,6 +145,16 @@
     }
     listEl.innerHTML = html;
     attachActionHandlers();
+  }
+
+  function renderAttendanceLine(r) {
+    if (r.attendanceConfirmed === true) {
+      return `<div class="res-attendance res-attendance-ok">✅ Asistencia confirmada por el cliente</div>`;
+    }
+    if (r.attendanceReminderSent && r.attendanceConfirmed === null && !["completed", "cancelled"].includes(r.status)) {
+      return `<div class="res-attendance res-attendance-pending">⏳ Esperando confirmación — si no responde, hay que llamarle</div>`;
+    }
+    return "";
   }
 
   function renderCard(r) {
@@ -182,6 +199,7 @@
               : ""
           }
           ${r.preOrderNotes ? `<div class="res-notes">🍽️ ${escapeHtml(r.preOrderNotes)}</div>` : ""}
+          ${renderAttendanceLine(r)}
         </div>
         <div class="res-actions">${actions}</div>
       </div>

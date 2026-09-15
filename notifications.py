@@ -138,6 +138,17 @@ def confirmation_message(reservation):
     )
 
 
+def attendance_confirmation_message(reservation, base_url):
+    confirm_url = f"{base_url}/confirm.html?id={reservation['id']}"
+    return (
+        f"White Bear Restaurant: hola {reservation['name']}, confirma tu "
+        f"asistencia para el {reservation['date']} a las {reservation['time']} "
+        f"({reservation['partySize']} personas) aqui: {confirm_url} "
+        f"Si no confirmas, por favor llama al (518) 302-5235 para confirmar "
+        f"tu reservacion."
+    )
+
+
 def reminder_message(reservation):
     return (
         f"White Bear Restaurant: hola {reservation['name']}, tu mesa para "
@@ -160,3 +171,11 @@ def notify_reminder(reservation):
         send_sms(reservation["phone"], message)
     if reservation.get("email"):
         send_email(reservation["email"], "Tu mesa está casi lista", message)
+
+
+def notify_attendance_confirmation(reservation, base_url):
+    message = attendance_confirmation_message(reservation, base_url)
+    if reservation.get("phone"):
+        send_sms(reservation["phone"], message)
+    if reservation.get("email"):
+        send_email(reservation["email"], "Confirma tu asistencia", message)

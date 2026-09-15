@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Confirma tu asistencia — White Bear Restaurant</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/confirm.css" />
+</head>
+<body class="confirm-body">
+
+<div class="confirm-backdrop">
+  <div class="confirm-popup" id="confirm-popup">
+
+    <div id="confirm-loading">
+      <div class="brand-icon" style="margin:0 auto 14px">🐻‍❄️</div>
+      <p>Cargando tu reservación…</p>
+    </div>
+
+    <div id="confirm-error" hidden>
+      <div class="check" style="background:color-mix(in srgb, var(--danger) 18%, var(--surface));color:var(--danger)">✕</div>
+      <h2>No encontramos esa reservación</h2>
+      <p style="color:var(--text-muted)">
+        Revisa el link que te enviamos, o llama al restaurante al
+        <strong>(518) 302-5235</strong> para confirmar directamente.
+      </p>
+    </div>
+
+    <div id="confirm-question" hidden>
+      <div class="brand-icon" style="margin:0 auto 14px">🐻‍❄️</div>
+      <h2>¿Confirmas tu asistencia?</h2>
+      <p style="color:var(--text-muted);margin-bottom:18px">
+        White Bear Restaurant te espera:
+      </p>
+      <dl class="details" id="confirm-details"></dl>
+      <div class="confirm-actions">
+        <button class="btn btn-primary" id="confirm-yes-btn">✅ Sí, confirmo mi asistencia</button>
+        <button class="btn btn-secondary" id="confirm-no-btn">No podré asistir</button>
+      </div>
+      <p class="hint" style="margin-top:16px">
+        Si tienes dudas, llama al restaurante al (518) 302-5235.
+      </p>
+    </div>
+
+    <div id="confirm-result" hidden>
+      <div class="check" id="confirm-result-icon">✓</div>
+      <h2 id="confirm-result-title"></h2>
+      <p id="confirm-result-text" style="color:var(--text-muted)"></p>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/confirm.js"></script>
+</body>
+</html>

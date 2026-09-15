@@ -228,6 +228,24 @@ body.tablet-body {
   font-weight: 600;
 }
 
+.res-attendance {
+  font-size: 0.82rem;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.res-attendance-ok {
+  background: color-mix(in srgb, var(--confirmed) 16%, var(--surface));
+  color: var(--confirmed);
+}
+
+.res-attendance-pending {
+  background: color-mix(in srgb, var(--warning) 16%, var(--surface));
+  color: var(--warning);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

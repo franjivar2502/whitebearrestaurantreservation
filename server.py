@@ -29,6 +29,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 DATA_FILE = os.path.join(BASE_DIR, "data", "reservations.json")
 
+# URL pública del sitio, usada para armar los links de confirmación de
+# asistencia que se envían por SMS/correo. En local apunta a localhost; al
+# desplegar, define PUBLIC_BASE_URL (p. ej. https://tu-sitio.onrender.com).
+PUBLIC_BASE_URL = None
+
 DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 RESTAURANT = {
@@ -297,6 +302,17 @@ class Handler(BaseHTTPRequestHandler):
             reservations.sort(key=lambda r: (r["date"], r["time"]))
             self._send_json(reservations)
             return
+        m = re.match(r"^/api/reservations/([a-f0-9]+)$", parsed.path)
+        if m:
+            res_id = m.group(1)
+            with _lock:
+                reservations = _read_reservations()
+            found = next((r for r in reservations if r["id"] == res_id), None)
+            if found:
+                self._send_json(found)
+            else:
+                self._send_json({"errors": ["Reservación no encontrada."]}, status=404)
+            return
         self._serve_static(parsed.path)
 
     def do_POST(self):
@@ -315,6 +331,8 @@ class Handler(BaseHTTPRequestHandler):
                 "status": "pending",
                 "createdAt": datetime.now().isoformat(timespec="seconds"),
                 "reminderSent": False,
+                "attendanceReminderSent": False,
+                "attendanceConfirmed": None,
                 **clean,
             }
             with _lock:
@@ -326,6 +344,33 @@ class Handler(BaseHTTPRequestHandler):
             ).start()
             self._send_json(reservation, status=201)
             return
+
+        m = re.match(r"^/api/reservations/([a-f0-9]+)/confirm-attendance$", parsed.path)
+        if m:
+            res_id = m.group(1)
+            payload = self._read_json_body()
+            if payload is None or not isinstance(payload.get("confirmed"), bool):
+                self._send_json({"errors": ["Falta indicar si confirma o no."]}, status=400)
+                return
+            confirmed = payload["confirmed"]
+            with _lock:
+                reservations = _read_reservations()
+                found = None
+                for r in reservations:
+                    if r["id"] == res_id:
+                        r["attendanceConfirmed"] = confirmed
+                        if not confirmed and r["status"] not in ("completed", "cancelled"):
+                            r["status"] = "cancelled"
+                        found = r
+                        break
+                if found:
+                    _write_reservations(reservations)
+            if found:
+                self._send_json(found)
+            else:
+                self._send_json({"errors": ["Reservación no encontrada."]}, status=404)
+            return
+
         self.send_response(404)
         self.end_headers()
 
@@ -381,6 +426,45 @@ class Handler(BaseHTTPRequestHandler):
 
 
 REMINDER_MINUTES_BEFORE = 15
+ADVANCE_ATTENDANCE_MINUTES_BEFORE = 24 * 60  # 24 horas antes, para reservaciones hechas con días de anticipación
+SAME_DAY_ATTENDANCE_MINUTES_BEFORE = 30  # 30 minutos antes, para reservaciones del mismo día
+
+
+def _check_and_send_attendance_confirmations():
+    """
+    Pide confirmar asistencia: 24h antes si la reservación se hizo con días
+    de anticipación (la fecha de la reserva es posterior al día en que se
+    creó), o 30 minutos antes si se reservó el mismo día para el mismo día.
+    Si la persona no responde, el mensaje le indica que debe llamar al
+    restaurante; el estado de la reserva no cambia hasta que responda.
+    """
+    now = datetime.now()
+    with _lock:
+        reservations = _read_reservations()
+        due = []
+        for r in reservations:
+            if r.get("status") == "cancelled" or r.get("attendanceReminderSent"):
+                continue
+            try:
+                res_dt = datetime.strptime(f"{r['date']} {r['time']}", "%Y-%m-%d %H:%M")
+                created_date = datetime.fromisoformat(r["createdAt"]).date()
+            except (ValueError, KeyError):
+                continue
+
+            same_day_booking = res_dt.date() == created_date
+            threshold = (
+                SAME_DAY_ATTENDANCE_MINUTES_BEFORE
+                if same_day_booking
+                else ADVANCE_ATTENDANCE_MINUTES_BEFORE
+            )
+            minutes_until = (res_dt - now).total_seconds() / 60
+            if 0 <= minutes_until <= threshold:
+                r["attendanceReminderSent"] = True
+                due.append(r)
+        if due:
+            _write_reservations(reservations)
+    for r in due:
+        notifications.notify_attendance_confirmation(r, PUBLIC_BASE_URL)
 
 
 def _check_and_send_reminders():
@@ -409,13 +493,19 @@ def _reminder_loop():
     while True:
         time.sleep(60)
         try:
-            _check_and_send_reminders()
+            _check_and_send_attendance_confirmations()
         except Exception:  # noqa: BLE001 - el hilo de fondo no debe morir por un error puntual
+            pass
+        try:
+            _check_and_send_reminders()
+        except Exception:  # noqa: BLE001
             pass
 
 
 def main():
     import sys
+
+    global PUBLIC_BASE_URL
 
     # Los proveedores de hosting (Render, Railway, etc.) asignan el puerto
     # mediante la variable de entorno PORT; en local se puede pasar como
@@ -426,6 +516,7 @@ def main():
         port = int(sys.argv[1])
     else:
         port = 8000
+    PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", f"http://localhost:{port}")
     _ensure_data_file()
     threading.Thread(target=_reminder_loop, daemon=True).start()
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)

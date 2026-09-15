@@ -63,6 +63,37 @@ No hace falta configurar los dos — puedes activar solo correo, solo SMS, o
 ambos. Al arrancar, el servidor imprime en consola si cada canal está
 ACTIVO o en modo prueba.
 
+## Confirmación de asistencia ("ventana emergente")
+
+Además de la confirmación de la reservación, el sitio pide que el cliente
+**confirme su asistencia** antes de la hora reservada:
+
+- **Reservaciones hechas con días de anticipación:** se les pide confirmar
+  **24 horas antes** de la hora reservada.
+- **Reservaciones hechas el mismo día:** se les pide confirmar **30 minutos
+  antes**.
+
+El aviso llega por SMS y/o correo (los mismos canales configurados arriba)
+con un link a `confirm.html?id=<código>` — una página que se ve y se
+comporta como una ventana emergente, con dos botones: **"Sí, confirmo mi
+asistencia"** o **"No podré asistir"**. Si confirma, queda marcado
+`attendanceConfirmed: true` y se ve en la tablet con la etiqueta "✅
+Asistencia confirmada". Si dice que no podrá asistir, la reservación se
+cancela automáticamente. **Si la persona no responde**, el mensaje le indica
+que debe llamar al restaurante al (518) 302-5235; mientras tanto, esa
+reservación aparece en la tablet con la etiqueta "⏳ Esperando confirmación"
+y en la pestaña de filtro **"Por confirmar"**, para que el staff sepa a
+quién llamar.
+
+Cada reservación solo recibe esta solicitud una vez
+(`attendanceReminderSent` evita duplicados) y las canceladas no la reciben.
+
+**Importante sobre el link:** el mensaje arma la URL usando
+`PUBLIC_BASE_URL` (o `http://localhost:PUERTO` si no la defines). Al
+desplegar el sitio en internet, define esta variable de entorno con tu URL
+real (por ejemplo `https://white-bear-reservations.onrender.com`) para que
+el link del SMS/correo funcione desde cualquier celular.
+
 ## Cómo ejecutarlo
 
 Requiere solo Python 3 (viene preinstalado en Mac/Linux).
