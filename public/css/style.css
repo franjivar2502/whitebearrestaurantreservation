@@ -116,6 +116,10 @@ a {
   pointer-events: none;
 }
 
+.welcome-splash[hidden] {
+  display: none;
+}
+
 .welcome-splash-content {
   position: relative;
   text-align: center;

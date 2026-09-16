@@ -29,26 +29,30 @@
   const galleryCard = document.getElementById("gallery-card");
   const photoGallery = document.getElementById("photo-gallery");
 
+  const hideWelcomeSplash = () => {
+    setTimeout(() => {
+      welcomeSplash.classList.add("welcome-splash-hide");
+      setTimeout(() => {
+        welcomeSplash.hidden = true;
+      }, 650);
+    }, 1000);
+  };
+
+  welcomeSplash.hidden = false;
+
   fetch("/api/photos")
     .then((res) => res.json())
     .then((photos) => {
-      if (!photos || !photos.length) return;
-
-      welcomeSplash.style.backgroundImage = `url("${photos[0].url}")`;
-      welcomeSplash.hidden = false;
-      setTimeout(() => {
-        welcomeSplash.classList.add("welcome-splash-hide");
-        setTimeout(() => {
-          welcomeSplash.hidden = true;
-        }, 650);
-      }, 1000);
-
-      galleryCard.hidden = false;
-      photoGallery.innerHTML = photos
-        .map((p) => `<img src="${p.url}" alt="${(p.caption || "").replace(/"/g, "&quot;")}" loading="lazy">`)
-        .join("");
+      if (photos && photos.length) {
+        welcomeSplash.style.backgroundImage = `url("${photos[0].url}")`;
+        galleryCard.hidden = false;
+        photoGallery.innerHTML = photos
+          .map((p) => `<img src="${p.url}" alt="${(p.caption || "").replace(/"/g, "&quot;")}" loading="lazy">`)
+          .join("");
+      }
+      hideWelcomeSplash();
     })
-    .catch(() => {});
+    .catch(() => hideWelcomeSplash());
 
   langSwitcher.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-lang]");
