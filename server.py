@@ -24,10 +24,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
 import notifications
+import storage
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
-DATA_FILE = os.path.join(BASE_DIR, "data", "reservations.json")
 
 # URL pública del sitio, usada para armar los links de confirmación de
 # asistencia que se envían por SMS/correo. En local apunta a localhost; al
@@ -109,27 +109,6 @@ def _hours_for_date(d):
     return open_t, close_t, last_seating_dt.time()
 
 _lock = threading.Lock()
-
-
-def _ensure_data_file():
-    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
-    if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f)
-
-
-def _read_reservations():
-    _ensure_data_file()
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
-
-
-def _write_reservations(reservations):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(reservations, f, indent=2, ensure_ascii=False)
 
 
 def _validate_preorder(raw_pre_order):
@@ -310,7 +289,7 @@ class Handler(BaseHTTPRequestHandler):
             qs = parse_qs(parsed.query)
             date_filter = qs.get("date", [None])[0]
             with _lock:
-                reservations = _read_reservations()
+                reservations = storage.list_reservations()
             if date_filter:
                 reservations = [r for r in reservations if r["date"] == date_filter]
             reservations.sort(key=lambda r: (r["date"], r["time"]))
@@ -320,7 +299,7 @@ class Handler(BaseHTTPRequestHandler):
         if m:
             res_id = m.group(1)
             with _lock:
-                reservations = _read_reservations()
+                reservations = storage.list_reservations()
             found = next((r for r in reservations if r["id"] == res_id), None)
             if found:
                 self._send_json(found)
@@ -350,9 +329,7 @@ class Handler(BaseHTTPRequestHandler):
                 **clean,
             }
             with _lock:
-                reservations = _read_reservations()
-                reservations.append(reservation)
-                _write_reservations(reservations)
+                storage.save_reservation(reservation)
             threading.Thread(
                 target=notifications.notify_confirmation, args=(reservation,), daemon=True
             ).start()
@@ -368,7 +345,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             confirmed = payload["confirmed"]
             with _lock:
-                reservations = _read_reservations()
+                reservations = storage.list_reservations()
                 found = None
                 for r in reservations:
                     if r["id"] == res_id:
@@ -378,7 +355,7 @@ class Handler(BaseHTTPRequestHandler):
                         found = r
                         break
                 if found:
-                    _write_reservations(reservations)
+                    storage.save_reservation(found)
             if found:
                 self._send_json(found)
             else:
@@ -402,7 +379,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"errors": ["Estado inválido."]}, status=400)
                 return
             with _lock:
-                reservations = _read_reservations()
+                reservations = storage.list_reservations()
                 found = None
                 for r in reservations:
                     if r["id"] == res_id:
@@ -410,7 +387,7 @@ class Handler(BaseHTTPRequestHandler):
                         found = r
                         break
                 if found:
-                    _write_reservations(reservations)
+                    storage.save_reservation(found)
             if found:
                 self._send_json(found)
             else:
@@ -425,11 +402,7 @@ class Handler(BaseHTTPRequestHandler):
         if m:
             res_id = m.group(1)
             with _lock:
-                reservations = _read_reservations()
-                remaining = [r for r in reservations if r["id"] != res_id]
-                deleted = len(remaining) != len(reservations)
-                if deleted:
-                    _write_reservations(remaining)
+                deleted = storage.delete_reservation(res_id)
             if deleted:
                 self._send_json({"ok": True})
             else:
@@ -454,7 +427,7 @@ def _check_and_send_attendance_confirmations():
     """
     now = datetime.now()
     with _lock:
-        reservations = _read_reservations()
+        reservations = storage.list_reservations()
         due = []
         for r in reservations:
             if r.get("status") == "cancelled" or r.get("attendanceReminderSent"):
@@ -474,9 +447,8 @@ def _check_and_send_attendance_confirmations():
             minutes_until = (res_dt - now).total_seconds() / 60
             if 0 <= minutes_until <= threshold:
                 r["attendanceReminderSent"] = True
+                storage.save_reservation(r)
                 due.append(r)
-        if due:
-            _write_reservations(reservations)
     for r in due:
         notifications.notify_attendance_confirmation(r, PUBLIC_BASE_URL)
 
@@ -484,7 +456,7 @@ def _check_and_send_attendance_confirmations():
 def _check_and_send_reminders():
     now = datetime.now()
     with _lock:
-        reservations = _read_reservations()
+        reservations = storage.list_reservations()
         due = []
         for r in reservations:
             if r.get("status") == "cancelled" or r.get("reminderSent"):
@@ -496,9 +468,8 @@ def _check_and_send_reminders():
             minutes_until = (res_dt - now).total_seconds() / 60
             if 0 <= minutes_until <= REMINDER_MINUTES_BEFORE:
                 r["reminderSent"] = True
+                storage.save_reservation(r)
                 due.append(r)
-        if due:
-            _write_reservations(reservations)
     for r in due:
         notifications.notify_reminder(r)
 
@@ -531,12 +502,14 @@ def main():
     else:
         port = 8000
     PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", f"http://localhost:{port}")
-    _ensure_data_file()
     threading.Thread(target=_reminder_loop, daemon=True).start()
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     print(f"White Bear Restaurant - servidor de reservaciones")
     print(f"  Sitio de clientes:  http://localhost:{port}/")
     print(f"  Panel para tablet:  http://localhost:{port}/tablet.html")
+    print(
+        f"  Almacenamiento: {'Supabase (persistente)' if storage.enabled() else 'archivo local data/reservations.json (NO persistente en hosting gratis)'}"
+    )
     print(
         f"  Notificaciones: correo {'ACTIVO' if notifications.email_enabled() else 'modo prueba (dry-run)'}, "
         f"SMS {'ACTIVO' if notifications.sms_enabled() else 'modo prueba (dry-run)'}"

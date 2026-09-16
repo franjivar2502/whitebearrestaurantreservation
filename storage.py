@@ -1,0 +1,123 @@
+"""
+Persistencia de reservaciones para White Bear Restaurant.
+
+Usa Supabase (Postgres, vía su API REST autogenerada) cuando las variables
+de entorno SUPABASE_URL y SUPABASE_KEY están configuradas -- así los datos
+sobreviven reinicios del servidor. Esto es necesario en el plan gratis de
+Render: el disco local no es persistente, así que si solo usáramos el
+archivo data/reservations.json, cada vez que el servicio se duerme y
+despierta se pierden todas las reservaciones.
+
+Si esas variables no están configuradas (por ejemplo en desarrollo local),
+usa el archivo local data/reservations.json como antes. No hace falta
+ninguna librería nueva: se usa urllib de la librería estándar, igual que
+en notifications.py.
+
+Tabla esperada en Supabase (crear una sola vez, ver README):
+
+    create table reservations (
+        id text primary key,
+        data jsonb not null,
+        created_at timestamptz not null default now()
+    );
+"""
+
+import json
+import os
+import urllib.error
+import urllib.request
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOCAL_DATA_FILE = os.path.join(BASE_DIR, "data", "reservations.json")
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+
+
+def enabled():
+    return bool(SUPABASE_URL and SUPABASE_KEY)
+
+
+def _headers(extra=None):
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+    }
+    if extra:
+        headers.update(extra)
+    return headers
+
+
+def _request(method, path, body=None, extra_headers=None):
+    url = f"{SUPABASE_URL}/rest/v1/{path}"
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    req = urllib.request.Request(url, data=data, method=method, headers=_headers(extra_headers))
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        raw = resp.read()
+        return json.loads(raw) if raw else None
+
+
+def _ensure_local_file():
+    os.makedirs(os.path.dirname(LOCAL_DATA_FILE), exist_ok=True)
+    if not os.path.exists(LOCAL_DATA_FILE):
+        with open(LOCAL_DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump([], f)
+
+
+def _read_local():
+    _ensure_local_file()
+    with open(LOCAL_DATA_FILE, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return []
+
+
+def _write_local(reservations):
+    with open(LOCAL_DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(reservations, f, indent=2, ensure_ascii=False)
+
+
+def list_reservations():
+    """Devuelve todas las reservaciones (sin ordenar; el llamador ordena)."""
+    if enabled():
+        rows = _request("GET", "reservations?select=data&order=created_at.asc") or []
+        return [row["data"] for row in rows]
+    return _read_local()
+
+
+def save_reservation(reservation):
+    """Crea o actualiza una reservación (upsert por id)."""
+    if enabled():
+        _request(
+            "POST",
+            "reservations",
+            body={"id": reservation["id"], "data": reservation},
+            extra_headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+        )
+        return
+    reservations = _read_local()
+    for i, r in enumerate(reservations):
+        if r["id"] == reservation["id"]:
+            reservations[i] = reservation
+            break
+    else:
+        reservations.append(reservation)
+    _write_local(reservations)
+
+
+def delete_reservation(res_id):
+    """Elimina una reservación. Devuelve True si existía."""
+    if enabled():
+        try:
+            _request("DELETE", f"reservations?id=eq.{res_id}")
+            return True
+        except urllib.error.HTTPError:
+            return False
+    reservations = _read_local()
+    remaining = [r for r in reservations if r["id"] != res_id]
+    deleted = len(remaining) != len(reservations)
+    if deleted:
+        _write_local(remaining)
+    return deleted
