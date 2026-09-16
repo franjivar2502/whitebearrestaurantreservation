@@ -30,7 +30,18 @@ import urllib.request
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOCAL_DATA_FILE = os.path.join(BASE_DIR, "data", "reservations.json")
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+def _normalize_supabase_url(raw):
+    url = raw.strip().rstrip("/")
+    # Tolerar que alguien pegue la URL completa del endpoint REST
+    # (.../rest/v1) en vez de solo la URL base del proyecto -- este
+    # módulo ya agrega /rest/v1/... él solo en cada request.
+    for suffix in ("/rest/v1", "/rest"):
+        if url.endswith(suffix):
+            url = url[: -len(suffix)]
+    return url
+
+
+SUPABASE_URL = _normalize_supabase_url(os.environ.get("SUPABASE_URL", ""))
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
 
