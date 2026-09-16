@@ -30,17 +30,63 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - Paleta de colores verde/marrón/vinotinto (la real del restaurante) + sección "Información del lugar" con accesibilidad, estacionamiento, mascotas, etc.
 - Idiomas: sitio de clientes en EN/ES/FR (inglés por defecto); panel de tablet en EN/ES/SR (inglés por defecto).
 - Galería de fotos con pantalla de bienvenida (fondo de 1 segundo al entrar) y panel de administración para agregar/reordenar/eliminar fotos (`/admin-photos.html`, ver sección más abajo).
-- Persistencia vía Supabase con respaldo a archivo local (`storage.py`) — falta conectar las credenciales reales, ver pendiente #1.
-- Repositorio en GitHub, desplegado en Render.
+- **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones y fotos ya no se pierden cuando Render reinicia el servicio.
+- Repositorio en GitHub, desplegado en Render y funcionando en vivo (probado el 2026-09-16): https://whitebearrestaurantreservation.onrender.com
+
+**🔧 Bugs reales encontrados y corregidos (2026-09-16):**
+- Typo en el valor de la variable de entorno `SUPABASE_URL` en Render (tenía el texto literal "SUPABASE_URL" en vez de la URL real).
+- La clave `SUPABASE_KEY` se pegó mal en Render (se copió la versión enmascarada del campo — puntos en vez del texto real). Ahora `storage.py` detecta esto automáticamente y da un mensaje de error específico si vuelve a pasar.
+- La pantalla de bienvenida (`welcome-splash`) se quedaba trabada en pantalla para siempre cuando la galería no tenía fotos (bug de CSS `display:flex` anulando `[hidden]`, combinado con que el JS solo la ocultaba dentro de la rama "hay fotos"). Ya corregido para que siempre se oculte tras 1 segundo, haya o no fotos.
 
 **⏳ Pendiente para que el proyecto esté 100% terminado:**
-1. **Conectar Supabase de verdad** — el código ya está listo (`storage.py`), falta la Project URL y la service_role key para que las reservaciones no se pierdan cuando Render reinicia el servicio.
-2. **Menú real para el preorden de grupos grandes** — hoy son 3 platillos placeholder.
-3. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
-4. **Definir una contraseña real para `ADMIN_PASSWORD`** (panel de fotos) — no dejar la de prueba.
-5. Decidir si el panel de tablet necesita más idiomas o queda así.
+1. **Menú real para el preorden de grupos grandes** — hoy son 3 platillos placeholder.
+2. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
+3. **Cambiar `ADMIN_PASSWORD`** (panel de fotos) a una contraseña definitiva — hoy sigue siendo la de prueba (`whitebear123`).
+4. Decidir si el panel de tablet necesita más idiomas o queda así.
+5. Volver a agregar al menos una foto real a la galería (se vació durante las pruebas de Supabase).
+6. **Próxima sesión: pulir el sitio a nivel visual/UX ("nivel app de $10k")** — ver la lista de mejoras preparada para la siguiente sesión.
 
 Dime en qué de esto quieres que sigamos y retomamos justo ahí.
+
+## 🎨 Plan de mejora visual/UX — próxima sesión ("nivel app de $10k")
+
+Lo funcional ya está sólido (reservaciones, tablet, notificaciones,
+persistencia real). Lo que separa esto de una app pulida de verdad es
+sobre todo **acabado visual, detalles de interacción y presencia
+profesional** — no funciones nuevas. Orden sugerido, de mayor a menor
+impacto visible para el cliente final:
+
+1. **Tipografía real.** Hoy usa la fuente del sistema. Un par de fuentes
+   de Google Fonts (una para títulos, otra para texto) cambia por
+   completo la sensación de "hecho a mano" a "diseñado".
+2. **Estados de carga y vacío diseñados.** Ahora mismo un formulario
+   enviándose o una galería sin fotos se ven simplemente en blanco.
+   Agregar spinners/skeletons y mensajes de "aún no hay fotos" con
+   estilo, en vez de espacios vacíos.
+3. **Micro-interacciones.** Transiciones suaves en botones, hover states,
+   feedback visual al confirmar una reservación (no solo un mensaje de
+   texto). Esto es lo que más "se siente" en una app pulida.
+4. **Meta tags para compartir (Open Graph).** Ahora mismo si alguien
+   comparte el link en WhatsApp/Facebook no se ve ninguna vista previa
+   con imagen. Agregar `og:image`, `og:title`, `og:description` y un
+   favicon real (hoy no tiene).
+5. **Mapa embebido** con la ubicación real (2793 Wilmington Rd), en vez
+   de solo la dirección en texto.
+6. **Sección de reseñas/calificación más visual** — hoy el 4.2 (243
+   reseñas) aparece como texto plano; se puede mostrar con estrellas y
+   más presencia, ya que es un dato de confianza real y verificable.
+7. **Optimización de imágenes** (compresión, tamaños responsivos) para
+   que la galería cargue rápido incluso en el "cold start" de Render.
+8. **Revisión de accesibilidad** — contraste de colores, estados de foco
+   visibles con teclado, textos alternativos en imágenes.
+9. **Dominio propio** (ej. `reservas.whitebearrestaurant.com`) en vez de
+   `onrender.com` — decisión de negocio del cliente, no técnica, pero
+   cambia mucho la percepción de profesionalismo.
+10. Pulir visualmente el panel de administración de fotos y el de tablet
+    (hoy son funcionales pero muy utilitarios).
+
+No implementar nada de esto todavía — es la lista para retomar en la
+próxima sesión.
 
 ## Qué incluye
 
