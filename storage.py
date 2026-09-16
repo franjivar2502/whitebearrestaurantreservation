@@ -42,7 +42,7 @@ def _normalize_supabase_url(raw):
 
 
 SUPABASE_URL = _normalize_supabase_url(os.environ.get("SUPABASE_URL", ""))
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "").strip()
 
 
 def enabled():
@@ -60,7 +60,26 @@ def _headers(extra=None):
     return headers
 
 
+def _check_header_safe(name, value):
+    # Los encabezados HTTP solo aceptan texto codificable en latin-1. Si al
+    # copiar/pegar SUPABASE_KEY (o SUPABASE_URL) en el panel de Render se
+    # coló un caracter "inteligente" (comilla curva, guion largo, espacio
+    # invisible), esto lo señala con precisión en vez de un error genérico.
+    try:
+        value.encode("latin-1")
+    except UnicodeEncodeError as exc:
+        bad_char = value[exc.start:exc.end]
+        raise ValueError(
+            f"La variable de entorno {name} tiene un caracter no válido "
+            f"({bad_char!r} en la posición {exc.start}) -- probablemente se "
+            f"coló al copiar/pegar el valor. Vuelve a copiarlo y pégalo de "
+            f"nuevo en Render (Environment -> {name})."
+        ) from exc
+
+
 def _request(method, path, body=None, extra_headers=None):
+    _check_header_safe("SUPABASE_KEY", SUPABASE_KEY)
+    _check_header_safe("SUPABASE_URL", SUPABASE_URL)
     url = f"{SUPABASE_URL}/rest/v1/{path}"
     data = json.dumps(body).encode("utf-8") if body is not None else None
     req = urllib.request.Request(url, data=data, method=method, headers=_headers(extra_headers))
