@@ -32,6 +32,9 @@
         perPerson: "per person",
         category: "Restaurant",
       },
+      gallery: {
+        title: "Gallery",
+      },
       about: {
         title: "About us",
         description:
@@ -159,6 +162,9 @@
         perPerson: "por persona",
         category: "Restaurante",
       },
+      gallery: {
+        title: "Galería",
+      },
       about: {
         title: "Sobre nosotros",
         description:
@@ -285,6 +291,9 @@
         reviews: "avis",
         perPerson: "par personne",
         category: "Restaurant",
+      },
+      gallery: {
+        title: "Galerie",
       },
       about: {
         title: "À propos",

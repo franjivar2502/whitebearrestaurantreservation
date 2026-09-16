@@ -18,10 +18,37 @@
   const infoToggleBtn = document.getElementById("info-toggle-btn");
   const infoContent = document.getElementById("info-content");
   const langSwitcher = document.getElementById("lang-switcher");
+  const welcomeSplash = document.getElementById("welcome-splash");
 
   const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
   i18n.applyStaticTranslations();
+
+  // Pantalla de bienvenida (si hay fotos, muestra la primera como fondo
+  // durante 1 segundo) y galería visible en la página.
+  const galleryCard = document.getElementById("gallery-card");
+  const photoGallery = document.getElementById("photo-gallery");
+
+  fetch("/api/photos")
+    .then((res) => res.json())
+    .then((photos) => {
+      if (!photos || !photos.length) return;
+
+      welcomeSplash.style.backgroundImage = `url("${photos[0].url}")`;
+      welcomeSplash.hidden = false;
+      setTimeout(() => {
+        welcomeSplash.classList.add("welcome-splash-hide");
+        setTimeout(() => {
+          welcomeSplash.hidden = true;
+        }, 650);
+      }, 1000);
+
+      galleryCard.hidden = false;
+      photoGallery.innerHTML = photos
+        .map((p) => `<img src="${p.url}" alt="${(p.caption || "").replace(/"/g, "&quot;")}" loading="lazy">`)
+        .join("");
+    })
+    .catch(() => {});
 
   langSwitcher.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-lang]");

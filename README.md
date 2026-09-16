@@ -18,6 +18,9 @@ Luego abre `http://localhost:8123/` (clientes) o `http://localhost:8123/tablet.h
 (staff). Desde el celular en la misma red Wi-Fi, usa la IP de esta Mac en vez
 de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 
+**🌐 En vivo:** https://whitebearrestaurantreservation.onrender.com
+(repo: https://github.com/franjivar2502/whitebearrestaurantreservation)
+
 **✅ Ya construido y probado:**
 - Formulario de reservaciones con validación de horario por día y tamaño de grupo.
 - Panel de tablet en tiempo real (se actualiza solo, sin recargar).
@@ -26,13 +29,15 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - Ventana emergente de confirmación de asistencia (24h o 30 min antes).
 - Paleta de colores verde/marrón/vinotinto (la real del restaurante) + sección "Información del lugar" con accesibilidad, estacionamiento, mascotas, etc.
 - Idiomas: sitio de clientes en EN/ES/FR (inglés por defecto); panel de tablet en EN/ES/SR (inglés por defecto).
-- Repositorio Git local con todo el historial de cambios (7 commits al día de hoy).
+- Galería de fotos con pantalla de bienvenida (fondo de 1 segundo al entrar) y panel de administración para agregar/reordenar/eliminar fotos (`/admin-photos.html`, ver sección más abajo).
+- Persistencia vía Supabase con respaldo a archivo local (`storage.py`) — falta conectar las credenciales reales, ver pendiente #1.
+- Repositorio en GitHub, desplegado en Render.
 
 **⏳ Pendiente para que el proyecto esté 100% terminado:**
-1. **Publicarlo en internet** — está listo para Render.com (ver sección más abajo), solo falta crear la cuenta de GitHub/Render y hacer el push (yo no puedo crear esas cuentas, pero sí ejecutar los comandos si me das la URL del repo).
+1. **Conectar Supabase de verdad** — el código ya está listo (`storage.py`), falta la Project URL y la service_role key para que las reservaciones no se pierdan cuando Render reinicia el servicio.
 2. **Menú real para el preorden de grupos grandes** — hoy son 3 platillos placeholder.
 3. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
-4. **Almacenamiento persistente** antes de recibir reservaciones reales de producción (ver advertencia sobre Render más abajo).
+4. **Definir una contraseña real para `ADMIN_PASSWORD`** (panel de fotos) — no dejar la de prueba.
 5. Decidir si el panel de tablet necesita más idiomas o queda así.
 
 Dime en qué de esto quieres que sigamos y retomamos justo ahí.
@@ -172,6 +177,83 @@ tarjeta de la tablet (sección "🍽️ Preorden"). Los platillos son un
 No hace falta tocar el HTML/JS: el formulario y la tablet leen esta lista
 desde el servidor. El umbral de 20 personas y la nota introductoria también
 se pueden ajustar ahí (`"threshold"` y `"note"`).
+
+## Persistencia de datos (Supabase)
+
+Render borra el disco local cada vez que el servicio se reinicia (se duerme
+por inactividad y despierta), así que las reservaciones guardadas en
+`data/reservations.json` se pierden. `storage.py` resuelve esto usando
+Supabase (Postgres gratis, vía su API REST) cuando está configurado, y cae
+de vuelta al archivo local si no lo está — no hace falta ninguna librería
+nueva, solo `urllib` de la librería estándar.
+
+**Para activarlo:**
+
+1. Crea una cuenta gratis en [supabase.com](https://supabase.com) y un
+   proyecto nuevo.
+2. En **SQL Editor**, corre:
+   ```sql
+   create table reservations (
+     id text primary key,
+     data jsonb not null,
+     created_at timestamptz not null default now()
+   );
+
+   create table photos (
+     id text primary key,
+     url text not null,
+     caption text not null default '',
+     sort_order integer not null default 0,
+     created_at timestamptz not null default now()
+   );
+   ```
+3. En **Settings → API**, copia la **Project URL** y la **service_role**
+   key (la secreta, no la "anon/public").
+4. Define estas variables de entorno donde corra `server.py` (local o en
+   Render):
+   ```
+   SUPABASE_URL=https://xxxxxxxx.supabase.co
+   SUPABASE_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+
+Sin esas variables, todo sigue funcionando igual que antes con el archivo
+local (útil para desarrollo, pero no para producción en Render).
+
+## Galería de fotos y pantalla de bienvenida
+
+El sitio de clientes (`index.html`) puede mostrar fotos reales del
+restaurante:
+
+- Si hay al menos una foto cargada, al entrar al sitio aparece una
+  **pantalla de bienvenida** de 1 segundo con la primera foto como fondo,
+  antes de revelar el resto de la página.
+- Todas las fotos se muestran además en una sección **"Gallery"** normal
+  dentro de la página.
+- Sin fotos cargadas, el sitio se ve exactamente igual que antes (sin
+  pantalla de bienvenida, sin sección de galería).
+
+**Panel de administración:** `/admin-photos.html` — protegido por
+contraseña. Ahí puedes **agregar** (pegando la URL de una imagen),
+**reordenar** (↑/↓ — la primera foto es la que se usa de fondo de
+bienvenida) y **eliminar** fotos, sin tocar código.
+
+Para activarlo, define esta variable de entorno (elige una contraseña
+real, no la de ejemplo):
+```
+ADMIN_PASSWORD=una-contraseña-que-solo-tú-sepas
+```
+Sin esta variable configurada, el panel de administración queda
+bloqueado por completo (nadie puede agregar/borrar fotos, ni siquiera con
+la contraseña en blanco).
+
+**Sobre las URLs de las fotos:** el servidor no tiene un sistema propio de
+"subir archivos" (para mantenerlo sin dependencias), así que cada foto se
+agrega pegando la URL de una imagen que ya esté alojada en algún lado:
+
+- Sube el archivo al **Storage** de Supabase (gratis, 1GB) y copia el link
+  público — es la opción más prolija ya que usamos Supabase de todos modos.
+- O cualquier otro host de imágenes (Imgur, un link público de Google
+  Drive/Fotos, etc.).
 
 ## Publicarlo en internet (link público, gratis)
 

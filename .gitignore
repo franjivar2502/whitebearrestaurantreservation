@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 data/reservations.json
 data/notifications_log.txt
+data/photos.json

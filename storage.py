@@ -121,3 +121,94 @@ def delete_reservation(res_id):
     if deleted:
         _write_local(remaining)
     return deleted
+
+
+# ---------------------------------------------------------------------------
+# Fotos de la galería (sitio de clientes)
+#
+# Tabla esperada en Supabase (crear una sola vez, ver README):
+#
+#     create table photos (
+#         id text primary key,
+#         url text not null,
+#         caption text not null default '',
+#         sort_order integer not null default 0,
+#         created_at timestamptz not null default now()
+#     );
+# ---------------------------------------------------------------------------
+
+LOCAL_PHOTOS_FILE = os.path.join(BASE_DIR, "data", "photos.json")
+
+
+def _read_local_photos():
+    os.makedirs(os.path.dirname(LOCAL_PHOTOS_FILE), exist_ok=True)
+    if not os.path.exists(LOCAL_PHOTOS_FILE):
+        with open(LOCAL_PHOTOS_FILE, "w", encoding="utf-8") as f:
+            json.dump([], f)
+    with open(LOCAL_PHOTOS_FILE, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return []
+
+
+def _write_local_photos(photos):
+    with open(LOCAL_PHOTOS_FILE, "w", encoding="utf-8") as f:
+        json.dump(photos, f, indent=2, ensure_ascii=False)
+
+
+def list_photos():
+    """Devuelve todas las fotos ordenadas por sort_order."""
+    if enabled():
+        return _request("GET", "photos?select=*&order=sort_order.asc") or []
+    photos = _read_local_photos()
+    return sorted(photos, key=lambda p: p.get("sort_order", 0))
+
+
+def add_photo(photo):
+    """Inserta una foto nueva (dict con id, url, caption, sort_order)."""
+    if enabled():
+        _request(
+            "POST",
+            "photos",
+            body=photo,
+            extra_headers={"Prefer": "return=minimal"},
+        )
+        return
+    photos = _read_local_photos()
+    photos.append(photo)
+    _write_local_photos(photos)
+
+
+def delete_photo(photo_id):
+    if enabled():
+        try:
+            _request("DELETE", f"photos?id=eq.{photo_id}")
+            return True
+        except urllib.error.HTTPError:
+            return False
+    photos = _read_local_photos()
+    remaining = [p for p in photos if p["id"] != photo_id]
+    deleted = len(remaining) != len(photos)
+    if deleted:
+        _write_local_photos(remaining)
+    return deleted
+
+
+def set_photo_order(ordered_ids):
+    """Reasigna sort_order según el orden de la lista de ids dada."""
+    if enabled():
+        for index, photo_id in enumerate(ordered_ids):
+            _request(
+                "PATCH",
+                f"photos?id=eq.{photo_id}",
+                body={"sort_order": index},
+                extra_headers={"Prefer": "return=minimal"},
+            )
+        return
+    photos = _read_local_photos()
+    order_map = {photo_id: index for index, photo_id in enumerate(ordered_ids)}
+    for p in photos:
+        if p["id"] in order_map:
+            p["sort_order"] = order_map[p["id"]]
+    _write_local_photos(photos)

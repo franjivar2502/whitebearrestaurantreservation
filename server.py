@@ -97,6 +97,10 @@ RESTAURANT = {
 VALID_STATUSES = {"pending", "confirmed", "seated", "completed", "cancelled"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
+# Contraseña para el panel de administración de fotos (/admin-photos.html).
+# Sin esto configurado, los endpoints de administración quedan bloqueados.
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+
 
 def _hours_for_date(d):
     """Devuelve (hora_apertura, hora_cierre, última_hora_para_reservar) para la fecha dada."""
@@ -248,6 +252,17 @@ class Handler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             return None
 
+    def _is_admin(self):
+        if not ADMIN_PASSWORD:
+            return False
+        return self.headers.get("X-Admin-Password") == ADMIN_PASSWORD
+
+    def _require_admin(self):
+        if self._is_admin():
+            return True
+        self._send_json({"errors": ["No autorizado."]}, status=401)
+        return False
+
     def _serve_static(self, path):
         if path == "/":
             path = "/index.html"
@@ -284,6 +299,11 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/restaurant":
             self._send_json(RESTAURANT)
+            return
+        if parsed.path == "/api/photos":
+            with _lock:
+                photos = storage.list_photos()
+            self._send_json(photos)
             return
         if parsed.path == "/api/reservations":
             qs = parse_qs(parsed.query)
@@ -362,6 +382,50 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"errors": ["Reservación no encontrada."]}, status=404)
             return
 
+        if parsed.path == "/api/admin/login":
+            payload = self._read_json_body()
+            password = (payload or {}).get("password", "")
+            if ADMIN_PASSWORD and password == ADMIN_PASSWORD:
+                self._send_json({"ok": True})
+            else:
+                self._send_json({"errors": ["Contraseña incorrecta."]}, status=401)
+            return
+
+        if parsed.path == "/api/admin/photos":
+            if not self._require_admin():
+                return
+            payload = self._read_json_body() or {}
+            url = (payload.get("url") or "").strip()
+            caption = (payload.get("caption") or "").strip()
+            if not url.startswith(("http://", "https://")):
+                self._send_json({"errors": ["La URL de la imagen no es válida."]}, status=400)
+                return
+            with _lock:
+                existing = storage.list_photos()
+                photo = {
+                    "id": uuid.uuid4().hex[:8],
+                    "url": url,
+                    "caption": caption,
+                    "sort_order": len(existing),
+                    "created_at": datetime.now().isoformat(timespec="seconds"),
+                }
+                storage.add_photo(photo)
+            self._send_json(photo, status=201)
+            return
+
+        if parsed.path == "/api/admin/photos/reorder":
+            if not self._require_admin():
+                return
+            payload = self._read_json_body() or {}
+            order = payload.get("order")
+            if not isinstance(order, list) or not order:
+                self._send_json({"errors": ["Falta el nuevo orden."]}, status=400)
+                return
+            with _lock:
+                storage.set_photo_order(order)
+            self._send_json({"ok": True})
+            return
+
         self.send_response(404)
         self.end_headers()
 
@@ -398,6 +462,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         parsed = urlparse(self.path)
+        m = re.match(r"^/api/admin/photos/([a-f0-9]+)$", parsed.path)
+        if m:
+            if not self._require_admin():
+                return
+            deleted = False
+            with _lock:
+                deleted = storage.delete_photo(m.group(1))
+            if deleted:
+                self._send_json({"ok": True})
+            else:
+                self._send_json({"errors": ["Foto no encontrada."]}, status=404)
+            return
+
         m = re.match(r"^/api/reservations/([a-f0-9]+)$", parsed.path)
         if m:
             res_id = m.group(1)
