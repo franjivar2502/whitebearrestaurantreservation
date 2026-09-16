@@ -267,6 +267,7 @@
     e.preventDefault();
     clearAlert();
     submitBtn.disabled = true;
+    submitBtn.classList.add("btn-loading");
     submitBtn.textContent = i18n.t("form.submitting");
 
     const preOrder = groupMenuSection.hidden
@@ -300,6 +301,7 @@
       if (!res.ok) {
         showAlert(data.errors);
         submitBtn.disabled = false;
+        submitBtn.classList.remove("btn-loading");
         submitBtn.textContent = i18n.t("form.submit");
         return;
       }
@@ -327,6 +329,7 @@
       showAlert([{ code: "NETWORK" }]);
     } finally {
       submitBtn.disabled = false;
+      submitBtn.classList.remove("btn-loading");
       submitBtn.textContent = i18n.t("form.submit");
     }
   });

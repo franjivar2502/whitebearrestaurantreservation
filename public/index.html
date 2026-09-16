@@ -4,6 +4,16 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>White Bear Restaurant — Reservations</title>
+<meta name="description" content="Reserve a table at White Bear Restaurant, 2793 Wilmington Rd, Lake Placid, NY. Rated 4.2 (243 reviews). Book online in seconds." />
+<meta property="og:type" content="restaurant" />
+<meta property="og:title" content="White Bear Restaurant — Book a table" />
+<meta property="og:description" content="2793 Wilmington Rd, Lake Placid, NY · ⭐ 4.2 (243 reviews) · Reserve your table online in seconds." />
+<meta property="og:image" content="https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkC8LdTYLIoCJ0Ma3amLrSrvJZYu5ygW9poDsycV1EQ0QE-tO_Vf7b55PeXvoQumTGtpegZxnn4kwyiJtLFlvZCaLTX9MeeGSm4Gvq0dyZMYgMfG_15fXY62ZOocVtfhqnFXmiR6kF969Oi=w1600-h1000-k-no" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -22,7 +32,14 @@
       <div>
         <h1>White Bear Restaurant</h1>
         <div class="hero-meta">
-          <span>⭐ 4.2 (243 <span data-i18n="hero.reviews">reviews</span>)</span>
+          <span class="rating" aria-label="4.2 out of 5 stars, 243 reviews">
+            <span class="rating-stars" aria-hidden="true">
+              <span class="rating-stars-bg">★★★★★</span>
+              <span class="rating-stars-fg" style="width:84%">★★★★★</span>
+            </span>
+            <span class="rating-value">4.2</span>
+            <span>(243 <span data-i18n="hero.reviews">reviews</span>)</span>
+          </span>
           <span>·</span>
           <span>$20-30 <span data-i18n="hero.perPerson">per person</span></span>
           <span>·</span>
@@ -61,6 +78,18 @@
   <div class="card" id="gallery-card" hidden>
     <p class="section-title" data-i18n="gallery.title">Gallery</p>
     <div class="photo-gallery" id="photo-gallery"></div>
+  </div>
+
+  <div class="card map-card">
+    <p class="section-title" data-i18n="map.title">Find us</p>
+    <div class="map-embed">
+      <iframe
+        src="https://maps.google.com/maps?q=2793+Wilmington+Rd,+Lake+Placid,+NY+12946&output=embed"
+        title="White Bear Restaurant location"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+      ></iframe>
+    </div>
   </div>
 
   <div class="card">

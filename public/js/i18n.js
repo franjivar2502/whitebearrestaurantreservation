@@ -35,6 +35,9 @@
       gallery: {
         title: "Gallery",
       },
+      map: {
+        title: "Find us",
+      },
       about: {
         title: "About us",
         description:
@@ -165,6 +168,9 @@
       gallery: {
         title: "Galería",
       },
+      map: {
+        title: "Cómo llegar",
+      },
       about: {
         title: "Sobre nosotros",
         description:
@@ -294,6 +300,9 @@
       },
       gallery: {
         title: "Galerie",
+      },
+      map: {
+        title: "Nous trouver",
       },
       about: {
         title: "À propos",
@@ -473,7 +482,9 @@
       if (typeof value === "string") el.innerHTML = value;
     });
     document.querySelectorAll(".lang-switcher [data-lang]").forEach((btn) => {
-      btn.classList.toggle("active", btn.getAttribute("data-lang") === currentLang);
+      const isActive = btn.getAttribute("data-lang") === currentLang;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-pressed", String(isActive));
     });
   }
 
