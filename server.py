@@ -296,6 +296,13 @@ class Handler(BaseHTTPRequestHandler):
 
     # ---------- routing ----------
     def do_GET(self):
+        try:
+            self._do_GET()
+        except Exception as exc:  # noqa: BLE001 - queremos ver el error, no un 502 genérico
+            print(f"[ERROR] GET {self.path}: {exc!r}")
+            self._send_json({"errors": [f"Error interno: {exc}"]}, status=500)
+
+    def _do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/restaurant":
             self._send_json(RESTAURANT)
@@ -329,6 +336,13 @@ class Handler(BaseHTTPRequestHandler):
         self._serve_static(parsed.path)
 
     def do_POST(self):
+        try:
+            self._do_POST()
+        except Exception as exc:  # noqa: BLE001
+            print(f"[ERROR] POST {self.path}: {exc!r}")
+            self._send_json({"errors": [f"Error interno: {exc}"]}, status=500)
+
+    def _do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/reservations":
             payload = self._read_json_body()
@@ -430,6 +444,13 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_PATCH(self):
+        try:
+            self._do_PATCH()
+        except Exception as exc:  # noqa: BLE001
+            print(f"[ERROR] PATCH {self.path}: {exc!r}")
+            self._send_json({"errors": [f"Error interno: {exc}"]}, status=500)
+
+    def _do_PATCH(self):
         parsed = urlparse(self.path)
         m = re.match(r"^/api/reservations/([a-f0-9]+)$", parsed.path)
         if m:
@@ -461,6 +482,13 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_DELETE(self):
+        try:
+            self._do_DELETE()
+        except Exception as exc:  # noqa: BLE001
+            print(f"[ERROR] DELETE {self.path}: {exc!r}")
+            self._send_json({"errors": [f"Error interno: {exc}"]}, status=500)
+
+    def _do_DELETE(self):
         parsed = urlparse(self.path)
         m = re.match(r"^/api/admin/photos/([a-f0-9]+)$", parsed.path)
         if m:
