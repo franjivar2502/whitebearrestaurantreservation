@@ -63,15 +63,21 @@
 <div class="container">
 
   <div class="card">
-    <p class="section-title" data-i18n="about.title">About us</p>
-    <p style="margin:0;color:var(--text-muted)" data-i18n="about.description">
-      Dine-in · Takeout · Delivery. Guests highlight generous portions, a great variety on the menu, friendly staff and a wonderful atmosphere.
-    </p>
-    <div class="highlights">
-      <span class="highlight-chip">Crispy Calamari with Marinara Sauce</span>
-      <span class="highlight-chip">Tortellini</span>
-      <span class="highlight-chip">Chicken Caesar Salad</span>
-      <span class="highlight-chip">Eggplant Parmigiana</span>
+    <div class="info-header" id="about-header">
+      <p class="section-title" style="margin:0" data-i18n="about.title">About us</p>
+      <button type="button" class="info-toggle-btn" id="about-toggle-btn" aria-expanded="false" aria-controls="about-content">See all ▾</button>
+    </div>
+
+    <div id="about-content" hidden>
+      <p style="margin:16px 0 0;color:var(--text-muted)" data-i18n="about.description">
+        Dine-in · Takeout · Delivery. Guests highlight generous portions, a great variety on the menu, friendly staff and a wonderful atmosphere.
+      </p>
+      <div class="highlights">
+        <span class="highlight-chip">Crispy Calamari with Marinara Sauce</span>
+        <span class="highlight-chip">Tortellini</span>
+        <span class="highlight-chip">Chicken Caesar Salad</span>
+        <span class="highlight-chip">Eggplant Parmigiana</span>
+      </div>
     </div>
   </div>
 

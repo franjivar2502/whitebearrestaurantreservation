@@ -239,6 +239,15 @@ header.hero {
   padding: 28px 20px 32px;
 }
 
+/* En el apartado del cliente el encabezado va transparente sobre la foto
+   de fondo -- un degradado oscuro sutil mantiene el texto blanco legible
+   sin volver a tapar la foto con un bloque de color sólido. */
+body.customer-body header.hero {
+  background: linear-gradient(180deg, rgba(15, 8, 6, 0.55) 0%, rgba(15, 8, 6, 0.28) 100%);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
 header.hero .hero-inner {
   max-width: 760px;
   margin: 0 auto;

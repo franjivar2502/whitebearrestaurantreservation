@@ -15,8 +15,12 @@
   const groupMenuNote = document.getElementById("group-menu-note");
   const groupMenuItemsEl = document.getElementById("group-menu-items");
   const preOrderNotesInput = document.getElementById("preOrderNotes");
+  const infoHeader = document.getElementById("info-header");
   const infoToggleBtn = document.getElementById("info-toggle-btn");
   const infoContent = document.getElementById("info-content");
+  const aboutHeader = document.getElementById("about-header");
+  const aboutToggleBtn = document.getElementById("about-toggle-btn");
+  const aboutContent = document.getElementById("about-content");
   const langSwitcher = document.getElementById("lang-switcher");
   const welcomeSplash = document.getElementById("welcome-splash");
 
@@ -64,11 +68,22 @@
   function renderInfoToggleLabel() {
     infoToggleBtn.textContent = i18n.t(infoExpanded ? "info.seeLess" : "info.seeAll");
   }
-  infoToggleBtn.addEventListener("click", () => {
+  infoHeader.addEventListener("click", () => {
     infoExpanded = !infoExpanded;
     infoToggleBtn.setAttribute("aria-expanded", String(infoExpanded));
     infoContent.hidden = !infoExpanded;
     renderInfoToggleLabel();
+  });
+
+  let aboutExpanded = false;
+  function renderAboutToggleLabel() {
+    aboutToggleBtn.textContent = i18n.t(aboutExpanded ? "info.seeLess" : "info.seeAll");
+  }
+  aboutHeader.addEventListener("click", () => {
+    aboutExpanded = !aboutExpanded;
+    aboutToggleBtn.setAttribute("aria-expanded", String(aboutExpanded));
+    aboutContent.hidden = !aboutExpanded;
+    renderAboutToggleLabel();
   });
 
   function renderInfoSection() {
@@ -246,6 +261,7 @@
   function renderAll() {
     renderInfoSection();
     renderInfoToggleLabel();
+    renderAboutToggleLabel();
     renderHeroHours();
     updateTimeConstraints();
     renderPartySizeHint();
