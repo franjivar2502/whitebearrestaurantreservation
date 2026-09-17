@@ -21,8 +21,31 @@
   const aboutHeader = document.getElementById("about-header");
   const aboutToggleBtn = document.getElementById("about-toggle-btn");
   const aboutContent = document.getElementById("about-content");
+  const galleryHeader = document.getElementById("gallery-header");
+  const galleryToggleBtn = document.getElementById("gallery-toggle-btn");
+  const mapCard = document.getElementById("map-card");
+  const mapHeader = document.getElementById("map-header");
+  const mapToggleBtn = document.getElementById("map-toggle-btn");
+  const mapEmbed = document.getElementById("map-embed");
   const langSwitcher = document.getElementById("lang-switcher");
   const welcomeSplash = document.getElementById("welcome-splash");
+
+  // Barras desplegables (About us, Venue information, Gallery, Find us):
+  // un mismo patrón de clic-para-expandir/contraer para las cuatro.
+  function makeCollapsible(header, toggleBtn, content, onToggle) {
+    let expanded = false;
+    function render() {
+      toggleBtn.textContent = i18n.t(expanded ? "info.seeLess" : "info.seeAll");
+    }
+    header.addEventListener("click", () => {
+      expanded = !expanded;
+      toggleBtn.setAttribute("aria-expanded", String(expanded));
+      content.hidden = !expanded;
+      if (onToggle) onToggle(expanded);
+      render();
+    });
+    return render;
+  }
 
   const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
@@ -64,26 +87,11 @@
     i18n.setLang(btn.getAttribute("data-lang"));
   });
 
-  let infoExpanded = false;
-  function renderInfoToggleLabel() {
-    infoToggleBtn.textContent = i18n.t(infoExpanded ? "info.seeLess" : "info.seeAll");
-  }
-  infoHeader.addEventListener("click", () => {
-    infoExpanded = !infoExpanded;
-    infoToggleBtn.setAttribute("aria-expanded", String(infoExpanded));
-    infoContent.hidden = !infoExpanded;
-    renderInfoToggleLabel();
-  });
-
-  let aboutExpanded = false;
-  function renderAboutToggleLabel() {
-    aboutToggleBtn.textContent = i18n.t(aboutExpanded ? "info.seeLess" : "info.seeAll");
-  }
-  aboutHeader.addEventListener("click", () => {
-    aboutExpanded = !aboutExpanded;
-    aboutToggleBtn.setAttribute("aria-expanded", String(aboutExpanded));
-    aboutContent.hidden = !aboutExpanded;
-    renderAboutToggleLabel();
+  const renderInfoToggleLabel = makeCollapsible(infoHeader, infoToggleBtn, infoContent);
+  const renderAboutToggleLabel = makeCollapsible(aboutHeader, aboutToggleBtn, aboutContent);
+  const renderGalleryToggleLabel = makeCollapsible(galleryHeader, galleryToggleBtn, photoGallery);
+  const renderMapToggleLabel = makeCollapsible(mapHeader, mapToggleBtn, mapEmbed, (expanded) => {
+    mapCard.classList.toggle("expanded", expanded);
   });
 
   function renderInfoSection() {
@@ -262,6 +270,8 @@
     renderInfoSection();
     renderInfoToggleLabel();
     renderAboutToggleLabel();
+    renderGalleryToggleLabel();
+    renderMapToggleLabel();
     renderHeroHours();
     updateTimeConstraints();
     renderPartySizeHint();

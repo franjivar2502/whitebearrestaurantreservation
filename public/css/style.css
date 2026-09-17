@@ -405,7 +405,11 @@ header.hero h1 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin-top: 4px;
+  margin-top: 20px;
+}
+
+.photo-gallery[hidden] {
+  display: none;
 }
 
 .photo-gallery img {
@@ -424,12 +428,15 @@ header.hero h1 {
 }
 
 .map-card {
-  padding-bottom: 0;
   overflow: hidden;
 }
 
+.map-card.expanded {
+  padding-bottom: 0;
+}
+
 .map-embed {
-  margin: 0 -22px -22px;
+  margin: 16px -22px -22px;
   aspect-ratio: 16 / 9;
 }
 
