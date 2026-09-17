@@ -191,13 +191,17 @@ body.tablet-body {
 }
 
 .table-tile.available {
+  background: rgb(230, 234, 228);
   background: color-mix(in srgb, var(--confirmed) 14%, var(--surface));
+  border-color: rgba(74, 103, 65, 0.35);
   border-color: color-mix(in srgb, var(--confirmed) 35%, transparent);
   color: var(--confirmed);
 }
 
 .table-tile.unavailable {
+  background: rgb(241, 228, 228);
   background: color-mix(in srgb, var(--cancelled) 14%, var(--surface));
+  border-color: rgba(156, 59, 59, 0.35);
   border-color: color-mix(in srgb, var(--cancelled) 35%, transparent);
   color: var(--cancelled);
 }
@@ -337,11 +341,13 @@ body.tablet-body {
 }
 
 .res-attendance-ok {
+  background: rgb(226, 231, 225);
   background: color-mix(in srgb, var(--confirmed) 16%, var(--surface));
   color: var(--confirmed);
 }
 
 .res-attendance-pending {
+  background: rgb(241, 234, 214);
   background: color-mix(in srgb, var(--warning) 16%, var(--surface));
   color: var(--warning);
 }
@@ -356,11 +362,11 @@ body.tablet-body {
   white-space: nowrap;
 }
 
-.badge-pending { background: color-mix(in srgb, var(--pending) 18%, var(--surface)); color: var(--pending); }
-.badge-confirmed { background: color-mix(in srgb, var(--confirmed) 18%, var(--surface)); color: var(--confirmed); }
-.badge-seated { background: color-mix(in srgb, var(--seated) 18%, var(--surface)); color: var(--seated); }
-.badge-completed { background: color-mix(in srgb, var(--completed) 18%, var(--surface)); color: var(--completed); }
-.badge-cancelled { background: color-mix(in srgb, var(--cancelled) 18%, var(--surface)); color: var(--cancelled); }
+.badge-pending { background: rgb(239, 231, 209); background: color-mix(in srgb, var(--pending) 18%, var(--surface)); color: var(--pending); }
+.badge-confirmed { background: rgb(222, 228, 221); background: color-mix(in srgb, var(--confirmed) 18%, var(--surface)); color: var(--confirmed); }
+.badge-seated { background: rgb(231, 215, 218); background: color-mix(in srgb, var(--seated) 18%, var(--surface)); color: var(--seated); }
+.badge-completed { background: rgb(229, 227, 224); background: color-mix(in srgb, var(--completed) 18%, var(--surface)); color: var(--completed); }
+.badge-cancelled { background: rgb(237, 220, 220); background: color-mix(in srgb, var(--cancelled) 18%, var(--surface)); color: var(--cancelled); }
 
 .res-actions {
   display: flex;

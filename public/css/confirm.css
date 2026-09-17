@@ -13,6 +13,7 @@ body.confirm-body {
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
+  background: radial-gradient(circle at top, rgb(232, 218, 214), var(--bg));
   background: radial-gradient(circle at top, color-mix(in srgb, var(--brand) 12%, var(--bg)), var(--bg));
 }
 
@@ -110,6 +111,7 @@ body.confirm-body {
 }
 
 .btn-secondary:hover {
+  background: rgb(245, 235, 235);
   background: color-mix(in srgb, var(--danger) 10%, var(--surface));
 }
 
@@ -117,6 +119,7 @@ body.confirm-body {
   width: 64px;
   height: 64px;
   border-radius: 50%;
+  background: rgb(222, 228, 221);
   background: color-mix(in srgb, var(--accent) 18%, var(--surface));
   color: var(--accent);
   display: flex;

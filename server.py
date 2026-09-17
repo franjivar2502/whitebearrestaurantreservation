@@ -299,6 +299,28 @@ def _validate_reservation(payload):
     }, []
 
 
+# Content-Type por extensión, para servir los archivos de public/. Faltaba
+# .jpg/.jpeg -- las fotos se servían como application/octet-stream, lo que
+# algunos navegadores (en particular Chrome para Android con "modo de ahorro
+# de datos") pueden negarse a mostrar como fondo CSS aunque el navegador de
+# escritorio no tenga problema.
+CONTENT_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "application/javascript; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".ico": "image/x-icon",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+}
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "WhiteBearReservations/1.0"
 
@@ -348,16 +370,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         ext = os.path.splitext(full_path)[1].lower()
-        content_types = {
-            ".html": "text/html; charset=utf-8",
-            ".css": "text/css; charset=utf-8",
-            ".js": "application/javascript; charset=utf-8",
-            ".json": "application/json; charset=utf-8",
-            ".svg": "image/svg+xml",
-            ".png": "image/png",
-            ".ico": "image/x-icon",
-        }
-        content_type = content_types.get(ext, "application/octet-stream")
+        content_type = CONTENT_TYPES.get(ext, "application/octet-stream")
 
         with open(full_path, "rb") as f:
             body = f.read()
@@ -619,6 +632,33 @@ class Handler(BaseHTTPRequestHandler):
             return
         self.send_response(404)
         self.end_headers()
+
+    def do_HEAD(self):
+        # BaseHTTPRequestHandler responde 501 a HEAD si no se define este
+        # método. Algunas apps (vistas previas de enlaces al compartir por
+        # WhatsApp/redes, ciertos proxies) sí lo usan -- sin esto, ese 501
+        # puede hacer que el link se vea "roto" antes de que la persona
+        # llegue a abrirlo en su navegador.
+        try:
+            parsed = urlparse(self.path)
+            path = parsed.path
+            if path == "/":
+                path = "/index.html"
+            safe_path = os.path.normpath(path).lstrip("/")
+            full_path = os.path.join(PUBLIC_DIR, safe_path)
+            if full_path.startswith(PUBLIC_DIR) and os.path.isfile(full_path):
+                ext = os.path.splitext(full_path)[1].lower()
+                self.send_response(200)
+                self.send_header("Content-Type", CONTENT_TYPES.get(ext, "application/octet-stream"))
+                self.send_header("Content-Length", str(os.path.getsize(full_path)))
+                self.end_headers()
+            else:
+                self.send_response(200)
+                self.end_headers()
+        except Exception as exc:  # noqa: BLE001
+            print(f"[ERROR] HEAD {self.path}: {exc!r}")
+            self.send_response(500)
+            self.end_headers()
 
 
 REMINDER_MINUTES_BEFORE = 15

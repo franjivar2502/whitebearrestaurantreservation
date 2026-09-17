@@ -93,12 +93,17 @@ body.customer-body {
 body.customer-body .card,
 body.customer-body form,
 body.customer-body .confirmation {
+  /* Respaldo para navegadores sin soporte de color-mix() (algunos Android
+     con Chrome/WebView desactualizado) -- sin esto, la tarjeta se queda
+     sin fondo y el texto se vuelve ilegible sobre la foto. */
+  background: rgba(255, 255, 255, 0.85);
   background: color-mix(in srgb, var(--surface) 78%, transparent);
   backdrop-filter: blur(16px) saturate(1.15);
   -webkit-backdrop-filter: blur(16px) saturate(1.15);
 }
 
 body.customer-body footer.site-footer {
+  background: rgba(247, 243, 236, 0.85);
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -704,14 +709,18 @@ textarea {
 }
 
 .alert-error {
+  background: rgb(241, 228, 228);
   background: color-mix(in srgb, var(--danger) 14%, var(--surface));
   color: var(--danger);
+  border: 1px solid rgba(156, 59, 59, 0.35);
   border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
 }
 
 .alert-success {
+  background: rgb(230, 234, 228);
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
   color: var(--accent);
+  border: 1px solid rgba(74, 103, 65, 0.35);
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
@@ -725,6 +734,7 @@ textarea {
   width: 64px;
   height: 64px;
   border-radius: 50%;
+  background: rgb(222, 228, 221);
   background: color-mix(in srgb, var(--accent) 18%, var(--surface));
   color: var(--accent);
   display: flex;
