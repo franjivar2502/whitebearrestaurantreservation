@@ -23,28 +23,24 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 
 **✅ Ya construido y probado:**
 - Formulario de reservaciones con validación de horario por día y tamaño de grupo.
-- Panel de tablet en tiempo real (se actualiza solo, sin recargar).
+- **Disponibilidad real por asientos** (122 en 24 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
+- Preferencia de mesa adentro/afuera (opcional) en el formulario de reservación.
+- Panel de tablet en tiempo real (se actualiza solo, sin recargar), con una pestaña nueva "Tables"/"Mesas" para que el staff marque mesas fuera de servicio.
 - Preorden para grupos de 20+ personas (menú aún placeholder, ver más abajo).
 - Confirmación y recordatorio automático por SMS/correo (modo prueba, sin credenciales reales todavía).
 - Ventana emergente de confirmación de asistencia (24h o 30 min antes).
-- Paleta de colores verde/marrón/vinotinto (la real del restaurante) + sección "Información del lugar" con accesibilidad, estacionamiento, mascotas, etc.
+- Diseño visual pulido: tipografía real (Fraunces + Inter), favicon propio, meta tags para compartir en redes, mapa embebido, calificación con estrellas, fondo tipo "marca de agua" con foto real del comedor, secciones desplegables (About us/Gallery/Find us/Venue information), micro-interacciones, y un pequeño distintivo "Built with AI" en el pie de página.
 - Idiomas: sitio de clientes en EN/ES/FR (inglés por defecto); panel de tablet en EN/ES/SR (inglés por defecto).
 - Galería de fotos con pantalla de bienvenida (fondo de 1 segundo al entrar) y panel de administración para agregar/reordenar/eliminar fotos (`/admin-photos.html`, ver sección más abajo).
-- **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones y fotos ya no se pierden cuando Render reinicia el servicio.
-- Repositorio en GitHub, desplegado en Render y funcionando en vivo (probado el 2026-09-16): https://whitebearrestaurantreservation.onrender.com
-
-**🔧 Bugs reales encontrados y corregidos (2026-09-16):**
-- Typo en el valor de la variable de entorno `SUPABASE_URL` en Render (tenía el texto literal "SUPABASE_URL" en vez de la URL real).
-- La clave `SUPABASE_KEY` se pegó mal en Render (se copió la versión enmascarada del campo — puntos en vez del texto real). Ahora `storage.py` detecta esto automáticamente y da un mensaje de error específico si vuelve a pasar.
-- La pantalla de bienvenida (`welcome-splash`) se quedaba trabada en pantalla para siempre cuando la galería no tenía fotos (bug de CSS `display:flex` anulando `[hidden]`, combinado con que el JS solo la ocultaba dentro de la rama "hay fotos"). Ya corregido para que siempre se oculte tras 1 segundo, haya o no fotos.
+- **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones, fotos y estado de mesas ya no se pierden cuando Render reinicia el servicio.
+- Repositorio en GitHub, desplegado en Render y funcionando en vivo: https://whitebearrestaurantreservation.onrender.com
 
 **⏳ Pendiente para que el proyecto esté 100% terminado:**
 1. **Menú real para el preorden de grupos grandes** — hoy son 3 platillos placeholder.
 2. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
 3. **Cambiar `ADMIN_PASSWORD`** (panel de fotos) a una contraseña definitiva — hoy sigue siendo la de prueba (`whitebear123`).
-4. Decidir si el panel de tablet necesita más idiomas o queda así.
-5. Volver a agregar al menos una foto real a la galería (se vació durante las pruebas de Supabase).
-6. **Próxima sesión: pulir el sitio a nivel visual/UX ("nivel app de $10k")** — ver la lista de mejoras preparada para la siguiente sesión.
+4. Confirmar con el cliente que el total de 122 asientos (calculado de las 24 mesas que dio) es correcto, ya que mencionó 130 de palabra.
+5. Decidir si el panel de tablet necesita más idiomas o queda así.
 
 Dime en qué de esto quieres que sigamos y retomamos justo ahí.
 
@@ -252,6 +248,12 @@ nueva, solo `urllib` de la librería estándar.
      sort_order integer not null default 0,
      created_at timestamptz not null default now()
    );
+
+   create table table_status (
+     id text primary key,
+     data jsonb not null,
+     created_at timestamptz not null default now()
+   );
    ```
 3. En **Settings → API**, copia la **Project URL** y la **service_role**
    key (la secreta, no la "anon/public").
@@ -264,6 +266,33 @@ nueva, solo `urllib` de la librería estándar.
 
 Sin esas variables, todo sigue funcionando igual que antes con el archivo
 local (útil para desarrollo, pero no para producción en Render).
+
+## Mesas y disponibilidad real
+
+El sitio ya sabe cuántos asientos hay libres a la hora que alguien está
+reservando -- no deja pasar una reservación que no cabe.
+
+**Inventario de mesas** (dato real del restaurante, en `server.py`):
+9 cuadradas de 4, 7 rectangulares de 4, 6 rectangulares de 6, 1
+rectangular de 12 y 1 rectangular de 10 -- **122 asientos en total** (24
+mesas). Si el número de mesas o sillas cambia, edita `_build_tables()` en
+`server.py`.
+
+**Cómo se calcula la disponibilidad:** en vez de exigir una mesa exacta
+del tamaño del grupo, se suman los asientos libres -- así una reserva de
+8 personas puede usar dos mesas de 4 juntas, tal como el restaurante
+acomoda de verdad. Una reservación nueva se compara contra: la capacidad
+total, menos las mesas que el staff marcó "no disponible" en el panel,
+menos lo ya comprometido por otras reservaciones activas cuyo horario se
+cruza (cada reservación ocupa su mesa 90 minutos, editable en
+`RESERVATION_DURATION_MINUTES`). Si no alcanza, el sitio de clientes
+rechaza la reservación con un mensaje claro en vez de aceptarla a ciegas.
+
+**Panel de staff (`tablet.html` → pestaña "Tables"/"Mesas"):** una
+cuadrícula con las 24 mesas agrupadas por tipo; tocar una mesa la marca
+disponible/no disponible (por ejemplo, para un evento privado o una
+silla rota) y eso baja la capacidad que ve el sitio de clientes al
+instante. No pide contraseña, igual que el resto del panel de tablet.
 
 ## Galería de fotos y pantalla de bienvenida
 

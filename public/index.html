@@ -157,6 +157,14 @@
           <option value="Other" data-i18n="form.occasionOther">Other</option>
         </select>
       </div>
+      <div class="field">
+        <label for="seatingPreference" data-i18n="form.seating">Seating (optional)</label>
+        <select id="seatingPreference" name="seatingPreference">
+          <option value="" data-i18n="form.seatingNone">No preference</option>
+          <option value="inside" data-i18n="form.seatingInside">Inside</option>
+          <option value="outside" data-i18n="form.seatingOutside">Outside</option>
+        </select>
+      </div>
       <div class="field full">
         <label for="notes" data-i18n="form.notes">Notes or special requests</label>
         <textarea id="notes" name="notes" data-i18n-placeholder="form.notesPlaceholder" placeholder="Allergies, high chair, outdoor table, etc."></textarea>
@@ -190,6 +198,7 @@
 <footer class="site-footer">
   White Bear Restaurant · 2793 Wilmington Rd, Lake Placid, NY 12946 · (518) 302-5235<br/>
   <span data-i18n="footer.staffQuestion">Are you staff?</span> <a href="tablet.html" data-i18n="footer.staffLinkText">Open the reservations panel</a>
+  <div class="ai-badge"><span aria-hidden="true">✦</span> <span data-i18n="footer.aiBadge">Built with AI</span></div>
 </footer>
 
 <script src="js/i18n.js"></script>

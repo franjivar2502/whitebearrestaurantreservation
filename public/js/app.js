@@ -312,6 +312,7 @@
       notes: [form.occasion.value ? `Occasion: ${form.occasion.value}.` : "", form.notes.value.trim()]
         .filter(Boolean)
         .join(" "),
+      seatingPreference: form.seatingPreference.value,
       preOrder,
       preOrderNotes: groupMenuSection.hidden ? "" : preOrderNotesInput.value.trim(),
     };
@@ -339,6 +340,13 @@
         <dt>${i18n.t("confirmation.partySize")}</dt><dd>${escapeHtml(String(data.partySize))}</dd>
         <dt>${i18n.t("confirmation.phone")}</dt><dd>${escapeHtml(data.phone)}</dd>
         ${data.email ? `<dt>${i18n.t("confirmation.email")}</dt><dd>${escapeHtml(data.email)}</dd>` : ""}
+        ${
+          data.seatingPreference
+            ? `<dt>${i18n.t("confirmation.seating")}</dt><dd>${escapeHtml(
+                i18n.t(data.seatingPreference === "inside" ? "form.seatingInside" : "form.seatingOutside")
+              )}</dd>`
+            : ""
+        }
         <dt>${i18n.t("confirmation.code")}</dt><dd>#${escapeHtml(data.id)}</dd>
         ${
           data.preOrder && data.preOrder.length

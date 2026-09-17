@@ -3,4 +3,5 @@ __pycache__/
 data/reservations.json
 data/notifications_log.txt
 data/photos.json
+data/table_status.json
 .env

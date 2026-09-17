@@ -90,6 +90,33 @@ body.tablet-body {
   transition: transform 0.2s;
 }
 
+.view-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 14px 24px 0;
+  background: var(--bg);
+  position: sticky;
+  top: 76px;
+  z-index: 9;
+}
+
+.view-tab {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 10px 6px 12px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+
+.view-tab.active {
+  color: var(--brand-dark);
+  border-bottom-color: var(--brand);
+}
+
 .tabs {
   display: flex;
   gap: 8px;
@@ -97,9 +124,82 @@ body.tablet-body {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   position: sticky;
-  top: 76px;
+  top: 122px;
   z-index: 9;
   overflow-x: auto;
+}
+
+#tables-view {
+  padding: 20px 24px 60px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.tables-summary {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--brand-dark);
+}
+
+.tables-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 6px 0 24px;
+  max-width: 640px;
+}
+
+.table-group {
+  margin-bottom: 26px;
+}
+
+.table-group-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.table-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.table-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 14px 10px;
+  font: inherit;
+  cursor: pointer;
+  min-height: 64px;
+}
+
+.table-tile-num {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.table-tile-state {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.table-tile.available {
+  background: color-mix(in srgb, var(--confirmed) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--confirmed) 35%, transparent);
+  color: var(--confirmed);
+}
+
+.table-tile.unavailable {
+  background: color-mix(in srgb, var(--cancelled) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--cancelled) 35%, transparent);
+  color: var(--cancelled);
 }
 
 .tab-spacer {

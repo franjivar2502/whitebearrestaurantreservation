@@ -96,6 +96,37 @@ RESTAURANT = {
 
 VALID_STATUSES = {"pending", "confirmed", "seated", "completed", "cancelled"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+VALID_SEATING_PREFERENCES = {"", "inside", "outside"}
+
+
+def _build_tables():
+    """
+    Inventario real de mesas del restaurante (dato dado por el cliente):
+    9 cuadradas de 4, 7 rectangulares de 4, 6 rectangulares de 6,
+    1 rectangular de 12 y 1 rectangular de 10.
+    """
+    tables = []
+
+    def add(shape, seats, count):
+        for i in range(1, count + 1):
+            tables.append({"id": f"{shape}{seats}-{i}", "shape": shape, "seats": seats, "index": i})
+
+    add("square", 4, 9)
+    add("rect", 4, 7)
+    add("rect", 6, 6)
+    add("rect", 12, 1)
+    add("rect", 10, 1)
+    return tables
+
+
+TABLES = _build_tables()
+TOTAL_SEATS = sum(t["seats"] for t in TABLES)
+
+# Cuánto tiempo ocupa una mesa una reservación, para saber si dos horarios
+# se cruzan. El restaurante puede acomodar un grupo en varias mesas juntas
+# (no hace falta una mesa exacta del tamaño del grupo), así que la
+# disponibilidad se calcula por total de asientos libres, no por mesa.
+RESERVATION_DURATION_MINUTES = 90
 
 # Contraseña para el panel de administración de fotos (/admin-photos.html).
 # Sin esto configurado, los endpoints de administración quedan bloqueados.
@@ -113,6 +144,44 @@ def _hours_for_date(d):
     return open_t, close_t, last_seating_dt.time()
 
 _lock = threading.Lock()
+
+
+def _time_to_minutes(t_str):
+    h, m = t_str.split(":")
+    return int(h) * 60 + int(m)
+
+
+def _seats_committed(res_date, res_time, exclude_id=None):
+    """
+    Suma de personas de reservaciones activas cuyo horario se cruza con
+    [res_time, res_time + duración) ese mismo día -- así una reservación a
+    las 19:00 no le quita disponibilidad a otra a las 21:30.
+    """
+    start = _time_to_minutes(res_time)
+    end = start + RESERVATION_DURATION_MINUTES
+    total = 0
+    for r in storage.list_reservations():
+        if exclude_id and r.get("id") == exclude_id:
+            continue
+        if r.get("status") in ("cancelled", "completed") or r.get("date") != res_date:
+            continue
+        try:
+            r_start = _time_to_minutes(r["time"])
+        except (KeyError, ValueError, AttributeError):
+            continue
+        r_end = r_start + RESERVATION_DURATION_MINUTES
+        if r_start < end and start < r_end:
+            total += int(r.get("partySize", 0))
+    return total
+
+
+def _available_seats(res_date, res_time, exclude_id=None):
+    """Asientos libres para ese horario: capacidad total (menos las mesas
+    que el staff marcó como no disponibles) menos lo ya comprometido."""
+    unavailable_ids = storage.list_unavailable_table_ids()
+    capacity = TOTAL_SEATS - sum(t["seats"] for t in TABLES if t["id"] in unavailable_ids)
+    committed = _seats_committed(res_date, res_time, exclude_id=exclude_id)
+    return capacity - committed
 
 
 def _validate_preorder(raw_pre_order):
@@ -158,6 +227,9 @@ def _validate_reservation(payload):
     res_time = (payload.get("time") or "").strip()
     party_size = payload.get("partySize")
     notes = (payload.get("notes") or "").strip()
+    seating_preference = (payload.get("seatingPreference") or "").strip().lower()
+    if seating_preference not in VALID_SEATING_PREFERENCES:
+        seating_preference = ""
     pre_order, pre_order_errors = _validate_preorder(payload.get("preOrder"))
     pre_order_notes = (payload.get("preOrderNotes") or "").strip()
     errors.extend(pre_order_errors)
@@ -221,6 +293,7 @@ def _validate_reservation(payload):
         "time": res_time,
         "partySize": party_size,
         "notes": notes,
+        "seatingPreference": seating_preference,
         "preOrder": pre_order,
         "preOrderNotes": pre_order_notes,
     }, []
@@ -312,6 +385,17 @@ class Handler(BaseHTTPRequestHandler):
                 photos = storage.list_photos()
             self._send_json(photos)
             return
+        if parsed.path == "/api/tables":
+            with _lock:
+                unavailable_ids = storage.list_unavailable_table_ids()
+            tables = [{**t, "unavailable": t["id"] in unavailable_ids} for t in TABLES]
+            available_seats = TOTAL_SEATS - sum(
+                t["seats"] for t in TABLES if t["id"] in unavailable_ids
+            )
+            self._send_json(
+                {"tables": tables, "totalSeats": TOTAL_SEATS, "availableSeats": available_seats}
+            )
+            return
         if parsed.path == "/api/reservations":
             qs = parse_qs(parsed.query)
             date_filter = qs.get("date", [None])[0]
@@ -352,6 +436,11 @@ class Handler(BaseHTTPRequestHandler):
             clean, errors = _validate_reservation(payload)
             if errors:
                 self._send_json({"errors": errors}, status=400)
+                return
+            with _lock:
+                available = _available_seats(clean["date"], clean["time"])
+            if available < clean["partySize"]:
+                self._send_json({"errors": [{"code": "NO_AVAILABILITY"}]}, status=400)
                 return
             reservation = {
                 "id": uuid.uuid4().hex[:8],
@@ -452,6 +541,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_PATCH(self):
         parsed = urlparse(self.path)
+        m = re.match(r"^/api/tables/([a-z0-9-]+)$", parsed.path)
+        if m:
+            table_id = m.group(1)
+            if not any(t["id"] == table_id for t in TABLES):
+                self._send_json({"errors": ["Mesa no encontrada."]}, status=404)
+                return
+            payload = self._read_json_body()
+            if payload is None or not isinstance(payload.get("unavailable"), bool):
+                self._send_json({"errors": ["Falta indicar la disponibilidad."]}, status=400)
+                return
+            with _lock:
+                storage.set_table_unavailable(table_id, payload["unavailable"])
+            self._send_json({"id": table_id, "unavailable": payload["unavailable"]})
+            return
+
         m = re.match(r"^/api/reservations/([a-f0-9]+)$", parsed.path)
         if m:
             res_id = m.group(1)

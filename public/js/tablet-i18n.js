@@ -17,6 +17,19 @@
     en: {
       pageTitle: "White Bear Restaurant — Reservations Panel",
       header: { reservations: "reservations", guests: "guests", refresh: "Refresh now" },
+      views: { reservations: "Reservations", tables: "Tables" },
+      tables: {
+        summary: "{available} of {total} seats free right now",
+        square4: "Square tables (4)",
+        rect4: "Rectangular tables (4)",
+        rect6: "Rectangular tables (6)",
+        rect12: "Rectangular table (12)",
+        rect10: "Rectangular table (10)",
+        table: "Table {n}",
+        available: "Available",
+        unavailable: "Unavailable",
+        hint: "Mark a table unavailable to take it out of service (private event, broken chair, etc.). This lowers the seats the customer site can book.",
+      },
       tabs: {
         today: "Today",
         upcoming: "Upcoming",
@@ -49,6 +62,19 @@
     es: {
       pageTitle: "White Bear Restaurant — Panel de Reservaciones",
       header: { reservations: "reservaciones", guests: "comensales", refresh: "Actualizar ahora" },
+      views: { reservations: "Reservaciones", tables: "Mesas" },
+      tables: {
+        summary: "{available} de {total} asientos libres ahora mismo",
+        square4: "Mesas cuadradas (4)",
+        rect4: "Mesas rectangulares (4)",
+        rect6: "Mesas rectangulares (6)",
+        rect12: "Mesa rectangular (12)",
+        rect10: "Mesa rectangular (10)",
+        table: "Mesa {n}",
+        available: "Disponible",
+        unavailable: "No disponible",
+        hint: "Marca una mesa como no disponible para sacarla de servicio (evento privado, silla rota, etc.). Esto reduce los asientos que el sitio de clientes puede reservar.",
+      },
       tabs: {
         today: "Hoy",
         upcoming: "Próximas",
@@ -81,6 +107,19 @@
     sr: {
       pageTitle: "White Bear Restaurant — Panel rezervacija",
       header: { reservations: "rezervacije", guests: "gostiju", refresh: "Osveži sada" },
+      views: { reservations: "Rezervacije", tables: "Stolovi" },
+      tables: {
+        summary: "{available} od {total} mesta slobodno sada",
+        square4: "Kvadratni stolovi (4)",
+        rect4: "Pravougaoni stolovi (4)",
+        rect6: "Pravougaoni stolovi (6)",
+        rect12: "Pravougaoni sto (12)",
+        rect10: "Pravougaoni sto (10)",
+        table: "Sto {n}",
+        available: "Slobodan",
+        unavailable: "Nedostupan",
+        hint: "Označite sto kao nedostupan da ga izbacite iz upotrebe (privatni event, pokvarena stolica, itd.). Ovo smanjuje broj mesta koje sajt za klijente može da rezerviše.",
+      },
       tabs: {
         today: "Danas",
         upcoming: "Predstojeće",

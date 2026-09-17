@@ -39,24 +39,37 @@
   </div>
 </header>
 
-<nav class="tabs">
-  <button class="tab active" data-filter="today" data-i18n="tabs.today">Today</button>
-  <button class="tab" data-filter="upcoming" data-i18n="tabs.upcoming">Upcoming</button>
-  <button class="tab" data-filter="all" data-i18n="tabs.all">All</button>
-  <div class="tab-spacer"></div>
-  <button class="tab status-tab" data-status="pending" data-i18n="tabs.pending">Pending</button>
-  <button class="tab status-tab" data-status="confirmed" data-i18n="tabs.confirmed">Confirmed</button>
-  <button class="tab status-tab active" data-status="active" data-i18n="tabs.active">Unfinished</button>
-  <button class="tab status-tab" data-status="needs-call" data-i18n="tabs.needsCall">⏳ Needs confirmation</button>
+<nav class="view-tabs" id="view-tabs">
+  <button type="button" class="view-tab active" data-view="reservations" data-i18n="views.reservations">Reservations</button>
+  <button type="button" class="view-tab" data-view="tables" data-i18n="views.tables">Tables</button>
 </nav>
 
-<main id="list-container" class="list-container">
-  <div class="empty-state" id="empty-state">
-    <div class="empty-icon">🍽️</div>
-    <p data-i18n="emptyState">No reservations to show.</p>
-  </div>
-  <div id="reservation-list"></div>
-</main>
+<section id="reservations-view">
+  <nav class="tabs">
+    <button class="tab active" data-filter="today" data-i18n="tabs.today">Today</button>
+    <button class="tab" data-filter="upcoming" data-i18n="tabs.upcoming">Upcoming</button>
+    <button class="tab" data-filter="all" data-i18n="tabs.all">All</button>
+    <div class="tab-spacer"></div>
+    <button class="tab status-tab" data-status="pending" data-i18n="tabs.pending">Pending</button>
+    <button class="tab status-tab" data-status="confirmed" data-i18n="tabs.confirmed">Confirmed</button>
+    <button class="tab status-tab active" data-status="active" data-i18n="tabs.active">Unfinished</button>
+    <button class="tab status-tab" data-status="needs-call" data-i18n="tabs.needsCall">⏳ Needs confirmation</button>
+  </nav>
+
+  <main id="list-container" class="list-container">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">🍽️</div>
+      <p data-i18n="emptyState">No reservations to show.</p>
+    </div>
+    <div id="reservation-list"></div>
+  </main>
+</section>
+
+<section id="tables-view" hidden>
+  <div class="tables-summary" id="tables-summary"></div>
+  <p class="tables-hint" data-i18n="tables.hint">Mark a table unavailable to take it out of service.</p>
+  <div id="tables-groups"></div>
+</section>
 
 <div class="toast" id="toast"></div>
 

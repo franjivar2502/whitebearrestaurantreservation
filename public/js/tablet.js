@@ -7,6 +7,11 @@
   const toastEl = document.getElementById("toast");
   const refreshBtn = document.getElementById("refresh-btn");
   const langSwitcher = document.getElementById("lang-switcher");
+  const viewTabs = document.querySelectorAll(".view-tab");
+  const reservationsView = document.getElementById("reservations-view");
+  const tablesView = document.getElementById("tables-view");
+  const tablesSummary = document.getElementById("tables-summary");
+  const tablesGroups = document.getElementById("tables-groups");
 
   const dateTabs = document.querySelectorAll(".tab[data-filter]");
   const statusTabs = document.querySelectorAll(".tab[data-status]");
@@ -17,6 +22,10 @@
   let pollTimer = null;
   let lastSeenIds = new Set();
   let firstLoad = true;
+  let currentView = "reservations"; // reservations | tables
+  let tables = [];
+  let totalSeats = 0;
+  let availableSeats = 0;
 
   tabletI18n.applyStaticTranslations();
 
@@ -29,6 +38,7 @@
   document.addEventListener("tablet-languagechange", () => {
     updateClock();
     render();
+    if (currentView === "tables" && tables.length) renderTables(totalSeats, availableSeats);
   });
 
   function todayIso() {
@@ -93,6 +103,93 @@
       // Falla silenciosa: se reintenta en el próximo ciclo de polling.
     }
   }
+
+  const TABLE_GROUP_ORDER = ["square4", "rect4", "rect6", "rect12", "rect10"];
+
+  function groupKeyFor(t) {
+    return `${t.shape}${t.seats}`;
+  }
+
+  async function fetchTables() {
+    try {
+      const res = await fetch("/api/tables", { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      const data = await res.json();
+      tables = data.tables || [];
+      totalSeats = data.totalSeats;
+      availableSeats = data.availableSeats;
+      renderTables(totalSeats, availableSeats);
+    } catch (err) {
+      // Falla silenciosa: se reintenta en el próximo ciclo de polling.
+    }
+  }
+
+  function renderTables(totalSeats, availableSeats) {
+    tablesSummary.textContent = tabletI18n.t("tables.summary", {
+      available: availableSeats,
+      total: totalSeats,
+    });
+
+    const groups = {};
+    tables.forEach((t) => {
+      const key = groupKeyFor(t);
+      (groups[key] = groups[key] || []).push(t);
+    });
+
+    tablesGroups.innerHTML = TABLE_GROUP_ORDER.filter((key) => groups[key])
+      .map((key) => {
+        const groupTables = groups[key].sort((a, b) => a.index - b.index);
+        const tiles = groupTables
+          .map(
+            (t) => `
+            <button type="button" class="table-tile ${t.unavailable ? "unavailable" : "available"}" data-id="${t.id}">
+              <span class="table-tile-num">${escapeHtml(tabletI18n.t("tables.table", { n: t.index }))}</span>
+              <span class="table-tile-state">${escapeHtml(
+                tabletI18n.t(t.unavailable ? "tables.unavailable" : "tables.available")
+              )}</span>
+            </button>`
+          )
+          .join("");
+        return `
+          <div class="table-group">
+            <p class="table-group-title">${escapeHtml(tabletI18n.t(`tables.${key}`))}</p>
+            <div class="table-tile-grid">${tiles}</div>
+          </div>`;
+      })
+      .join("");
+
+    tablesGroups.querySelectorAll(".table-tile").forEach((btn) => {
+      btn.addEventListener("click", () => toggleTable(btn.getAttribute("data-id")));
+    });
+  }
+
+  async function toggleTable(id) {
+    const t = tables.find((x) => x.id === id);
+    if (!t) return;
+    const nextUnavailable = !t.unavailable;
+    try {
+      const res = await fetch(`/api/tables/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ unavailable: nextUnavailable }),
+      });
+      if (!res.ok) throw new Error("update failed");
+      fetchTables();
+    } catch (err) {
+      showToast(tabletI18n.t("toast.updateFailed"));
+    }
+  }
+
+  viewTabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      viewTabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      currentView = tab.getAttribute("data-view");
+      reservationsView.hidden = currentView !== "reservations";
+      tablesView.hidden = currentView !== "tables";
+      if (currentView === "tables") fetchTables();
+    });
+  });
 
   function applyFilters() {
     const today = todayIso();
@@ -250,11 +347,17 @@
     });
   });
 
-  refreshBtn.addEventListener("click", fetchReservations);
+  refreshBtn.addEventListener("click", () => {
+    fetchReservations();
+    if (currentView === "tables") fetchTables();
+  });
 
   updateClock();
   setInterval(updateClock, 30000);
 
   fetchReservations();
-  pollTimer = setInterval(fetchReservations, 5000);
+  pollTimer = setInterval(() => {
+    fetchReservations();
+    if (currentView === "tables") fetchTables();
+  }, 5000);
 })();

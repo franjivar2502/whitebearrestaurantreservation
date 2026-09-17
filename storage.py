@@ -242,3 +242,67 @@ def set_photo_order(ordered_ids):
         if p["id"] in order_map:
             p["sort_order"] = order_map[p["id"]]
     _write_local_photos(photos)
+
+
+# ---------------------------------------------------------------------------
+# Estado de mesas (panel de staff): qué mesas están marcadas como no
+# disponibles ahora mismo (fuera de servicio, evento privado, etc.). Solo se
+# guarda una fila por mesa marcada como no disponible -- una mesa sin fila
+# se considera disponible por defecto.
+#
+# Tabla esperada en Supabase (crear una sola vez, ver README):
+#
+#     create table table_status (
+#         id text primary key,
+#         data jsonb not null,
+#         created_at timestamptz not null default now()
+#     );
+# ---------------------------------------------------------------------------
+
+LOCAL_TABLE_STATUS_FILE = os.path.join(BASE_DIR, "data", "table_status.json")
+
+
+def _read_local_table_status():
+    os.makedirs(os.path.dirname(LOCAL_TABLE_STATUS_FILE), exist_ok=True)
+    if not os.path.exists(LOCAL_TABLE_STATUS_FILE):
+        with open(LOCAL_TABLE_STATUS_FILE, "w", encoding="utf-8") as f:
+            json.dump([], f)
+    with open(LOCAL_TABLE_STATUS_FILE, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return []
+
+
+def _write_local_table_status(rows):
+    with open(LOCAL_TABLE_STATUS_FILE, "w", encoding="utf-8") as f:
+        json.dump(rows, f, indent=2, ensure_ascii=False)
+
+
+def list_unavailable_table_ids():
+    """Devuelve el conjunto de ids de mesa marcadas como no disponibles."""
+    if enabled():
+        rows = _request("GET", "table_status?select=data") or []
+        return {row["data"]["id"] for row in rows if row.get("data", {}).get("unavailable")}
+    rows = _read_local_table_status()
+    return {row["id"] for row in rows if row.get("unavailable")}
+
+
+def set_table_unavailable(table_id, unavailable):
+    """Marca (o desmarca) una mesa como no disponible (upsert por id)."""
+    if enabled():
+        _request(
+            "POST",
+            "table_status",
+            body={"id": table_id, "data": {"id": table_id, "unavailable": unavailable}},
+            extra_headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+        )
+        return
+    rows = _read_local_table_status()
+    for row in rows:
+        if row["id"] == table_id:
+            row["unavailable"] = unavailable
+            break
+    else:
+        rows.append({"id": table_id, "unavailable": unavailable})
+    _write_local_table_status(rows)
