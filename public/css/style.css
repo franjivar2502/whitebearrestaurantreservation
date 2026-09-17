@@ -81,6 +81,35 @@ body {
   padding-block: 0;
 }
 
+/* ---------- fondo "marca de agua" (apartado del cliente) ---------- */
+body.customer-body {
+  background-image: url("../images/hero-bg.jpg");
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+body.customer-body .card,
+body.customer-body form,
+body.customer-body .confirmation {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+}
+
+body.customer-body footer.site-footer {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@media (max-width: 700px) {
+  body.customer-body {
+    background-attachment: scroll;
+  }
+}
+
 a {
   color: inherit;
 }
