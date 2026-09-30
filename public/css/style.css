@@ -158,19 +158,19 @@ header.hero h1,
   animation: fade-in-up 0.5s ease both;
 }
 
-.container > .card:nth-child(2) {
+.container > .card:nth-child(3) {
   animation-delay: 0.06s;
 }
 
-.container > .card:nth-child(3) {
+.container > .card:nth-child(4) {
   animation-delay: 0.12s;
 }
 
-.container > .card:nth-child(4) {
+.container > .card:nth-child(5) {
   animation-delay: 0.18s;
 }
 
-.container > form {
+.container > .card:nth-child(6) {
   animation-delay: 0.24s;
 }
 
