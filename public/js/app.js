@@ -34,10 +34,6 @@
   const reviewForm = document.getElementById("review-form");
   const reviewAlertBox = document.getElementById("review-alert");
   const reviewSubmitBtn = document.getElementById("review-submit-btn");
-  const mapCard = document.getElementById("map-card");
-  const mapHeader = document.getElementById("map-header");
-  const mapToggleBtn = document.getElementById("map-toggle-btn");
-  const mapEmbed = document.getElementById("map-embed");
   const langSwitcher = document.getElementById("lang-switcher");
   const welcomeSplash = document.getElementById("welcome-splash");
 
@@ -116,9 +112,6 @@
   const renderGalleryToggleLabel = makeCollapsible(galleryHeader, galleryToggleBtn, photoGallery);
   const renderMenuGalleryToggleLabel = makeCollapsible(menuGalleryHeader, menuGalleryToggleBtn, menuGallery);
   const renderReviewsToggleLabel = makeCollapsible(reviewsHeader, reviewsToggleBtn, reviewsContent);
-  const renderMapToggleLabel = makeCollapsible(mapHeader, mapToggleBtn, mapEmbed, (expanded) => {
-    mapCard.classList.toggle("expanded", expanded);
-  });
 
   function renderInfoSection() {
     const groups = i18n.getInfoGroups();
@@ -341,7 +334,6 @@
     renderGalleryToggleLabel();
     renderMenuGalleryToggleLabel();
     renderReviewsToggleLabel();
-    renderMapToggleLabel();
     renderReviewsList();
     renderHeroHours();
     updateTimeConstraints();

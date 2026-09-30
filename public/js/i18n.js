@@ -35,9 +35,6 @@
       gallery: {
         title: "Gallery",
       },
-      map: {
-        title: "Find us",
-      },
       menu: {
         title: "Our Menu",
       },
@@ -198,9 +195,6 @@
       gallery: {
         title: "Galería",
       },
-      map: {
-        title: "Cómo llegar",
-      },
       menu: {
         title: "Nuestro Menú",
       },
@@ -360,9 +354,6 @@
       },
       gallery: {
         title: "Galerie",
-      },
-      map: {
-        title: "Nous trouver",
       },
       menu: {
         title: "Notre menu",
