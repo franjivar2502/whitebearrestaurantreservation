@@ -6,8 +6,17 @@ tablet del restaurante.
 
 ## 📍 Estado del proyecto (para retomarlo en cualquier momento)
 
-**Ubicación permanente del proyecto:**
+**Ubicación permanente del proyecto (original):**
 `/Users/mgabriella98/WhiteBearRest.PROYECT./white-bear-reservations`
+
+**⚠️ Nota (2026-09-29): existe una segunda copia clonada** en
+`/Users/mgabriella98/whitebearrestaurantreservation` (desde otra sesión de
+Claude, misma Mac). Se clonó por HTTPS desde GitHub, así que **no tiene
+configuradas credenciales para hacer `git push`** todavía -- para subir
+cambios desde ahí hace falta generar una llave SSH nueva (agregarla como
+Deploy Key del repo) o autenticar `gh` con un token. Antes de seguir
+trabajando desde cualquiera de las dos copias, correr `git pull` para no
+perder cambios hechos en la otra.
 
 **Para arrancarlo:**
 ```bash
@@ -30,6 +39,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - Confirmación y recordatorio automático por SMS/correo (modo prueba, sin credenciales reales todavía).
 - Ventana emergente de confirmación de asistencia (24h o 30 min antes).
 - Diseño visual pulido: tipografía real (Fraunces + Inter), favicon propio, meta tags para compartir en redes, mapa embebido, calificación con estrellas, fondo tipo "marca de agua" con foto real del comedor, secciones desplegables (About us/Gallery/Find us/Venue information), micro-interacciones, y un pequeño distintivo "Built with AI" en el pie de página.
+- **Logo real del oso** (`public/images/bear-logo.jpg` + `public/favicon.png`) en vez del emoji 🐻‍❄️ — un sello circular con el nombre del restaurante, generado específicamente para el negocio (no es foto de stock). Se usa como ícono de marca en las 5 páginas del sitio y como favicon (recortado a la cara del oso para que se lea bien de pequeño). Si se quiere cambiar, basta con reemplazar `bear-logo.jpg` por otra imagen cuadrada.
 - Idiomas: sitio de clientes en EN/ES/FR (inglés por defecto); panel de tablet en EN/ES/SR (inglés por defecto).
 - Galería de fotos con pantalla de bienvenida (fondo de 1 segundo al entrar) y panel de administración para agregar/reordenar/eliminar fotos (`/admin-photos.html`, ver sección más abajo).
 - **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones, fotos y estado de mesas ya no se pierden cuando Render reinicia el servicio.
@@ -41,6 +51,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 3. **Cambiar `ADMIN_PASSWORD`** (panel de fotos) a una contraseña definitiva — hoy sigue siendo la de prueba (`whitebear123`).
 4. Confirmar con el cliente que el total de 122 asientos (calculado de las 24 mesas que dio) es correcto, ya que mencionó 130 de palabra.
 5. Decidir si el panel de tablet necesita más idiomas o queda así.
+6. **Subir (`git push`) el commit del logo nuevo del oso** desde esta segunda copia del proyecto -- quedó hecho localmente pero bloqueado por falta de credenciales de GitHub en esta sesión (ver nota de arriba). Una vez resuelto el acceso, hacer `git push` y luego confirmar que Render lo despliegue.
 
 Dime en qué de esto quieres que sigamos y retomamos justo ahí.
 
