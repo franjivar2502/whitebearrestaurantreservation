@@ -23,6 +23,17 @@
   const aboutContent = document.getElementById("about-content");
   const galleryHeader = document.getElementById("gallery-header");
   const galleryToggleBtn = document.getElementById("gallery-toggle-btn");
+  const menuGalleryCard = document.getElementById("menu-card");
+  const menuGalleryHeader = document.getElementById("menu-header");
+  const menuGalleryToggleBtn = document.getElementById("menu-toggle-btn");
+  const menuGallery = document.getElementById("menu-gallery");
+  const reviewsHeader = document.getElementById("reviews-header");
+  const reviewsToggleBtn = document.getElementById("reviews-toggle-btn");
+  const reviewsContent = document.getElementById("reviews-content");
+  const reviewsList = document.getElementById("reviews-list");
+  const reviewForm = document.getElementById("review-form");
+  const reviewAlertBox = document.getElementById("review-alert");
+  const reviewSubmitBtn = document.getElementById("review-submit-btn");
   const mapCard = document.getElementById("map-card");
   const mapHeader = document.getElementById("map-header");
   const mapToggleBtn = document.getElementById("map-toggle-btn");
@@ -67,19 +78,32 @@
 
   welcomeSplash.hidden = false;
 
+  const photoImgTag = (p) =>
+    `<img src="${p.url}" alt="${(p.caption || "").replace(/"/g, "&quot;")}" loading="lazy">`;
+
   fetch("/api/photos")
     .then((res) => res.json())
     .then((photos) => {
       if (photos && photos.length) {
         welcomeSplash.style.backgroundImage = `url("${photos[0].url}")`;
-        galleryCard.hidden = false;
-        photoGallery.innerHTML = photos
-          .map((p) => `<img src="${p.url}" alt="${(p.caption || "").replace(/"/g, "&quot;")}" loading="lazy">`)
-          .join("");
+
+        const galleryPhotos = photos.filter((p) => (p.category || "gallery") === "gallery");
+        const menuPhotos = photos.filter((p) => p.category === "menu");
+
+        if (galleryPhotos.length) {
+          galleryCard.hidden = false;
+          photoGallery.innerHTML = galleryPhotos.map(photoImgTag).join("");
+        }
+        if (menuPhotos.length) {
+          menuGalleryCard.hidden = false;
+          menuGallery.innerHTML = menuPhotos.map(photoImgTag).join("");
+        }
       }
       hideWelcomeSplash();
     })
     .catch(() => hideWelcomeSplash());
+
+  fetchReviews();
 
   langSwitcher.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-lang]");
@@ -90,6 +114,8 @@
   const renderInfoToggleLabel = makeCollapsible(infoHeader, infoToggleBtn, infoContent);
   const renderAboutToggleLabel = makeCollapsible(aboutHeader, aboutToggleBtn, aboutContent);
   const renderGalleryToggleLabel = makeCollapsible(galleryHeader, galleryToggleBtn, photoGallery);
+  const renderMenuGalleryToggleLabel = makeCollapsible(menuGalleryHeader, menuGalleryToggleBtn, menuGallery);
+  const renderReviewsToggleLabel = makeCollapsible(reviewsHeader, reviewsToggleBtn, reviewsContent);
   const renderMapToggleLabel = makeCollapsible(mapHeader, mapToggleBtn, mapEmbed, (expanded) => {
     mapCard.classList.toggle("expanded", expanded);
   });
@@ -157,6 +183,48 @@
     const d = document.createElement("div");
     d.textContent = str == null ? "" : str;
     return d.innerHTML;
+  }
+
+  function showFormAlert(box, kind, message) {
+    box.innerHTML = "";
+    const div = document.createElement("div");
+    div.className = `alert alert-${kind}`;
+    div.innerHTML = message;
+    box.appendChild(div);
+  }
+
+  let reviewsCache = [];
+
+  function renderReviewsList() {
+    if (!reviewsCache.length) {
+      reviewsList.innerHTML = `<p class="hint">${escapeHtml(i18n.t("reviews.empty"))}</p>`;
+      return;
+    }
+    reviewsList.innerHTML = reviewsCache
+      .map((r) => {
+        const rating = Number(r.rating) || 0;
+        const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+        return `
+          <div class="review-item">
+            <div class="review-item-header">
+              <span class="review-stars" aria-hidden="true">${stars}</span>
+              <span class="review-name">${escapeHtml(i18n.t("reviews.by", { name: r.name }))}</span>
+            </div>
+            <p class="review-text">${escapeHtml(r.text)}</p>
+            ${r.photoUrl ? `<img class="review-photo" src="${escapeHtml(r.photoUrl)}" alt="" loading="lazy">` : ""}
+          </div>`;
+      })
+      .join("");
+  }
+
+  function fetchReviews() {
+    fetch("/api/reviews")
+      .then((res) => res.json())
+      .then((data) => {
+        reviewsCache = Array.isArray(data) ? data : [];
+        renderReviewsList();
+      })
+      .catch(() => {});
   }
 
   function subtractMinutes(hhmm, minutes) {
@@ -271,7 +339,10 @@
     renderInfoToggleLabel();
     renderAboutToggleLabel();
     renderGalleryToggleLabel();
+    renderMenuGalleryToggleLabel();
+    renderReviewsToggleLabel();
     renderMapToggleLabel();
+    renderReviewsList();
     renderHeroHours();
     updateTimeConstraints();
     renderPartySizeHint();
@@ -365,6 +436,40 @@
       submitBtn.disabled = false;
       submitBtn.classList.remove("btn-loading");
       submitBtn.textContent = i18n.t("form.submit");
+    }
+  });
+
+  reviewForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    reviewAlertBox.innerHTML = "";
+    reviewSubmitBtn.disabled = true;
+    reviewSubmitBtn.classList.add("btn-loading");
+    reviewSubmitBtn.textContent = i18n.t("reviews.submitting");
+
+    const formData = new FormData(reviewForm);
+
+    try {
+      const res = await fetch("/api/reviews", { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        const messages = (data.errors || [{ code: "REVIEW_INVALID" }]).map((err) =>
+          escapeHtml(i18n.t(`errors.${err.code}`, { ...err.params, phone: restaurantInfo.phone }))
+        );
+        showFormAlert(reviewAlertBox, "error", messages.map((m) => `• ${m}`).join("<br/>"));
+        return;
+      }
+
+      reviewForm.reset();
+      reviewsCache = [data, ...reviewsCache];
+      renderReviewsList();
+      showFormAlert(reviewAlertBox, "success", escapeHtml(i18n.t("reviews.thanks")));
+    } catch (err) {
+      showFormAlert(reviewAlertBox, "error", escapeHtml(i18n.t("errors.NETWORK")));
+    } finally {
+      reviewSubmitBtn.disabled = false;
+      reviewSubmitBtn.classList.remove("btn-loading");
+      reviewSubmitBtn.textContent = i18n.t("reviews.submit");
     }
   });
 

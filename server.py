@@ -98,6 +98,71 @@ VALID_STATUSES = {"pending", "confirmed", "seated", "completed", "cancelled"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 VALID_SEATING_PREFERENCES = {"", "inside", "outside"}
 
+# Moderación de reseñas de clientes por palabras clave: cualquier reseña que
+# contenga una palabra de esta lista (español o inglés) se rechaza -- nunca
+# llega a publicarse, para no afectar la reputación del restaurante con
+# comentarios ofensivos, acusaciones graves o spam evidente. Es una barrera
+# simple a propósito (sin servicio externo, sin dependencias) -- no
+# reemplaza el criterio del staff, pero filtra lo obviamente dañino antes de
+# que se publique solo.
+NEGATIVE_REVIEW_KEYWORDS = {
+    "terrible", "horrible", "pesimo", "pésimo", "asqueroso", "asquerosa",
+    "asco", "sucio", "sucia", "grosero", "grosera", "maleducado",
+    "maleducada", "estafa", "robo", "rata", "ratas", "cucaracha",
+    "cucarachas", "intoxicacion", "intoxicación", "vomito", "vómito",
+    "nunca mas", "nunca más", "no vuelvo", "malisimo", "malísimo", "fatal",
+    "porqueria", "porquería", "basura", "denuncia", "demanda", "veneno",
+    "asqueado", "asqueada", "pelo en la comida", "insecto en la comida",
+    "awful", "disgusting", "filthy", "rude", "scam", "rat", "roach",
+    "roaches", "cockroach", "vomit", "food poisoning", "never again",
+    "worst", "trash", "gross", "nasty", "lawsuit", "poison",
+}
+
+
+def _review_text_allowed(text):
+    """True si el texto no contiene ninguna palabra clave negativa."""
+    lowered = (text or "").lower()
+    return not any(kw in lowered for kw in NEGATIVE_REVIEW_KEYWORDS)
+
+
+def _parse_multipart(body, boundary):
+    """
+    Parser mínimo de multipart/form-data (sin dependencias -- el módulo
+    `cgi` que antes hacía esto fue eliminado de la librería estándar en
+    Python 3.13). Devuelve un dict {nombre_de_campo: {"data": bytes,
+    "filename": str|None, "content_type": str|None}}.
+    """
+    fields = {}
+    delimiter = b"--" + boundary.encode("utf-8")
+    parts = body.split(delimiter)
+    for part in parts:
+        part = part.strip(b"\r\n")
+        if not part or part == b"--":
+            continue
+        if b"\r\n\r\n" not in part:
+            continue
+        raw_headers, content = part.split(b"\r\n\r\n", 1)
+        content = content.rstrip(b"\r\n")
+        headers = {}
+        for line in raw_headers.split(b"\r\n"):
+            if b":" not in line:
+                continue
+            key, value = line.split(b":", 1)
+            headers[key.strip().lower().decode("ascii", "ignore")] = value.strip().decode("utf-8", "ignore")
+        disposition = headers.get("content-disposition", "")
+        name_match = re.search(r'name="([^"]*)"', disposition)
+        if not name_match:
+            continue
+        field_name = name_match.group(1)
+        filename_match = re.search(r'filename="([^"]*)"', disposition)
+        filename = filename_match.group(1) if filename_match else None
+        fields[field_name] = {
+            "data": content,
+            "filename": filename,
+            "content_type": headers.get("content-type"),
+        }
+    return fields
+
 
 def _build_tables():
     """
@@ -347,6 +412,10 @@ class Handler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             return None
 
+    def _read_raw_body(self):
+        length = int(self.headers.get("Content-Length", 0))
+        return self.rfile.read(length) if length else b""
+
     def _is_admin(self):
         if not ADMIN_PASSWORD:
             return False
@@ -398,6 +467,12 @@ class Handler(BaseHTTPRequestHandler):
                 photos = storage.list_photos()
             self._send_json(photos)
             return
+        if parsed.path == "/api/reviews":
+            with _lock:
+                reviews = storage.list_reviews()
+            approved = [r for r in reviews if r.get("status") == "approved"]
+            self._send_json(approved)
+            return
         if parsed.path == "/api/tables":
             with _lock:
                 unavailable_ids = storage.list_unavailable_table_ids()
@@ -441,6 +516,72 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/reviews":
+            content_type_header = self.headers.get("Content-Type", "")
+            boundary_match = re.search(r'boundary="?([^";]+)"?', content_type_header)
+            if "multipart/form-data" not in content_type_header or not boundary_match:
+                self._send_json({"errors": [{"code": "REVIEW_INVALID"}]}, status=400)
+                return
+            body = self._read_raw_body()
+            fields = _parse_multipart(body, boundary_match.group(1))
+
+            name = (fields.get("name", {}).get("data") or b"").decode("utf-8", "ignore").strip()
+            text = (fields.get("text", {}).get("data") or b"").decode("utf-8", "ignore").strip()
+            rating_raw = (fields.get("rating", {}).get("data") or b"").decode("utf-8", "ignore").strip()
+
+            errors = []
+            if not name or len(name) < 2:
+                errors.append({"code": "NAME_REQUIRED"})
+            if not text or len(text) < 5:
+                errors.append({"code": "REVIEW_TEXT_REQUIRED"})
+            rating = None
+            if rating_raw:
+                try:
+                    rating = int(rating_raw)
+                    if not (1 <= rating <= 5):
+                        raise ValueError
+                except ValueError:
+                    errors.append({"code": "REVIEW_RATING_INVALID"})
+            if errors:
+                self._send_json({"errors": errors}, status=400)
+                return
+
+            if not _review_text_allowed(text):
+                self._send_json({"errors": [{"code": "REVIEW_REJECTED"}]}, status=400)
+                return
+
+            photo_url = ""
+            photo_field = fields.get("photo")
+            if photo_field and photo_field.get("filename"):
+                photo_bytes = photo_field["data"]
+                photo_content_type = photo_field.get("content_type") or "application/octet-stream"
+                if not photo_content_type.startswith("image/"):
+                    self._send_json({"errors": [{"code": "REVIEW_PHOTO_INVALID"}]}, status=400)
+                    return
+                if len(photo_bytes) > 8 * 1024 * 1024:
+                    self._send_json({"errors": [{"code": "REVIEW_PHOTO_TOO_LARGE"}]}, status=400)
+                    return
+                ext = os.path.splitext(photo_field["filename"])[1].lower() or ".jpg"
+                if ext not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+                    ext = ".jpg"
+                filename = f"{uuid.uuid4().hex[:12]}{ext}"
+                with _lock:
+                    photo_url = storage.upload_review_photo(filename, photo_bytes, photo_content_type)
+
+            review = {
+                "id": uuid.uuid4().hex[:8],
+                "name": name,
+                "text": text,
+                "rating": rating,
+                "photoUrl": photo_url,
+                "status": "approved",
+                "createdAt": datetime.now().isoformat(timespec="seconds"),
+            }
+            with _lock:
+                storage.save_review(review)
+            self._send_json(review, status=201)
+            return
+
         if parsed.path == "/api/reservations":
             payload = self._read_json_body()
             if payload is None:
@@ -513,6 +654,9 @@ class Handler(BaseHTTPRequestHandler):
             payload = self._read_json_body() or {}
             url = (payload.get("url") or "").strip()
             caption = (payload.get("caption") or "").strip()
+            category = (payload.get("category") or "gallery").strip()
+            if category not in ("gallery", "menu"):
+                category = "gallery"
             if not url.startswith(("http://", "https://")):
                 self._send_json({"errors": ["La URL de la imagen no es válida."]}, status=400)
                 return
@@ -522,6 +666,7 @@ class Handler(BaseHTTPRequestHandler):
                     "id": uuid.uuid4().hex[:8],
                     "url": url,
                     "caption": caption,
+                    "category": category,
                     "sort_order": len(existing),
                     "created_at": datetime.now().isoformat(timespec="seconds"),
                 }
@@ -554,6 +699,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_PATCH(self):
         parsed = urlparse(self.path)
+        m = re.match(r"^/api/admin/photos/([a-f0-9]+)$", parsed.path)
+        if m:
+            if not self._require_admin():
+                return
+            photo_id = m.group(1)
+            payload = self._read_json_body() or {}
+            category = payload.get("category")
+            if category not in ("gallery", "menu"):
+                self._send_json({"errors": ["Sección inválida."]}, status=400)
+                return
+            with _lock:
+                storage.update_photo_category(photo_id, category)
+            self._send_json({"id": photo_id, "category": category})
+            return
+
         m = re.match(r"^/api/tables/([a-z0-9-]+)$", parsed.path)
         if m:
             table_id = m.group(1)

@@ -42,7 +42,9 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - **Logo real del oso** (`public/images/bear-logo.jpg` + `public/favicon.png`) en vez del emoji 🐻‍❄️ — un sello circular con el nombre del restaurante, generado específicamente para el negocio (no es foto de stock). Se usa como ícono de marca en las 5 páginas del sitio y como favicon (recortado a la cara del oso para que se lea bien de pequeño). Si se quiere cambiar, basta con reemplazar `bear-logo.jpg` por otra imagen cuadrada.
 - Idiomas: sitio de clientes en EN/ES/FR (inglés por defecto); panel de tablet en EN/ES/SR (inglés por defecto).
 - Galería de fotos con pantalla de bienvenida (fondo de 1 segundo al entrar) y panel de administración para agregar/reordenar/eliminar fotos (`/admin-photos.html`, ver sección más abajo).
-- **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones, fotos y estado de mesas ya no se pierden cuando Render reinicia el servicio.
+- **Galería separada en dos secciones**: "Gallery" (fotos generales) y "Our Menu"/"Nuestro Menú" (fotos del menú) — el panel de admin ahora tiene un campo "Sección" al agregar una foto, y un botón ⇄ para cambiar la sección de una foto ya existente.
+- **Reseñas de clientes con fotos**, moderadas automáticamente (`public/js/app.js` + `server.py`) — cualquier visitante puede dejar una reseña con calificación de 1 a 5 estrellas y subir una foto directo desde su celular. Cualquier reseña que contenga una palabra clave negativa (lista en `NEGATIVE_REVIEW_KEYWORDS` en `server.py`) se rechaza automáticamente con un mensaje que invita a llamar al restaurante en vez de publicarse; el resto se publica al instante. Las fotos se guardan en Supabase Storage (bucket `review-photos`, ya creado) o en `public/uploads/reviews/` en desarrollo local sin Supabase.
+- **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones, fotos, reseñas y estado de mesas ya no se pierden cuando Render reinicia el servicio.
 - Repositorio en GitHub, desplegado en Render y funcionando en vivo: https://whitebearrestaurantreservation.onrender.com
 
 **⏳ Pendiente para que el proyecto esté 100% terminado:**
@@ -50,6 +52,8 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 2. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
 3. **Cambiar `ADMIN_PASSWORD`** (panel de fotos) a una contraseña definitiva — hoy sigue siendo la de prueba (`whitebear123`).
 4. Confirmar con el cliente que el total de 122 asientos (calculado de las 24 mesas que dio) es correcto, ya que mencionó 130 de palabra.
+5. **13 fotos reales que el cliente quiso subir no se pudieron procesar** (2026-09-29) — eran archivos temporales de Fotos.app en macOS, protegidos por el sistema de permisos; ni siquiera la app de Claude pudo abrirlos. Hace falta que el cliente las re-exporte a una carpeta normal (Escritorio, Descargas) para poder editarlas y subirlas -- algunas son fotos del comedor/exterior (van a "Gallery") y otras del menú (van a "Our Menu"), hay que clasificarlas al agregarlas.
+6. Revisar y ampliar `NEGATIVE_REVIEW_KEYWORDS` en `server.py` si empiezan a llegar reseñas reales -- la lista actual es un punto de partida razonable, no exhaustiva.
 5. Decidir si el panel de tablet necesita más idiomas o queda así.
 6. **Subir (`git push`) el commit del logo nuevo del oso** desde esta segunda copia del proyecto -- quedó hecho localmente pero bloqueado por falta de credenciales de GitHub en esta sesión (ver nota de arriba). Una vez resuelto el acceso, hacer `git push` y luego confirmar que Render lo despliegue.
 
@@ -265,6 +269,16 @@ nueva, solo `urllib` de la librería estándar.
      data jsonb not null,
      created_at timestamptz not null default now()
    );
+
+   create table reviews (
+     id text primary key,
+     data jsonb not null,
+     created_at timestamptz not null default now()
+   );
+
+   insert into storage.buckets (id, name, public)
+   values ('review-photos', 'review-photos', true)
+   on conflict (id) do nothing;
    ```
 3. En **Settings → API**, copia la **Project URL** y la **service_role**
    key (la secreta, no la "anon/public").

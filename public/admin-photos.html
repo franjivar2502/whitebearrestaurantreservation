@@ -32,6 +32,11 @@
   }
   .icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .icon-btn.danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+  .photo-category-badge {
+    display: inline-block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; padding: 2px 8px; border-radius: 999px; margin-top: 4px;
+    background: var(--surface-alt); color: var(--text-muted); border: 1px solid var(--border);
+  }
 </style>
 </head>
 <body>
@@ -64,6 +69,13 @@
       <div class="field">
         <label for="photo-caption">Descripción (opcional)</label>
         <input type="text" id="photo-caption" placeholder="Ej. Terraza al atardecer" />
+      </div>
+      <div class="field">
+        <label for="photo-category">Sección</label>
+        <select id="photo-category">
+          <option value="gallery">Galería general</option>
+          <option value="menu">Nuestro Menú</option>
+        </select>
       </div>
       <button type="submit" class="btn btn-primary" id="add-btn">Agregar foto</button>
     </form>

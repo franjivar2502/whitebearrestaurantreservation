@@ -12,6 +12,7 @@
   const addBtn = document.getElementById("add-btn");
   const urlInput = document.getElementById("photo-url");
   const captionInput = document.getElementById("photo-caption");
+  const categoryInput = document.getElementById("photo-category");
   const photoList = document.getElementById("photo-list");
   const emptyPhotos = document.getElementById("empty-photos");
 
@@ -100,21 +101,25 @@
     }
     emptyPhotos.hidden = true;
     photoList.innerHTML = photos
-      .map(
-        (p, i) => `
+      .map((p, i) => {
+        const category = p.category === "menu" ? "menu" : "gallery";
+        const categoryLabel = category === "menu" ? "Nuestro Menú" : "Galería general";
+        return `
         <div class="photo-row" data-id="${escapeHtml(p.id)}">
           <img class="photo-thumb" src="${escapeHtml(p.url)}" alt="" />
           <div class="photo-info">
             <div class="photo-caption">${escapeHtml(p.caption) || "(sin descripción)"}</div>
             <div class="photo-url">${escapeHtml(p.url)}</div>
+            <span class="photo-category-badge">${escapeHtml(categoryLabel)}</span>
           </div>
           <div class="photo-actions">
+            <button type="button" class="icon-btn" data-action="category" title="Cambiar de sección">⇄</button>
             <button type="button" class="icon-btn" data-action="up" ${i === 0 ? "disabled" : ""} title="Subir">↑</button>
             <button type="button" class="icon-btn" data-action="down" ${i === photos.length - 1 ? "disabled" : ""} title="Bajar">↓</button>
             <button type="button" class="icon-btn danger" data-action="delete" title="Eliminar">✕</button>
           </div>
-        </div>`
-      )
+        </div>`;
+      })
       .join("");
 
     photoList.querySelectorAll(".photo-row").forEach((row) => {
@@ -160,6 +165,16 @@
       await adminFetch(`/api/admin/photos/${id}`, { method: "DELETE" });
       await loadPhotos();
     }
+    if (action === "category") {
+      const current = photos[index].category === "menu" ? "menu" : "gallery";
+      const next = current === "menu" ? "gallery" : "menu";
+      await adminFetch(`/api/admin/photos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: next }),
+      });
+      await loadPhotos();
+    }
   }
 
   addForm.addEventListener("submit", async (e) => {
@@ -170,7 +185,11 @@
       const res = await adminFetch("/api/admin/photos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: urlInput.value.trim(), caption: captionInput.value.trim() }),
+        body: JSON.stringify({
+          url: urlInput.value.trim(),
+          caption: captionInput.value.trim(),
+          category: categoryInput.value,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {

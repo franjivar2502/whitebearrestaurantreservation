@@ -225,6 +225,23 @@ def delete_photo(photo_id):
     return deleted
 
 
+def update_photo_category(photo_id, category):
+    """Cambia la sección (gallery/menu) de una foto existente."""
+    if enabled():
+        _request(
+            "PATCH",
+            f"photos?id=eq.{photo_id}",
+            body={"category": category},
+            extra_headers={"Prefer": "return=minimal"},
+        )
+        return
+    photos = _read_local_photos()
+    for p in photos:
+        if p["id"] == photo_id:
+            p["category"] = category
+    _write_local_photos(photos)
+
+
 def set_photo_order(ordered_ids):
     """Reasigna sort_order según el orden de la lista de ids dada."""
     if enabled():
@@ -306,3 +323,103 @@ def set_table_unavailable(table_id, unavailable):
     else:
         rows.append({"id": table_id, "unavailable": unavailable})
     _write_local_table_status(rows)
+
+
+# ---------------------------------------------------------------------------
+# Reseñas de clientes (texto + foto opcional), con moderación por palabras
+# clave (ver server.py). Mismo patrón JSONB que reservations/table_status.
+#
+# Tabla esperada en Supabase (crear una sola vez, ver README):
+#
+#     create table reviews (
+#         id text primary key,
+#         data jsonb not null,
+#         created_at timestamptz not null default now()
+#     );
+# ---------------------------------------------------------------------------
+
+LOCAL_REVIEWS_FILE = os.path.join(BASE_DIR, "data", "reviews.json")
+
+
+def _read_local_reviews():
+    os.makedirs(os.path.dirname(LOCAL_REVIEWS_FILE), exist_ok=True)
+    if not os.path.exists(LOCAL_REVIEWS_FILE):
+        with open(LOCAL_REVIEWS_FILE, "w", encoding="utf-8") as f:
+            json.dump([], f)
+    with open(LOCAL_REVIEWS_FILE, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return []
+
+
+def _write_local_reviews(reviews):
+    with open(LOCAL_REVIEWS_FILE, "w", encoding="utf-8") as f:
+        json.dump(reviews, f, indent=2, ensure_ascii=False)
+
+
+def list_reviews():
+    """Devuelve todas las reseñas (el llamador filtra por status si hace falta)."""
+    if enabled():
+        rows = _request("GET", "reviews?select=data&order=created_at.desc") or []
+        return [row["data"] for row in rows]
+    reviews = _read_local_reviews()
+    return sorted(reviews, key=lambda r: r.get("createdAt", ""), reverse=True)
+
+
+def save_review(review):
+    """Crea o actualiza una reseña (upsert por id)."""
+    if enabled():
+        _request(
+            "POST",
+            "reviews",
+            body={"id": review["id"], "data": review},
+            extra_headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+        )
+        return
+    reviews = _read_local_reviews()
+    for i, r in enumerate(reviews):
+        if r["id"] == review["id"]:
+            reviews[i] = review
+            break
+    else:
+        reviews.append(review)
+    _write_local_reviews(reviews)
+
+
+# ---------------------------------------------------------------------------
+# Fotos que suben los clientes junto a su reseña. A diferencia de las fotos
+# de la galería (que el staff agrega pegando una URL ya alojada en algún
+# lado), estas llegan como bytes reales desde el celular del cliente y hay
+# que alojarlas nosotros mismos -- Supabase Storage cuando está configurado
+# (para que sobrevivan un reinicio de Render), o un archivo local dentro de
+# public/ para desarrollo sin cuenta de Supabase.
+# ---------------------------------------------------------------------------
+
+REVIEW_PHOTOS_BUCKET = "review-photos"
+LOCAL_REVIEW_PHOTOS_DIR = os.path.join(BASE_DIR, "public", "uploads", "reviews")
+
+
+def upload_review_photo(filename, content_bytes, content_type):
+    """Sube la foto de una reseña y devuelve la URL pública para guardarla."""
+    if enabled():
+        url = f"{SUPABASE_URL}/storage/v1/object/{REVIEW_PHOTOS_BUCKET}/{filename}"
+        req = urllib.request.Request(
+            url,
+            data=content_bytes,
+            method="POST",
+            headers={
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": content_type,
+                "x-upsert": "true",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            resp.read()
+        return f"{SUPABASE_URL}/storage/v1/object/public/{REVIEW_PHOTOS_BUCKET}/{filename}"
+
+    os.makedirs(LOCAL_REVIEW_PHOTOS_DIR, exist_ok=True)
+    with open(os.path.join(LOCAL_REVIEW_PHOTOS_DIR, filename), "wb") as f:
+        f.write(content_bytes)
+    return f"/uploads/reviews/{filename}"
