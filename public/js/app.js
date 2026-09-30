@@ -81,8 +81,6 @@
     .then((res) => res.json())
     .then((photos) => {
       if (photos && photos.length) {
-        welcomeSplash.style.backgroundImage = `url("${photos[0].url}")`;
-
         const galleryPhotos = photos.filter((p) => (p.category || "gallery") === "gallery");
         const menuPhotos = photos.filter((p) => p.category === "menu");
 
