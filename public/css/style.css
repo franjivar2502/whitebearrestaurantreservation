@@ -81,40 +81,6 @@ body {
   padding-block: 0;
 }
 
-/* ---------- fondo "marca de agua" (apartado del cliente) ---------- */
-body.customer-body {
-  background-image: url("../images/hero-bg.jpg");
-  background-size: cover;
-  background-position: top center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
-
-body.customer-body .card,
-body.customer-body form,
-body.customer-body .confirmation {
-  /* Respaldo para navegadores sin soporte de color-mix() (algunos Android
-     con Chrome/WebView desactualizado) -- sin esto, la tarjeta se queda
-     sin fondo y el texto se vuelve ilegible sobre la foto. */
-  background: rgba(255, 255, 255, 0.85);
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
-  backdrop-filter: blur(16px) saturate(1.15);
-  -webkit-backdrop-filter: blur(16px) saturate(1.15);
-}
-
-body.customer-body footer.site-footer {
-  background: rgba(247, 243, 236, 0.85);
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-@media (max-width: 700px) {
-  body.customer-body {
-    background-attachment: scroll;
-  }
-}
-
 a {
   color: inherit;
 }
@@ -251,15 +217,6 @@ header.hero {
   background: linear-gradient(135deg, var(--brand-dark), var(--brand));
   color: var(--on-brand);
   padding: 28px 20px 32px;
-}
-
-/* En el apartado del cliente el encabezado va transparente sobre la foto
-   de fondo -- un degradado oscuro sutil mantiene el texto blanco legible
-   sin volver a tapar la foto con un bloque de color sólido. */
-body.customer-body header.hero {
-  background: linear-gradient(180deg, rgba(15, 8, 6, 0.55) 0%, rgba(15, 8, 6, 0.28) 100%);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
 }
 
 header.hero .hero-inner {
