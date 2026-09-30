@@ -37,7 +37,7 @@
         pending: "Pending",
         confirmed: "Confirmed",
         active: "Unfinished",
-        needsCall: "⏳ Needs confirmation",
+        needsCall: "Needs confirmation",
       },
       emptyState: "No reservations to show.",
       today: "Today",
@@ -50,8 +50,8 @@
       },
       actions: { confirm: "Confirm", seat: "Seat", complete: "Complete", cancel: "Cancel" },
       attendance: {
-        confirmed: "✅ Attendance confirmed by the guest",
-        waiting: "⏳ Waiting for confirmation — call if they don't respond",
+        confirmed: "Attendance confirmed by the guest",
+        waiting: "Waiting for confirmation — call if they don't respond",
       },
       toast: {
         newReservation: "New reservation: {name}",
@@ -82,7 +82,7 @@
         pending: "Pendientes",
         confirmed: "Confirmadas",
         active: "Sin finalizar",
-        needsCall: "⏳ Por confirmar",
+        needsCall: "Por confirmar",
       },
       emptyState: "No hay reservaciones para mostrar.",
       today: "Hoy",
@@ -95,8 +95,8 @@
       },
       actions: { confirm: "Confirmar", seat: "Sentar", complete: "Finalizar", cancel: "Cancelar" },
       attendance: {
-        confirmed: "✅ Asistencia confirmada por el cliente",
-        waiting: "⏳ Esperando confirmación — si no responde, hay que llamarle",
+        confirmed: "Asistencia confirmada por el cliente",
+        waiting: "Esperando confirmación — si no responde, hay que llamarle",
       },
       toast: {
         newReservation: "Nueva reservación: {name}",
@@ -127,7 +127,7 @@
         pending: "Na čekanju",
         confirmed: "Potvrđene",
         active: "Nezavršene",
-        needsCall: "⏳ Treba potvrdu",
+        needsCall: "Treba potvrdu",
       },
       emptyState: "Nema rezervacija za prikaz.",
       today: "Danas",
@@ -140,8 +140,8 @@
       },
       actions: { confirm: "Potvrdi", seat: "Smesti", complete: "Završi", cancel: "Otkaži" },
       attendance: {
-        confirmed: "✅ Gost je potvrdio dolazak",
-        waiting: "⏳ Čeka se potvrda — pozovite ako ne odgovori",
+        confirmed: "Gost je potvrdio dolazak",
+        waiting: "Čeka se potvrda — pozovite ako ne odgovori",
       },
       toast: {
         newReservation: "Nova rezervacija: {name}",
@@ -199,7 +199,12 @@
     });
     document.querySelectorAll("[data-i18n-title]").forEach((el) => {
       const value = t(el.getAttribute("data-i18n-title"));
-      if (typeof value === "string") el.setAttribute("title", value);
+      if (typeof value === "string") {
+        el.setAttribute("title", value);
+        // Los botones que solo llevan icono no tienen texto que leer: el
+        // lector de pantalla necesita el mismo rótulo, y traducido.
+        if (!el.textContent.trim()) el.setAttribute("aria-label", value);
+      }
     });
     document.querySelectorAll(".lang-switcher [data-lang]").forEach((btn) => {
       btn.classList.toggle("active", btn.getAttribute("data-lang") === currentLang);

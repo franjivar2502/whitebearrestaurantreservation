@@ -1,21 +1,89 @@
+/*
+ * Panel del personal -- "Adirondack Morning".
+ *
+ * Misma escena 3D y misma marca que el sitio del cliente, pero de día: el
+ * comedor tiene mucha luz y el panel está abierto durante todo el turno, así
+ * que sobre fondo claro se lee mejor y cansa menos la vista. Todo el tema se
+ * define aquí reasignando los tokens de style.css, para que los componentes
+ * que ya existían sigan funcionando sin tocarlos uno por uno.
+ */
 html, body.tablet-body {
   height: 100%;
 }
 
 body.tablet-body {
+  /* Superficies y tinta */
+  --bg: #eef1f7;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-solid: #ffffff;
+  --surface-alt: rgba(17, 28, 52, 0.05);
+  --border: rgba(20, 32, 58, 0.14);
+  --border-strong: rgba(20, 32, 58, 0.3);
+  --text: #131b2e;
+  --text-muted: #5b6784;
+
+  /* Marca: el mismo oro, oscurecido hasta contrastar sobre blanco */
+  --brand: #b07d1c;
+  --brand-dark: #7d5709;
+  --brand-light: #d9a441;
+  --on-brand: #ffffff;
+  --accent: #3f6b34;
+  --burgundy: #8c3346;
+
+  /* Estado. Todos pasan 4.5:1 sobre blanco, y en blanco sobre el color. */
+  --danger: #a3323f;
+  --warning: #8a6206;
+  --pending: #8a6206;
+  --confirmed: #3f6b34;
+  --seated: #9a5a10;
+  --completed: #5b6784;
+  --cancelled: #a3323f;
+
+  --shadow: 0 10px 30px rgba(18, 28, 54, 0.1);
+  --glass-blur: 18px;
+
+  /* Alturas de la barra fija. Están aquí y no repartidas por el archivo
+     porque las tres franjas pegajosas se apilan una debajo de otra: si una
+     cambia de alto, las de abajo tienen que seguirla. */
+  --chrome-header-h: 72px;
+  --chrome-views-h: 48px;
+
   background: var(--bg);
+  color: var(--text);
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
 
+/* El velo del sitio del cliente oscurece; aquí, al revés, aclara: el panel
+   necesita que el texto negro se lea sobre el cielo. */
+body.tablet-body::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(238, 241, 247, 0.32) 0%,
+    rgba(238, 241, 247, 0.62) 40%,
+    rgba(238, 241, 247, 0.78) 100%
+  );
+}
+
+body.tablet-body :focus-visible {
+  outline: 2px solid var(--brand-dark);
+  outline-offset: 2px;
+}
+
+/* ---------- barra superior ---------- */
 .tablet-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 24px;
-  background: linear-gradient(135deg, var(--brand-dark), var(--brand));
-  color: var(--on-brand);
+  height: var(--chrome-header-h);
+  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(176, 125, 28, 0.35);
+  color: var(--text);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -25,78 +93,152 @@ body.tablet-body {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .tablet-header .brand-icon {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+}
+
+.tablet-header .brand-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tablet-brand-text {
+  min-width: 0;
 }
 
 .tablet-header h1 {
   margin: 0;
-  font-size: 1.2rem;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .clock {
-  font-size: 0.85rem;
-  opacity: 0.85;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  margin-top: 3px;
+  white-space: nowrap;
 }
 
 .tablet-header-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
 }
 
+/* Los dos números del turno: son lo primero que mira el personal al pasar
+   por delante de la tablet, así que van en fichas propias y en mono. */
 .stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 64px;
+  justify-content: center;
+  min-width: 74px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
 }
 
 .stat-value {
-  font-size: 1.4rem;
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
 }
 
 .stat-label {
-  font-size: 0.68rem;
-  opacity: 0.85;
-  margin-top: 2px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.tablet-header .lang-switcher {
+  margin-left: 4px;
+}
+
+/* Sobre blanco, el oro de marca se queda en 3.6:1 y no llega al mínimo
+   legible, así que el idioma activo usa el tono oscuro. */
+.tablet-header .lang-switcher button.active {
+  background: var(--surface-solid);
+  color: var(--brand-dark);
+  box-shadow: 0 1px 2px rgba(18, 28, 54, 0.14);
 }
 
 .btn-refresh {
-  background: rgba(255, 255, 255, 0.18);
-  color: var(--on-brand);
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  font-size: 1.3rem;
   cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
 }
 
-.btn-refresh:active {
-  transform: rotate(120deg);
-  transition: transform 0.2s;
+.btn-refresh svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
+.btn-refresh:hover {
+  border-color: var(--border-strong);
+}
+
+.btn-refresh:active svg {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn-refresh svg {
+    transition: transform 0.35s ease;
+  }
+}
+
+/* ---------- vistas y filtros ---------- */
 .view-tabs {
   display: flex;
-  gap: 8px;
-  padding: 14px 24px 0;
-  background: var(--bg);
+  gap: 4px;
+  padding: 0 24px;
+  height: var(--chrome-views-h);
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid var(--border);
   position: sticky;
-  top: 76px;
+  top: var(--chrome-header-h);
   z-index: 9;
 }
 
@@ -104,10 +246,12 @@ body.tablet-body {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  padding: 10px 6px 12px;
+  padding: 0 14px;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
   font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
   border-bottom: 3px solid transparent;
 }
@@ -119,32 +263,332 @@ body.tablet-body {
 
 .tabs {
   display: flex;
+  align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border-bottom: 1px solid var(--border);
   position: sticky;
-  top: 122px;
-  z-index: 9;
+  top: calc(var(--chrome-header-h) + var(--chrome-views-h));
+  z-index: 8;
   overflow-x: auto;
 }
 
+.tab-spacer {
+  flex: 1;
+  min-width: 12px;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  color: var(--text-muted);
+  padding: 0 16px;
+  min-height: 44px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.tab.active {
+  background: var(--brand-dark);
+  color: var(--on-brand);
+  border-color: var(--brand-dark);
+}
+
+.tab.status-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tab .i {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* ---------- listado ---------- */
+.list-container,
 #tables-view {
-  padding: 20px 24px 60px;
+  padding: 22px 24px 60px;
   max-width: 1100px;
   margin: 0 auto;
 }
 
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 72px 20px;
+}
+
+.empty-state .empty-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.empty-state .empty-icon svg {
+  width: 44px;
+  height: 44px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.5;
+}
+
+.day-heading {
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-dark);
+  margin: 30px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.day-heading:first-child {
+  margin-top: 0;
+}
+
+/* Cada reserva es una ficha con una franja de estado a la izquierda: el
+   estado se ve antes de leer nada, y no depende solo del color (regla de
+   accesibilidad: el color no puede ser el único portador de información,
+   por eso la franja va acompañada siempre de la etiqueta con texto). */
+.res-card {
+  position: relative;
+  display: flex;
+  /* Alineado arriba, no centrado: la hora y los botones tienen que caer
+     siempre a la misma altura aunque una ficha crezca con notas o pedido,
+     para que la vista los recorra en línea recta. */
+  align-items: flex-start;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--completed);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+  margin-bottom: 10px;
+}
+
+.res-card.status-pending { border-left-color: var(--pending); }
+.res-card.status-confirmed { border-left-color: var(--confirmed); }
+.res-card.status-seated { border-left-color: var(--seated); }
+.res-card.status-completed { border-left-color: var(--completed); }
+.res-card.status-cancelled { border-left-color: var(--cancelled); }
+
+.res-card.status-completed,
+.res-card.status-cancelled {
+  opacity: 0.72;
+}
+
+.res-time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: stretch;
+  min-width: 84px;
+  padding-right: 16px;
+  border-right: 1px solid var(--border);
+}
+
+.res-time .t {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.res-time .party {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+.res-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.res-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.res-sub {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.res-sub span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.res-notes,
+.res-preorder,
+.res-attendance {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 0.83rem;
+  margin-top: 7px;
+  line-height: 1.45;
+}
+
+.res-notes {
+  color: var(--text-muted);
+}
+
+.res-preorder {
+  color: var(--brand-dark);
+  background: var(--surface-alt);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-weight: 600;
+}
+
+.res-attendance {
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-weight: 600;
+}
+
+.res-attendance-ok {
+  background: rgb(232, 240, 230);
+  background: color-mix(in srgb, var(--confirmed) 12%, #fff);
+  color: var(--confirmed);
+}
+
+.res-attendance-pending {
+  background: rgb(247, 240, 222);
+  background: color-mix(in srgb, var(--warning) 12%, #fff);
+  color: var(--warning);
+}
+
+/* Iconos en línea: reemplazan a los emojis, que cambian de forma y de color
+   en cada sistema y desentonan en una herramienta de trabajo. */
+.i {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.res-notes .i,
+.res-preorder .i,
+.res-attendance .i {
+  margin-top: 2px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid currentColor;
+}
+
+.badge-pending { background: rgb(247, 240, 222); background: color-mix(in srgb, var(--pending) 12%, #fff); color: var(--pending); }
+.badge-confirmed { background: rgb(232, 240, 230); background: color-mix(in srgb, var(--confirmed) 12%, #fff); color: var(--confirmed); }
+.badge-seated { background: rgb(248, 238, 224); background: color-mix(in srgb, var(--seated) 12%, #fff); color: var(--seated); }
+.badge-completed { background: rgb(239, 241, 245); background: color-mix(in srgb, var(--completed) 12%, #fff); color: var(--completed); }
+.badge-cancelled { background: rgb(249, 232, 233); background: color-mix(in srgb, var(--cancelled) 12%, #fff); color: var(--cancelled); }
+
+.res-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.action-confirm { background: var(--confirmed); color: #fff; }
+.action-seat { background: var(--seated); color: #fff; }
+.action-complete { background: var(--completed); color: #fff; }
+.action-cancel { background: transparent; color: var(--cancelled); border-color: var(--cancelled); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .action-btn {
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  .action-btn:hover {
+    filter: brightness(1.08);
+  }
+  .action-btn:active {
+    transform: translateY(1px);
+  }
+}
+
+/* ---------- mesas ---------- */
 .tables-summary {
-  font-size: 1.15rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--brand-dark);
 }
 
 .tables-hint {
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   color: var(--text-muted);
-  margin: 6px 0 24px;
+  margin: 8px 0 26px;
   max-width: 640px;
 }
 
@@ -153,9 +597,11 @@ body.tablet-body {
 }
 
 .table-group-title {
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  color: var(--text);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
   margin: 0 0 10px;
 }
 
@@ -169,237 +615,58 @@ body.tablet-body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 5px;
   border-radius: 12px;
   border: 1px solid var(--border);
+  background: var(--surface-solid);
   padding: 14px 10px;
   font: inherit;
   cursor: pointer;
-  min-height: 64px;
+  min-height: 72px;
 }
 
 .table-tile-num {
+  font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .table-tile-state {
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.66rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.06em;
 }
 
 .table-tile.available {
-  background: rgb(230, 234, 228);
-  background: color-mix(in srgb, var(--confirmed) 14%, var(--surface));
-  border-color: rgba(74, 103, 65, 0.35);
+  background: rgb(232, 240, 230);
+  background: color-mix(in srgb, var(--confirmed) 10%, #fff);
+  border-color: rgba(63, 107, 52, 0.35);
   border-color: color-mix(in srgb, var(--confirmed) 35%, transparent);
   color: var(--confirmed);
 }
 
 .table-tile.unavailable {
-  background: rgb(241, 228, 228);
-  background: color-mix(in srgb, var(--cancelled) 14%, var(--surface));
-  border-color: rgba(156, 59, 59, 0.35);
+  background: rgb(249, 232, 233);
+  background: color-mix(in srgb, var(--cancelled) 10%, #fff);
+  border-color: rgba(163, 50, 63, 0.35);
   border-color: color-mix(in srgb, var(--cancelled) 35%, transparent);
   color: var(--cancelled);
 }
 
-.tab-spacer {
-  flex: 1;
-}
-
-.tab {
-  border: 1px solid var(--border);
-  background: var(--surface-alt);
-  color: var(--text-muted);
-  padding: 10px 18px;
-  border-radius: 999px;
-  font-size: 0.92rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.tab.active {
-  background: var(--brand);
-  color: var(--on-brand);
-  border-color: var(--brand);
-}
-
-.tab.status-tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.list-container {
-  padding: 20px 24px 60px;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.empty-state {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 60px 20px;
-}
-
-.empty-state .empty-icon {
-  font-size: 3rem;
-  margin-bottom: 10px;
-}
-
-.day-heading {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--brand-dark);
-  margin: 24px 0 12px;
-  text-transform: capitalize;
-}
-
-.day-heading:first-child {
-  margin-top: 0;
-}
-
-.res-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 16px 18px;
-  margin-bottom: 12px;
-}
-
-.res-time {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 78px;
-  padding-right: 16px;
-  border-right: 1px solid var(--border);
-}
-
-.res-time .t {
-  font-size: 1.25rem;
-  font-weight: 800;
-  line-height: 1.1;
-}
-
-.res-time .party {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-top: 4px;
-  white-space: nowrap;
-}
-
-.res-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.res-name {
-  font-size: 1.05rem;
-  font-weight: 700;
-}
-
-.res-sub {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-}
-
-.res-notes {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin-top: 6px;
-  font-style: italic;
-}
-
-.res-preorder {
-  font-size: 0.82rem;
-  color: var(--brand-dark);
-  background: var(--surface-alt);
-  border-radius: 8px;
-  padding: 6px 10px;
-  margin-top: 6px;
-  font-weight: 600;
-}
-
-.res-attendance {
-  font-size: 0.82rem;
-  border-radius: 8px;
-  padding: 6px 10px;
-  margin-top: 6px;
-  font-weight: 600;
-}
-
-.res-attendance-ok {
-  background: rgb(226, 231, 225);
-  background: color-mix(in srgb, var(--confirmed) 16%, var(--surface));
-  color: var(--confirmed);
-}
-
-.res-attendance-pending {
-  background: rgb(241, 234, 214);
-  background: color-mix(in srgb, var(--warning) 16%, var(--surface));
-  color: var(--warning);
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.badge-pending { background: rgb(239, 231, 209); background: color-mix(in srgb, var(--pending) 18%, var(--surface)); color: var(--pending); }
-.badge-confirmed { background: rgb(222, 228, 221); background: color-mix(in srgb, var(--confirmed) 18%, var(--surface)); color: var(--confirmed); }
-.badge-seated { background: rgb(231, 215, 218); background: color-mix(in srgb, var(--seated) 18%, var(--surface)); color: var(--seated); }
-.badge-completed { background: rgb(229, 227, 224); background: color-mix(in srgb, var(--completed) 18%, var(--surface)); color: var(--completed); }
-.badge-cancelled { background: rgb(237, 220, 220); background: color-mix(in srgb, var(--cancelled) 18%, var(--surface)); color: var(--cancelled); }
-
-.res-actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.action-btn {
-  border: none;
-  border-radius: 10px;
-  padding: 12px 16px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  min-width: 48px;
-  min-height: 48px;
-}
-
-.action-confirm { background: var(--confirmed); color: #fff; }
-.action-seat { background: var(--seated); color: #fff; }
-.action-complete { background: var(--completed); color: #fff; }
-.action-cancel { background: transparent; color: var(--cancelled); border: 1px solid var(--cancelled) !important; }
-
+/* ---------- aviso flotante ---------- */
 .toast {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: var(--brand-dark);
-  color: var(--on-brand);
+  background: var(--text);
+  color: #fff;
   padding: 14px 22px;
   border-radius: 999px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 12px 34px rgba(18, 28, 54, 0.28);
   font-weight: 600;
   font-size: 0.9rem;
   opacity: 0;
@@ -413,19 +680,128 @@ body.tablet-body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ---------- pantallas estrechas ---------- */
+@media (max-width: 860px) {
+  body.tablet-body {
+    --chrome-header-h: 64px;
+  }
+  .tablet-header,
+  .view-tabs,
+  .tabs,
+  .list-container,
+  #tables-view {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .stat {
+    min-width: 62px;
+    padding: 5px 8px;
+  }
+  .stat-value {
+    font-size: 1.05rem;
+  }
+  /* El selector de idioma se aprieta, pero no se esconde: el personal
+     trabaja en tres idiomas y la tablet no siempre es la grande. */
+  .tablet-header .lang-switcher button {
+    padding: 6px 7px;
+    font-size: 0.7rem;
+  }
+}
+
 @media (max-width: 700px) {
+  /* La ficha deja de ser una fila de tres columnas y pasa a apilarse:
+     hora arriba, datos en medio, acciones abajo a la derecha. */
   .res-card {
     flex-wrap: wrap;
+    gap: 10px;
   }
   .res-time {
-    border-right: none;
-    padding-right: 0;
+    width: 100%;
+    align-self: auto;
     flex-direction: row;
-    gap: 8px;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 12px;
     min-width: 0;
+    padding: 0 0 10px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .res-time .party {
+    margin-top: 0;
+  }
+  .res-info {
+    min-width: 100%;
   }
   .res-actions {
     width: 100%;
     justify-content: flex-end;
+  }
+}
+
+/* En teléfono nada de esto cabe en una línea. El encabezado pasa a dos filas
+   (marca arriba, cifras e idioma abajo) y las franjas de filtros dejan de ser
+   pegajosas: tres barras fijas se comerían un quinto de la pantalla, y de paso
+   desaparece el encadenado de alturas, que es la parte frágil del montaje. */
+@media (max-width: 560px) {
+  .tablet-header {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 16px;
+  }
+  .tablet-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .view-tabs,
+  .tabs {
+    position: static;
+    height: auto;
+  }
+  .view-tabs {
+    padding-top: 2px;
+  }
+  .view-tab {
+    padding: 12px 12px 10px;
+  }
+  .tablet-header h1 {
+    display: none;
+  }
+  .tablet-header .brand-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .tablet-header-left {
+    gap: 10px;
+  }
+  .tablet-header-right {
+    gap: 6px;
+  }
+  .clock {
+    font-size: 0.68rem;
+    margin-top: 0;
+  }
+  .clock-date {
+    display: none;
+  }
+  .stat {
+    min-width: 0;
+    padding: 4px 8px;
+  }
+  .stat-value {
+    font-size: 0.95rem;
+  }
+  .stat-label {
+    font-size: 0.54rem;
+    letter-spacing: 0.04em;
+  }
+  .btn-refresh {
+    width: 40px;
+    height: 40px;
+  }
+  .btn-refresh svg {
+    width: 17px;
+    height: 17px;
   }
 }

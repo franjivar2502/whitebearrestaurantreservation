@@ -7,26 +7,23 @@
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/tablet.css" />
 </head>
 <body class="tablet-body">
 
+<canvas id="bg-3d" class="bg-3d" data-variant="day" aria-hidden="true"></canvas>
+
 <header class="tablet-header">
   <div class="tablet-header-left">
     <div class="brand-icon"><img src="images/bear-logo.jpg" alt="White Bear Restaurant" class="brand-icon-img"></div>
-    <div>
-      <h1>White Bear Restaurant</h1>
+    <div class="tablet-brand-text">
+      <h1>White Bear</h1>
       <div id="clock" class="clock">--:--</div>
     </div>
   </div>
   <div class="tablet-header-right">
-    <div class="lang-switcher" id="lang-switcher">
-      <button type="button" data-lang="en">EN</button>
-      <button type="button" data-lang="es">ES</button>
-      <button type="button" data-lang="sr">SR</button>
-    </div>
     <div class="stat">
       <span class="stat-value" id="stat-total">0</span>
       <span class="stat-label" data-i18n="header.reservations">reservations</span>
@@ -35,7 +32,14 @@
       <span class="stat-value" id="stat-guests">0</span>
       <span class="stat-label" data-i18n="header.guests">guests</span>
     </div>
-    <button class="btn btn-refresh" id="refresh-btn" data-i18n-title="header.refresh" title="Refresh now">⟳</button>
+    <div class="lang-switcher" id="lang-switcher">
+      <button type="button" data-lang="en">EN</button>
+      <button type="button" data-lang="es">ES</button>
+      <button type="button" data-lang="sr">SR</button>
+    </div>
+    <button class="btn btn-refresh" id="refresh-btn" data-i18n-title="header.refresh" title="Refresh now">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
+    </button>
   </div>
 </header>
 
@@ -53,12 +57,17 @@
     <button class="tab status-tab" data-status="pending" data-i18n="tabs.pending">Pending</button>
     <button class="tab status-tab" data-status="confirmed" data-i18n="tabs.confirmed">Confirmed</button>
     <button class="tab status-tab active" data-status="active" data-i18n="tabs.active">Unfinished</button>
-    <button class="tab status-tab" data-status="needs-call" data-i18n="tabs.needsCall">⏳ Needs confirmation</button>
+    <button class="tab status-tab" data-status="needs-call">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7.5V12l3 2"/></svg>
+      <span data-i18n="tabs.needsCall">Needs confirmation</span>
+    </button>
   </nav>
 
   <main id="list-container" class="list-container">
     <div class="empty-state" id="empty-state">
-      <div class="empty-icon">🍽️</div>
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 11h16a8 8 0 0 1-16 0M12 4v3M5.5 20h13"/></svg>
+      </div>
       <p data-i18n="emptyState">No reservations to show.</p>
     </div>
     <div id="reservation-list"></div>
@@ -73,6 +82,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="js/bg-3d.js" defer></script>
 <script src="js/tablet-i18n.js"></script>
 <script src="js/tablet.js"></script>
 </body>

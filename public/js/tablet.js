@@ -16,6 +16,23 @@
   const dateTabs = document.querySelectorAll(".tab[data-filter]");
   const statusTabs = document.querySelectorAll(".tab[data-status]");
 
+  /* Iconos de línea en vez de emojis. Los emojis se dibujan distinto en cada
+     sistema (y en color), así que en una herramienta de trabajo quedan
+     desiguales; estos heredan el color del texto y pesan unos bytes. */
+  const ICON_PATHS = {
+    people: "M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M20 19v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.4 4.6a3.5 3.5 0 0 1 0 6.8",
+    phone: "M15.5 20A11.5 11.5 0 0 1 4 8.5V6.6A1.6 1.6 0 0 1 5.6 5h2.1c.5 0 .9.3 1 .8l.8 3c.1.4 0 .8-.4 1l-1.4 1a9.6 9.6 0 0 0 4.5 4.5l1-1.4c.2-.4.6-.5 1-.4l3 .8c.5.1.8.5.8 1v2.1A1.6 1.6 0 0 1 17.4 20z",
+    mail: "M4 7h16v11H4zM4 7l8 6 8-6",
+    hash: "M6 9h13M5 15h13M11 4 9 20M16 4l-2 16",
+    note: "M6 4h8l4 4v12H6zM14 4v4h4M9 13h6M9 16.5h4",
+    dish: "M4 11h16a8 8 0 0 1-16 0M12 4v3M5.5 20h13",
+    clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7.5V12l3 2",
+  };
+
+  function icon(name) {
+    return `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${ICON_PATHS[name]}"/></svg>`;
+  }
+
   let dateFilter = "today"; // today | upcoming | all
   let statusFilter = "active"; // active | pending | confirmed
   let reservations = [];
@@ -46,12 +63,22 @@
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
 
+  /* Fecha y hora van en elementos separados para que en pantallas estrechas
+     el CSS pueda esconder la fecha y dejar la hora, que es lo que se mira. */
   function updateClock() {
     const now = new Date();
-    clockEl.textContent =
-      now.toLocaleDateString(tabletI18n.locale(), { weekday: "long", day: "numeric", month: "long" }) +
-      " · " +
-      now.toLocaleTimeString(tabletI18n.locale(), { hour: "2-digit", minute: "2-digit" });
+    const date = now.toLocaleDateString(tabletI18n.locale(), {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+    const time = now.toLocaleTimeString(tabletI18n.locale(), {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    clockEl.innerHTML =
+      `<span class="clock-date">${escapeHtml(date)} · </span>` +
+      `<span class="clock-time">${escapeHtml(time)}</span>`;
   }
 
   function formatDayHeading(iso) {
@@ -245,10 +272,10 @@
 
   function renderAttendanceLine(r) {
     if (r.attendanceConfirmed === true) {
-      return `<div class="res-attendance res-attendance-ok">${escapeHtml(tabletI18n.t("attendance.confirmed"))}</div>`;
+      return `<div class="res-attendance res-attendance-ok">${icon("people")}<span>${escapeHtml(tabletI18n.t("attendance.confirmed"))}</span></div>`;
     }
     if (r.attendanceReminderSent && r.attendanceConfirmed === null && !["completed", "cancelled"].includes(r.status)) {
-      return `<div class="res-attendance res-attendance-pending">${escapeHtml(tabletI18n.t("attendance.waiting"))}</div>`;
+      return `<div class="res-attendance res-attendance-pending">${icon("clock")}<span>${escapeHtml(tabletI18n.t("attendance.waiting"))}</span></div>`;
     }
     return "";
   }
@@ -272,29 +299,29 @@
     }
 
     return `
-      <div class="res-card" data-id="${r.id}">
+      <div class="res-card status-${escapeHtml(r.status)}" data-id="${r.id}">
         <div class="res-time">
           <span class="t">${escapeHtml(tabletI18n.formatTime(r.time))}</span>
-          <span class="party">👥 ${escapeHtml(String(r.partySize))}</span>
+          <span class="party">${icon("people")}${escapeHtml(String(r.partySize))}</span>
         </div>
         <div class="res-info">
           <div class="res-name">${escapeHtml(r.name)}
             <span class="badge ${badgeClass}">${escapeHtml(badgeLabel)}</span>
           </div>
           <div class="res-sub">
-            <span>📞 ${escapeHtml(r.phone)}</span>
-            ${r.email ? `<span>✉️ ${escapeHtml(r.email)}</span>` : ""}
-            <span>#${escapeHtml(r.id)}</span>
+            <span>${icon("phone")}${escapeHtml(r.phone)}</span>
+            ${r.email ? `<span>${icon("mail")}${escapeHtml(r.email)}</span>` : ""}
+            <span>${icon("hash")}${escapeHtml(r.id)}</span>
           </div>
-          ${r.notes ? `<div class="res-notes">📝 ${escapeHtml(r.notes)}</div>` : ""}
+          ${r.notes ? `<div class="res-notes">${icon("note")}<span>${escapeHtml(r.notes)}</span></div>` : ""}
           ${
             r.preOrder && r.preOrder.length
-              ? `<div class="res-preorder">🍽️ ${r.preOrder
+              ? `<div class="res-preorder">${icon("dish")}<span>${r.preOrder
                   .map((i) => `${i.quantity}× ${escapeHtml(i.name)}`)
-                  .join(", ")}</div>`
+                  .join(", ")}</span></div>`
               : ""
           }
-          ${r.preOrderNotes ? `<div class="res-notes">🍽️ ${escapeHtml(r.preOrderNotes)}</div>` : ""}
+          ${r.preOrderNotes ? `<div class="res-notes">${icon("dish")}<span>${escapeHtml(r.preOrderNotes)}</span></div>` : ""}
           ${renderAttendanceLine(r)}
         </div>
         <div class="res-actions">${actions}</div>

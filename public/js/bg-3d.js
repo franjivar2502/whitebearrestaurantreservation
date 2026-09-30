@@ -3,9 +3,19 @@
  * Three.js ni ninguna librería -- son ~4KB en vez de ~600KB, y en el plan
  * gratis de Render cada KB cuenta en el arranque en frío).
  *
- * Dibuja una noche en Lake Placid: aurora boreal sobre la silueta de las
- * montañas, estrellas y nieve cayendo. Los colores salen de la marca real
- * del restaurante (borgoña y verde bosque) sobre azul noche.
+ * Dibuja Lake Placid en dos registros, según data-variant en el canvas:
+ *
+ *   (sin atributo)  noche  -- aurora boreal sobre la silueta de las montañas,
+ *                             estrellas y nieve. Es el fondo del sitio del
+ *                             cliente: la reserva se hace de tarde/noche.
+ *   data-variant="day"      -- amanecer de invierno, cielo claro y montañas
+ *                             en perspectiva aérea. Es el fondo del panel del
+ *                             personal, que se usa a plena luz y durante horas
+ *                             seguidas: sobre claro cansa mucho menos la vista
+ *                             y se lee mejor bajo el reflejo del comedor.
+ *
+ * Es la misma escena y la misma marca (borgoña y verde bosque, oro de acento),
+ * solo cambia la hora del día. El shader interpola entre ambas con u_day.
  *
  * Si el navegador no soporta WebGL, no hace nada: el degradado CSS que ya
  * tiene el body queda como fondo y el sitio se ve bien igual.
@@ -28,6 +38,7 @@
     precision mediump float;
     uniform vec2 u_res;
     uniform float u_time;
+    uniform float u_day; // 0.0 = noche, 1.0 = amanecer
 
     float hash(vec2 p) {
       return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -65,20 +76,24 @@
       vec2 uv = gl_FragCoord.xy / u_res.xy;
       float t = u_time;
 
-      // Cielo: azul noche profundo, más oscuro abajo
-      vec3 col = mix(vec3(0.016, 0.026, 0.063), vec3(0.035, 0.047, 0.11), uv.y);
+      // Cielo. De noche, azul profundo más oscuro abajo. De día, azul frío
+      // arriba que se abre a crema cálida sobre el horizonte.
+      vec3 skyLow  = mix(vec3(0.016, 0.026, 0.063), vec3(0.93, 0.90, 0.86), u_day);
+      vec3 skyHigh = mix(vec3(0.035, 0.047, 0.110), vec3(0.52, 0.66, 0.84), u_day);
+      vec3 col = mix(skyLow, skyHigh, uv.y);
 
-      // Estrellas (solo en la mitad superior, se desvanecen hacia abajo)
+      // Estrellas (solo de noche; de día se apagan del todo)
       vec2 sp = gl_FragCoord.xy / max(u_res.y, 1.0);
       vec2 cell = floor(sp * 140.0);
       float star = hash(cell);
       if (star > 0.985) {
         float twinkle = 0.55 + 0.45 * sin(t * 1.6 + star * 90.0);
         float fade = smoothstep(0.18, 0.85, uv.y);
-        col += vec3(0.85, 0.9, 1.0) * twinkle * fade * 0.5;
+        col += vec3(0.85, 0.9, 1.0) * twinkle * fade * 0.5 * (1.0 - u_day);
       }
 
-      // Aurora: bandas de ruido que fluyen, en verde bosque y borgoña
+      // Las mismas bandas de ruido sirven para las dos escenas: de noche son
+      // la aurora (verde bosque y borgoña), de día cirros altos.
       float aur = 0.0;
       for (int i = 0; i < 3; i++) {
         float fi = float(i);
@@ -89,20 +104,28 @@
         aur += shape * (0.5 - fi * 0.12);
       }
       float auroraFade = smoothstep(0.32, 0.95, uv.y);
-      vec3 auroraCol = mix(vec3(0.29, 0.40, 0.25), vec3(0.48, 0.14, 0.19), 0.35 + 0.35 * sin(uv.x * 2.2 + t * 0.18));
-      col += auroraCol * aur * auroraFade * 1.15;
+      vec3 auroraNight = mix(vec3(0.29, 0.40, 0.25), vec3(0.48, 0.14, 0.19), 0.35 + 0.35 * sin(uv.x * 2.2 + t * 0.18));
+      vec3 bandCol = mix(auroraNight, vec3(1.0, 0.99, 0.96), u_day);
+      col += bandCol * aur * auroraFade * mix(1.15, 0.30, u_day);
 
-      // Resplandor cálido en el horizonte (las luces del restaurante)
+      // Resplandor cálido en el horizonte: de noche las luces del restaurante,
+      // de día el sol bajo de la mañana.
       float glow = smoothstep(0.42, 0.0, abs(uv.y - 0.20)) * smoothstep(1.0, 0.25, abs(uv.x - 0.5) * 1.7);
-      col += vec3(0.88, 0.64, 0.20) * glow * 0.14;
+      col += vec3(0.88, 0.64, 0.20) * glow * mix(0.14, 0.11, u_day);
 
-      // Montañas: dos capas para dar profundidad
+      // Montañas: dos capas para dar profundidad. De día se aclaran con la
+      // distancia (perspectiva aérea) en vez de recortarse en negro.
+      vec3 farCol  = mix(vec3(0.045, 0.055, 0.100), vec3(0.63, 0.70, 0.81), u_day);
+      vec3 nearCol = mix(vec3(0.020, 0.026, 0.050), vec3(0.47, 0.56, 0.69), u_day);
       float far = ridge(uv.x + 3.1, 11.0, 0.20);
       float near = ridge(uv.x * 0.8, 47.0, 0.11);
-      if (uv.y < far) col = mix(col, vec3(0.045, 0.055, 0.10), 0.88);
-      if (uv.y < near) col = mix(col, vec3(0.020, 0.026, 0.050), 0.94);
+      if (uv.y < far) col = mix(col, farCol, 0.88);
+      if (uv.y < near) col = mix(col, nearCol, 0.94);
 
-      // Nieve cayendo (tres capas a distinta velocidad = profundidad)
+      // Nieve cayendo (tres capas a distinta velocidad = profundidad).
+      // De noche los copos aclaran; de día, a contraluz sobre el cielo
+      // brillante, se leen como motas algo más oscuras que el fondo.
+      vec3 flakeCol = mix(vec3(0.92, 0.95, 1.00), vec3(-0.13, -0.11, -0.07), u_day);
       for (int i = 0; i < 3; i++) {
         float fi = float(i);
         float scale = 26.0 + fi * 18.0;
@@ -115,15 +138,16 @@
           vec2 centre = vec2(0.5 + 0.28 * sin(t * 0.7 + rnd * 40.0), 0.5);
           float d = length(gf - centre);
           float flake = smoothstep(0.13 - fi * 0.02, 0.0, d);
-          col += vec3(0.92, 0.95, 1.0) * flake * (0.42 - fi * 0.1);
+          col += flakeCol * flake * (0.42 - fi * 0.1);
         }
       }
 
-      // Viñeta suave para que el contenido de arriba respire
+      // Viñeta. De día apenas se insinúa: oscurecer los bordes de una
+      // pantalla clara la ensuciaría.
       float vig = smoothstep(1.25, 0.25, length(uv - vec2(0.5, 0.55)));
-      col *= 0.62 + 0.38 * vig;
+      col *= mix(0.62 + 0.38 * vig, 0.90 + 0.10 * vig, u_day);
 
-      gl_FragColor = vec4(col, 1.0);
+      gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
     }
   `;
 
@@ -158,6 +182,9 @@
 
   const uRes = gl.getUniformLocation(program, "u_res");
   const uTime = gl.getUniformLocation(program, "u_time");
+  const uDay = gl.getUniformLocation(program, "u_day");
+
+  const dayMode = canvas.dataset.variant === "day" ? 1 : 0;
 
   function resize() {
     // Se renderiza a media resolución: el shader es suave, nadie nota la
@@ -176,6 +203,7 @@
     resize();
     gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform1f(uTime, timeMs * 0.001);
+    gl.uniform1f(uDay, dayMode);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
