@@ -472,6 +472,52 @@
     }
   });
 
+  /* Aparición escalonada al hacer scroll.
+     Se marca desde JS (no desde el HTML) a propósito: si el script falla o
+     el navegador no tiene IntersectionObserver, los campos nunca se ocultan. */
+  function setupScrollReveal() {
+    if (!("IntersectionObserver" in window)) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    // El bloque de menú de grupo se deja fuera a propósito: aparece y
+    // desaparece según el número de personas y no debe depender del observer.
+    const targets = Array.from(
+      document.querySelectorAll(
+        "#reservation-form > .section-title," +
+          "#reservation-form > .form-grid > .field," +
+          "#reservation-form > #submit-btn"
+      )
+    );
+    if (!targets.length) return;
+
+    targets.forEach((el) => el.classList.add("reveal"));
+
+    // Los que ya entran juntos en pantalla se encadenan con un retardo
+    // pequeño, para que se lean uno detrás de otro y no todos de golpe.
+    let queued = 0;
+    let lastShown = 0;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const now = performance.now();
+          if (now - lastShown > 400) queued = 0;
+          const delay = queued * 110;
+          queued += 1;
+          lastShown = now;
+          setTimeout(() => entry.target.classList.add("is-visible"), delay);
+          observer.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.15 }
+    );
+
+    targets.forEach((el) => observer.observe(el));
+  }
+
+  setupScrollReveal();
+
   newReservationBtn.addEventListener("click", () => {
     form.reset();
     dateInput.value = `${yyyy}-${mm}-${dd}`;

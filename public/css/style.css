@@ -1,73 +1,41 @@
+/*
+ * Tema "Adirondack Night": interfaz espacial de paneles de vidrio flotando
+ * sobre un cielo 3D en WebGL (ver js/bg-3d.js). La paleta sale de la marca
+ * real del restaurante -- borgoña y verde bosque -- llevada a un registro
+ * nocturno, con oro como color de acento y acción.
+ */
 :root {
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --surface-alt: #f4f4f4;
-  --border: #e4e4e4;
-  --text: #1a1a1a;
-  --text-muted: #71717a;
-  --brand: #7a2331;
-  --brand-dark: #571726;
-  --brand-light: #b5717e;
-  --on-brand: #ffffff;
-  --accent: #4a6741;
-  --danger: #9c3b3b;
-  --warning: #a67c00;
-  --pending: #a67c00;
-  --confirmed: #4a6741;
-  --seated: #7a2331;
-  --completed: #6f6151;
-  --cancelled: #9c3b3b;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --radius: 14px;
-  --font-display: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --bg: #060a16;
+  --surface: rgba(18, 24, 44, 0.62);
+  --surface-solid: #121a2c;
+  --surface-alt: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.26);
+  --text: #f2f5ff;
+  --text-muted: #a8b2cc;
+  --brand: #d9a441;
+  --brand-dark: #a87b26;
+  --brand-light: #f0c877;
+  --on-brand: #12131a;
+  --accent: #6f9e63;
+  --burgundy: #b8536a;
+  --danger: #e0788a;
+  --warning: #dca94a;
+  --pending: #dca94a;
+  --confirmed: #6f9e63;
+  --seated: #d9a441;
+  --completed: #8d97b3;
+  --cancelled: #e0788a;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --glass-blur: 22px;
+  --radius: 18px;
+  --font-display: "Syncopate", "Inter", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-body: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #121212;
-    --surface: #1a1a1a;
-    --surface-alt: #232323;
-    --border: #333333;
-    --text: #f2f2f2;
-    --text-muted: #a3a3a3;
-    --brand: #c9808f;
-    --brand-dark: #e0a8b3;
-    --brand-light: #7a2331;
-    --on-brand: #2b141a;
-    --accent: #8fb37e;
-    --danger: #d98a8a;
-    --warning: #d9a940;
-    --pending: #d9a940;
-    --confirmed: #8fb37e;
-    --seated: #c9808f;
-    --completed: #a99b85;
-    --cancelled: #d98a8a;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  }
-}
-
-:root[data-theme="dark"] {
-  --bg: #121212;
-  --surface: #1a1a1a;
-  --surface-alt: #232323;
-  --border: #333333;
-  --text: #f2f2f2;
-  --text-muted: #a3a3a3;
-  --brand: #c9808f;
-  --brand-dark: #e0a8b3;
-  --brand-light: #7a2331;
-  --on-brand: #2b141a;
-  --accent: #8fb37e;
-  --danger: #d98a8a;
-  --warning: #d9a940;
-  --pending: #d9a940;
-  --confirmed: #8fb37e;
-  --seated: #c9808f;
-  --completed: #a99b85;
-  --cancelled: #d98a8a;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-}
+/* Este tema es nocturno por diseño (el fondo es un cielo 3D), así que no
+   cambia con la preferencia de color del sistema: se ve igual en ambos. */
 
 * {
   box-sizing: border-box;
@@ -79,6 +47,34 @@ body {
   color: var(--text);
   font-family: var(--font-body);
   padding-block: 0;
+}
+
+/* Lienzo del cielo 3D: detrás de todo, fijo, y nunca intercepta clics. */
+.bg-3d {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  display: block;
+  pointer-events: none;
+}
+
+/* Velo sobre el fondo 3D. Como el formulario ya no vive dentro de un panel,
+   el texto cae directo sobre la aurora: esto oscurece la columna central
+   lo justo para que se lea, y deja los bordes despejados. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 62% 72% at 50% 45%,
+    rgba(4, 7, 16, 0.68) 0%,
+    rgba(4, 7, 16, 0.38) 58%,
+    rgba(4, 7, 16, 0.08) 100%
+  );
 }
 
 a {
@@ -97,9 +93,36 @@ textarea:focus-visible,
 
 header.hero h1,
 .welcome-splash-title,
-.section-title,
 .confirmation h2 {
   font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Los títulos de sección se leen como etiquetas técnicas: Syncopate es
+   muy ancha, así que va en tamaño chico, mayúsculas y con tracking. */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--brand);
+}
+
+/* Datos (horarios, calificación, códigos, badges) en monoespaciada:
+   se leen como una lectura de instrumento, no como prosa. */
+.hero-hours,
+.rating-value,
+.review-stars,
+.ai-badge,
+.confirmation .details dd {
+  font-family: var(--font-mono);
+}
+
+label,
+.hint {
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
 }
 
 .container {
@@ -148,6 +171,29 @@ header.hero h1,
   .container > .card,
   .container > form {
     animation: none;
+  }
+}
+
+/* Aparición al hacer scroll. La clase .reveal la pone el JS, nunca el HTML:
+   si el JS no carga, todo queda visible como siempre. */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s cubic-bezier(0.22, 0.61, 0.36, 1),
+              transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 
@@ -225,10 +271,15 @@ header.hero h1,
 
 /* ---------- header ---------- */
 header.hero {
-  background: var(--surface);
+  background: rgba(10, 14, 28, 0.55);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
   color: var(--text);
-  padding: 18px 20px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
 header.hero .hero-inner {
@@ -265,10 +316,18 @@ header.hero .hero-inner {
 
 header.hero h1 {
   margin: 0;
-  font-size: 1.2rem;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
   font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 560px) {
+  header.hero h1 {
+    font-size: 1rem;
+  }
 }
 
 .lang-switcher {
@@ -372,14 +431,30 @@ header.hero h1 {
 }
 
 /* ---------- cards / sections ---------- */
+/* Panel de vidrio: la unidad base de la interfaz. Flota sobre el cielo 3D
+   con desenfoque de fondo, un borde de luz arriba y sombra de profundidad. */
 .card {
   background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.09);
   padding: 22px;
-  margin-top: -20px;
+  margin-top: 14px;
   position: relative;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .section-title {
@@ -566,10 +641,67 @@ header.hero h1 {
 form {
   margin-top: 24px;
   background: var(--surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.09);
   padding: 24px;
+}
+
+/* El formulario de reserva no vive dentro de un panel: los campos flotan
+   directamente sobre el fondo 3D y van apareciendo uno a uno al bajar. */
+#reservation-form {
+  margin-top: 32px;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* Una sola columna: así cada campo entra en escena por separado
+   mientras se hace scroll, en vez de aparecer de dos en dos. */
+#reservation-form .form-grid {
+  grid-template-columns: 1fr;
+  gap: 34px;
+}
+
+#reservation-form .field {
+  margin-bottom: 0;
+  gap: 10px;
+}
+
+#reservation-form label {
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand-light);
+}
+
+#reservation-form input,
+#reservation-form select,
+#reservation-form textarea {
+  /* Sin panel detrás, el campo necesita su propio fondo para que el
+     texto se lea sobre las estrellas y la aurora. */
+  background: rgba(6, 10, 22, 0.78);
+  padding: 15px 16px;
+  font-size: 1.02rem;
+}
+
+#reservation-form .hint {
+  color: var(--text-muted);
+}
+
+#reservation-form .section-title {
+  font-size: 1.05rem;
+  letter-spacing: 0.14em;
+  margin-bottom: 26px;
+}
+
+#reservation-form #submit-btn {
+  margin-top: 36px;
 }
 
 .form-grid {
@@ -595,14 +727,26 @@ label {
   color: var(--text-muted);
 }
 
+/* Los campos van hundidos en el panel (sombra interior) en vez de
+   elevados: contrastan con los botones, que sobresalen. */
 input, select, textarea {
   font: inherit;
-  padding: 11px 12px;
+  padding: 12px 13px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: rgba(4, 8, 18, 0.55);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45);
   color: var(--text);
   width: 100%;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input::placeholder, textarea::placeholder {
+  color: rgba(168, 178, 204, 0.6);
+}
+
+input:hover, select:hover, textarea:hover {
+  border-color: var(--border-strong);
 }
 
 input:focus, select:focus, textarea:focus {
@@ -690,14 +834,16 @@ textarea {
 }
 
 .btn-primary {
-  background: var(--brand);
+  background: linear-gradient(180deg, var(--brand-light), var(--brand));
   color: var(--on-brand);
   width: 100%;
-  box-shadow: 0 3px 0 var(--brand-dark), 0 4px 8px rgba(0, 0, 0, 0.12);
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 0 var(--brand-dark), 0 10px 24px rgba(217, 164, 65, 0.28);
 }
 
 .btn-primary:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.07);
+  box-shadow: 0 4px 0 var(--brand-dark), 0 12px 30px rgba(217, 164, 65, 0.4);
 }
 
 .btn-primary:active {
