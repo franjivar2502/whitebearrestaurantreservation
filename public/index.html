@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -31,34 +31,13 @@
   <div class="hero-inner">
     <div class="brand-row">
       <div class="brand-icon"><img src="images/bear-logo.jpg" alt="White Bear Restaurant" class="brand-icon-img"></div>
-      <div>
-        <h1>White Bear Restaurant</h1>
-        <div class="hero-meta">
-          <span class="rating" aria-label="4.2 out of 5 stars, 243 reviews">
-            <span class="rating-stars" aria-hidden="true">
-              <span class="rating-stars-bg">★★★★★</span>
-              <span class="rating-stars-fg" style="width:84%">★★★★★</span>
-            </span>
-            <span class="rating-value">4.2</span>
-            <span>(243 <span data-i18n="hero.reviews">reviews</span>)</span>
-          </span>
-          <span>·</span>
-          <span>$20-30 <span data-i18n="hero.perPerson">per person</span></span>
-          <span>·</span>
-          <span data-i18n="hero.category">Restaurant</span>
-        </div>
-      </div>
+      <h1>White Bear Restaurant</h1>
       <div class="lang-switcher" id="lang-switcher">
         <button type="button" data-lang="en">EN</button>
         <button type="button" data-lang="es">ES</button>
         <button type="button" data-lang="fr">FR</button>
       </div>
     </div>
-    <div class="hero-details">
-      <span>📍 2793 Wilmington Rd, Lake Placid, NY 12946</span>
-      <span>📞 (518) 302-5235</span>
-    </div>
-    <div class="hero-hours" id="hero-hours"></div>
   </div>
 </header>
 
@@ -228,6 +207,35 @@
     </div>
 
     <div class="info-grid" id="info-content" hidden></div>
+  </div>
+
+  <div class="card">
+    <div class="info-header" id="restaurant-info-header">
+      <p class="section-title" style="margin:0" data-i18n="restaurantInfo.title">Restaurant Info</p>
+      <button type="button" class="info-toggle-btn" id="restaurant-info-toggle-btn" aria-expanded="false" aria-controls="restaurant-info-content">See all ▾</button>
+    </div>
+
+    <div id="restaurant-info-content" hidden>
+      <div class="hero-meta">
+        <span class="rating" aria-label="4.2 out of 5 stars, 243 reviews">
+          <span class="rating-stars" aria-hidden="true">
+            <span class="rating-stars-bg">★★★★★</span>
+            <span class="rating-stars-fg" style="width:84%">★★★★★</span>
+          </span>
+          <span class="rating-value">4.2</span>
+          <span>(243 <span data-i18n="hero.reviews">reviews</span>)</span>
+        </span>
+        <span>·</span>
+        <span>$20-30 <span data-i18n="hero.perPerson">per person</span></span>
+        <span>·</span>
+        <span data-i18n="hero.category">Restaurant</span>
+      </div>
+      <div class="hero-details">
+        <span>📍 2793 Wilmington Rd, Lake Placid, NY 12946</span>
+        <span>📞 (518) 302-5235</span>
+      </div>
+      <div class="hero-hours" id="hero-hours"></div>
+    </div>
   </div>
 
 </div>

@@ -38,6 +38,9 @@
       menu: {
         title: "Our Menu",
       },
+      restaurantInfo: {
+        title: "Restaurant info",
+      },
       reviews: {
         title: "Reviews",
         subtitle: "Share your experience and add a photo -- we'd love to see it!",
@@ -198,6 +201,9 @@
       menu: {
         title: "Nuestro Menú",
       },
+      restaurantInfo: {
+        title: "Información del restaurante",
+      },
       reviews: {
         title: "Reseñas",
         subtitle: "Comparte tu experiencia y una foto -- ¡nos encantaría verla!",
@@ -357,6 +363,9 @@
       },
       menu: {
         title: "Notre menu",
+      },
+      restaurantInfo: {
+        title: "Infos du restaurant",
       },
       reviews: {
         title: "Avis",

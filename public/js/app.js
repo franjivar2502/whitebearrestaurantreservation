@@ -30,6 +30,9 @@
   const reviewsHeader = document.getElementById("reviews-header");
   const reviewsToggleBtn = document.getElementById("reviews-toggle-btn");
   const reviewsContent = document.getElementById("reviews-content");
+  const restaurantInfoHeader = document.getElementById("restaurant-info-header");
+  const restaurantInfoToggleBtn = document.getElementById("restaurant-info-toggle-btn");
+  const restaurantInfoContent = document.getElementById("restaurant-info-content");
   const reviewsList = document.getElementById("reviews-list");
   const reviewForm = document.getElementById("review-form");
   const reviewAlertBox = document.getElementById("review-alert");
@@ -110,6 +113,11 @@
   const renderGalleryToggleLabel = makeCollapsible(galleryHeader, galleryToggleBtn, photoGallery);
   const renderMenuGalleryToggleLabel = makeCollapsible(menuGalleryHeader, menuGalleryToggleBtn, menuGallery);
   const renderReviewsToggleLabel = makeCollapsible(reviewsHeader, reviewsToggleBtn, reviewsContent);
+  const renderRestaurantInfoToggleLabel = makeCollapsible(
+    restaurantInfoHeader,
+    restaurantInfoToggleBtn,
+    restaurantInfoContent
+  );
 
   function renderInfoSection() {
     const groups = i18n.getInfoGroups();
@@ -332,6 +340,7 @@
     renderGalleryToggleLabel();
     renderMenuGalleryToggleLabel();
     renderReviewsToggleLabel();
+    renderRestaurantInfoToggleLabel();
     renderReviewsList();
     renderHeroHours();
     updateTimeConstraints();
