@@ -80,6 +80,89 @@
   const photoImgTag = (p) =>
     `<img src="${p.url}" alt="${(p.caption || "").replace(/"/g, "&quot;")}" loading="lazy">`;
 
+  /* Carrusel de platos que acompaña al formulario en pantalla ancha.
+     Solo arranca si hay fotos de la sección "menu": sin contenido se queda
+     oculto y el formulario ocupa todo el ancho, en vez de dejar un hueco. */
+  const DISH_RAIL_INTERVAL = 3000;
+
+  function startDishRail(menuPhotos) {
+    const rail = document.getElementById("dish-rail");
+    const frame = document.getElementById("dish-rail-frame");
+    const toggle = document.getElementById("dish-rail-toggle");
+    if (!rail || !frame || !menuPhotos.length) return;
+
+    // Orden aleatorio (Fisher-Yates sobre una copia, para no alterar el
+    // orden que el staff definió para la galería).
+    const shuffled = menuPhotos.slice();
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    frame.innerHTML = shuffled
+      .map(
+        (p, i) =>
+          `<img src="${p.url}" alt="${(p.caption || "").replace(/"/g, "&quot;")}"` +
+          `${i === 0 ? ' class="is-current"' : ""}` +
+          `${i > 1 ? ' loading="lazy"' : ""}>`
+      )
+      .join("");
+    rail.hidden = false;
+
+    const slides = Array.from(frame.children);
+    if (slides.length < 2) return; // una sola foto: nada que rotar
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let index = 0;
+    let timer = null;
+    // Con movimiento reducido el carrusel arranca detenido: se ve la primera
+    // foto y quien quiera las demás puede darle al botón.
+    let paused = reduceMotion;
+    let onScreen = true;
+
+    function step() {
+      slides[index].classList.remove("is-current");
+      index = (index + 1) % slides.length;
+      slides[index].classList.add("is-current");
+    }
+
+    function sync() {
+      const shouldRun = !paused && onScreen && !document.hidden;
+      if (shouldRun && !timer) {
+        timer = setInterval(step, DISH_RAIL_INTERVAL);
+      } else if (!shouldRun && timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    function setPaused(next) {
+      paused = next;
+      toggle.setAttribute("aria-pressed", String(paused));
+      toggle.innerHTML = paused
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 4.5v15l13-7.5z"/></svg>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5v14M15 5v14"/></svg>';
+      toggle.setAttribute("title", i18n.t(paused ? "dishRail.play" : "dishRail.pause"));
+      toggle.setAttribute("aria-label", toggle.getAttribute("title"));
+      sync();
+    }
+
+    toggle.addEventListener("click", () => setPaused(!paused));
+    setPaused(paused);
+
+    // No gastar batería rotando fotos que nadie está viendo.
+    document.addEventListener("visibilitychange", sync);
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(
+        (entries) => {
+          onScreen = entries[0].isIntersecting;
+          sync();
+        },
+        { threshold: 0.1 }
+      ).observe(rail);
+    }
+  }
+
   fetch("/api/photos")
     .then((res) => res.json())
     .then((photos) => {
@@ -95,6 +178,7 @@
           menuGalleryCard.hidden = false;
           menuGallery.innerHTML = menuPhotos.map(photoImgTag).join("");
         }
+        startDishRail(menuPhotos);
       }
       hideWelcomeSplash();
     })

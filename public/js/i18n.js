@@ -56,6 +56,7 @@
         by: "by {name}",
       },
       establishment: "White Bear Restaurant · Lake Placid, NY · Since 2023",
+      dishRail: { label: "From our kitchen", pause: "Pause the photos", play: "Play the photos" },
       about: {
         title: "About us",
         description:
@@ -220,6 +221,7 @@
         by: "por {name}",
       },
       establishment: "White Bear Restaurant · Lake Placid, NY · Desde 2023",
+      dishRail: { label: "De nuestra cocina", pause: "Pausar las fotos", play: "Reanudar las fotos" },
       about: {
         title: "Sobre nosotros",
         description:
@@ -384,6 +386,7 @@
         by: "par {name}",
       },
       establishment: "White Bear Restaurant · Lake Placid, NY · Depuis 2023",
+      dishRail: { label: "De notre cuisine", pause: "Mettre les photos en pause", play: "Relancer les photos" },
       about: {
         title: "À propos",
         description:

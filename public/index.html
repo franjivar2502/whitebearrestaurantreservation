@@ -50,6 +50,8 @@
 
 <div class="container">
 
+  <div class="booking-layout">
+
   <form id="reservation-form" novalidate>
     <p class="section-title" data-i18n="form.title">Reserve your table</p>
 
@@ -121,6 +123,21 @@
 
     <button type="submit" class="btn btn-primary" id="submit-btn" data-i18n="form.submit">Book table</button>
   </form>
+
+  <!-- Carrusel de platos. Nace oculto y solo aparece si hay fotos de la
+       sección "menu": sin contenido, el formulario ocupa todo el ancho. -->
+  <aside class="dish-rail" id="dish-rail" hidden>
+    <div class="dish-rail-frame" id="dish-rail-frame"></div>
+    <div class="dish-rail-foot">
+      <p class="dish-rail-label" data-i18n="dishRail.label">From our kitchen</p>
+      <button type="button" class="dish-rail-toggle" id="dish-rail-toggle"
+              data-i18n-title="dishRail.pause" title="Pause the photos" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5v14M15 5v14"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  </div><!-- /.booking-layout -->
 
   <div class="confirmation card" id="confirmation">
     <div class="check">✓</div>
