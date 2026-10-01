@@ -18,6 +18,7 @@ import os
 import re
 import threading
 import time
+import unicodedata
 import uuid
 from datetime import datetime, date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -105,6 +106,13 @@ VALID_SEATING_PREFERENCES = {"", "inside", "outside"}
 # simple a propósito (sin servicio externo, sin dependencias) -- no
 # reemplaza el criterio del staff, pero filtra lo obviamente dañino antes de
 # que se publique solo.
+# Topes de longitud y de antelación. En un sitio abierto a internet, todo
+# campo libre necesita un techo: si no, cualquiera llena la base del cliente.
+MAX_NAME_LENGTH = 120
+MAX_NOTES_LENGTH = 1000
+MAX_REVIEW_LENGTH = 2000
+MAX_BOOKING_DAYS_AHEAD = 180
+
 NEGATIVE_REVIEW_KEYWORDS = {
     "terrible", "horrible", "pesimo", "pésimo", "asqueroso", "asquerosa",
     "asco", "sucio", "sucia", "grosero", "grosera", "maleducado",
@@ -119,10 +127,32 @@ NEGATIVE_REVIEW_KEYWORDS = {
 }
 
 
+def _normalize_review_text(text):
+    """Minúsculas y sin acentos, para que 'pésimo' y 'pesimo' den lo mismo."""
+    lowered = (text or "").lower()
+    descompuesto = unicodedata.normalize("NFD", lowered)
+    return "".join(c for c in descompuesto if unicodedata.category(c) != "Mn")
+
+
+# Las palabras se buscan como palabras completas, no como subcadenas.
+#
+# Buscar subcadenas parecía más estricto y en realidad rechazaba reseñas
+# buenas: "rat" cae dentro de "t-rat-o", así que "excelente trato" -- de las
+# frases más comunes en una reseña positiva en español -- quedaba bloqueada.
+# Lo mismo "robo" dentro de "robot", "rata" en "barata" o "asco" en "frasco".
+_NEGATIVE_REVIEW_PATTERN = re.compile(
+    r"\b(?:"
+    + "|".join(
+        re.escape(_normalize_review_text(kw))
+        for kw in sorted(NEGATIVE_REVIEW_KEYWORDS, key=len, reverse=True)
+    )
+    + r")\b"
+)
+
+
 def _review_text_allowed(text):
     """True si el texto no contiene ninguna palabra clave negativa."""
-    lowered = (text or "").lower()
-    return not any(kw in lowered for kw in NEGATIVE_REVIEW_KEYWORDS)
+    return _NEGATIVE_REVIEW_PATTERN.search(_normalize_review_text(text)) is None
 
 
 def _parse_multipart(body, boundary):
@@ -364,8 +394,12 @@ def _validate_reservation(payload):
     pre_order_notes = (payload.get("preOrderNotes") or "").strip()
     errors.extend(pre_order_errors)
 
-    if not name or len(name) < 2:
+    # Los topes de longitud no son cosmética: sin ellos cabe un nombre de
+    # 5000 caracteres que descuadra la ficha del panel y llena la base.
+    if not name or len(name) < 2 or len(name) > MAX_NAME_LENGTH:
         errors.append({"code": "NAME_REQUIRED"})
+    if len(notes) > MAX_NOTES_LENGTH or len(pre_order_notes) > MAX_NOTES_LENGTH:
+        errors.append({"code": "NOTES_TOO_LONG"})
     if not phone or len(re.sub(r"\D", "", phone)) < 7:
         errors.append({"code": "PHONE_INVALID"})
     if email and not EMAIL_RE.match(email):
@@ -379,6 +413,12 @@ def _validate_reservation(payload):
 
     if parsed_date and parsed_date < date.today():
         errors.append({"code": "DATE_PAST"})
+
+    # Tope por arriba: sin él se aceptaban reservas a 400 días vista. Ningún
+    # restaurante toma mesa para dentro de un año, y esas filas se quedan
+    # ensuciando el panel durante meses.
+    if parsed_date and parsed_date > date.today() + timedelta(days=MAX_BOOKING_DAYS_AHEAD):
+        errors.append({"code": "DATE_TOO_FAR"})
 
     try:
         parsed_time = datetime.strptime(res_time, "%H:%M").time()
@@ -604,9 +644,9 @@ class Handler(BaseHTTPRequestHandler):
             rating_raw = (fields.get("rating", {}).get("data") or b"").decode("utf-8", "ignore").strip()
 
             errors = []
-            if not name or len(name) < 2:
+            if not name or len(name) < 2 or len(name) > MAX_NAME_LENGTH:
                 errors.append({"code": "NAME_REQUIRED"})
-            if not text or len(text) < 5:
+            if not text or len(text) < 5 or len(text) > MAX_REVIEW_LENGTH:
                 errors.append({"code": "REVIEW_TEXT_REQUIRED"})
             rating = None
             if rating_raw:

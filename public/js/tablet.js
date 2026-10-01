@@ -100,6 +100,19 @@
     return d.innerHTML;
   }
 
+  /* Para texto dentro de un atributo hace falta otra cosa que escapeHtml.
+     Aquel pasa por textContent/innerHTML, que escapa < y & pero deja pasar
+     las comillas -- y la comilla es el carácter con el que uno se sale de
+     src="..." para colar un onerror. */
+  function escapeAttr(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function showToast(msg) {
     toastEl.textContent = msg;
     toastEl.classList.add("show");
@@ -211,8 +224,8 @@
               <button type="button"
                 class="floor-table ${t.unavailable ? "unavailable" : "available"} ${t.shape === "square" ? "is-square" : "is-rect"}"
                 style="left:${t.x}%;top:${t.y}%;width:${size.w}%;height:${size.h}%"
-                data-id="${t.id}"
-                aria-label="${escapeHtml(`${label} — ${tabletI18n.t("tables.seats", { n: t.seats })} — ${state}`)}">
+                data-id="${escapeAttr(t.id)}"
+                aria-label="${escapeAttr(`${label} — ${tabletI18n.t("tables.seats", { n: t.seats })} — ${state}`)}">
                 <span class="floor-table-num">${escapeHtml(String(t.number))}</span>
                 <span class="floor-table-seats">${escapeHtml(tabletI18n.t("tables.seats", { n: t.seats }))}</span>
               </button>`;
@@ -328,20 +341,20 @@
 
     let actions = "";
     if (r.status === "pending") {
-      actions += `<button class="action-btn action-confirm" data-id="${r.id}" data-status="confirmed">${escapeHtml(tabletI18n.t("actions.confirm"))}</button>`;
+      actions += `<button class="action-btn action-confirm" data-id="${escapeAttr(r.id)}" data-status="confirmed">${escapeHtml(tabletI18n.t("actions.confirm"))}</button>`;
     }
     if (r.status === "confirmed") {
-      actions += `<button class="action-btn action-seat" data-id="${r.id}" data-status="seated">${escapeHtml(tabletI18n.t("actions.seat"))}</button>`;
+      actions += `<button class="action-btn action-seat" data-id="${escapeAttr(r.id)}" data-status="seated">${escapeHtml(tabletI18n.t("actions.seat"))}</button>`;
     }
     if (r.status === "seated") {
-      actions += `<button class="action-btn action-complete" data-id="${r.id}" data-status="completed">${escapeHtml(tabletI18n.t("actions.complete"))}</button>`;
+      actions += `<button class="action-btn action-complete" data-id="${escapeAttr(r.id)}" data-status="completed">${escapeHtml(tabletI18n.t("actions.complete"))}</button>`;
     }
     if (!["completed", "cancelled"].includes(r.status)) {
-      actions += `<button class="action-btn action-cancel" data-id="${r.id}" data-status="cancelled">${escapeHtml(tabletI18n.t("actions.cancel"))}</button>`;
+      actions += `<button class="action-btn action-cancel" data-id="${escapeAttr(r.id)}" data-status="cancelled">${escapeHtml(tabletI18n.t("actions.cancel"))}</button>`;
     }
 
     return `
-      <div class="res-card status-${escapeHtml(r.status)}" data-id="${r.id}">
+      <div class="res-card status-${escapeHtml(r.status)}" data-id="${escapeAttr(r.id)}">
         <div class="res-time">
           <span class="t">${escapeHtml(tabletI18n.formatTime(r.time))}</span>
           <span class="party">${icon("people")}${escapeHtml(String(r.partySize))}</span>
