@@ -164,40 +164,88 @@ def _parse_multipart(body, boundary):
     return fields
 
 
-# Inventario real de mesas del restaurante (dato dado por el cliente):
-# 9 cuadradas de 4, 7 rectangulares de 4, 6 rectangulares de 6,
-# 1 rectangular de 12 y 1 rectangular de 10.
+# Plano del salón, trazado sobre el mapa que dibujó el cliente: el local son
+# dos salones separados por un pasillo. El izquierdo tiene la entrada, la
+# barra y el baño; el derecho es el comedor del fondo.
 #
-# El tercer valor es el número con el que cada mesa aparece en el panel del
-# staff, y tiene que ser el mismo con el que el personal la llama en el salón:
-# el cliente confirmó que las mesas se identifican por número y va a entregar
-# el mapa del salón para fijar cuál es cuál. Hasta que llegue ese mapa los
-# números siguen el orden del inventario, que es provisional -- cuando llegue,
-# se corrigen solo aquí. Los ids no dependen del número, así que reordenarlos
-# no invalida las mesas ya marcadas como no disponibles en table_status.json.
+# Cada fila es (id, forma, asientos, número, salón, x, y). x e y son el centro
+# de la mesa en % del ancho y del alto del salón -- es un esquema para que el
+# staff ubique la mesa de un vistazo, no un plano a escala. El id no depende
+# de la posición ni del número, así que mover o renumerar una mesa aquí no
+# invalida las que el staff dejó marcadas como no disponibles.
+#
+# Inventario: 11 cuadradas de 4, 7 rectangulares de 4, 6 rectangulares de 6,
+# 1 de 12 y 1 de 10 = 26 mesas, 130 asientos. El desglose que dio el cliente
+# al principio sumaba 122 con 9 cuadradas, pero de palabra siempre dijo 130;
+# al revisar el mapa del salón aparecieron dos cuadradas más en el grupo de
+# la entrada (el 2x2 junto a la ventana), que son justo los 8 asientos que
+# faltaban. 130 es ahora el tope que el sitio de clientes puede vender.
+#
+# PENDIENTE DE CONFIRMAR CON EL CLIENTE -- hasta entonces esto es una lectura
+# del mapa, no un dato verificado:
+#   1. El mapa no trae números. Los asigné en orden de lectura: primero el
+#      salón de la entrada, de arriba hacia abajo, y después el del fondo.
+#   2. El mapa marca las rectangulares con "R" sin decir cuáles son de 4 y
+#      cuáles de 6. Puse las 5 de la pared derecha del salón de la entrada
+#      como las de 6 (más una del fondo), y el resto de 4.
+#   3. Cuál de las dos grandes es la de 12 y cuál la de 10: puse la de 12 en
+#      la del fondo (la más larga) y la de 10 en la del centro.
 TABLE_LAYOUT = [
-    # (forma, asientos, números visibles en el salón)
-    ("square", 4, [1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    ("rect", 4, [10, 11, 12, 13, 14, 15, 16]),
-    ("rect", 6, [17, 18, 19, 20, 21, 22]),
-    ("rect", 12, [23]),
-    ("rect", 10, [24]),
+    # --- Salón de la entrada (barra, entrada, baño) ---
+    ("square4-1", "square", 4, 1, "left", 8, 7),
+    ("square4-2", "square", 4, 2, "left", 26, 9),
+    ("square4-3", "square", 4, 3, "left", 69, 7),
+    ("square4-10", "square", 4, 4, "left", 9, 18),
+    ("square4-11", "square", 4, 5, "left", 27, 20),
+    ("rect6-1", "rect", 6, 6, "left", 78, 24),
+    ("rect6-2", "rect", 6, 7, "left", 78, 35),
+    ("rect6-3", "rect", 6, 8, "left", 78, 46),
+    ("rect6-4", "rect", 6, 9, "left", 78, 68),
+    ("rect6-5", "rect", 6, 10, "left", 78, 83),
+    # --- Salón del fondo ---
+    ("square4-4", "square", 4, 11, "right", 14, 7),
+    ("square4-5", "square", 4, 12, "right", 49, 7),
+    ("square4-6", "square", 4, 13, "right", 79, 7),
+    ("rect4-1", "rect", 4, 14, "right", 14, 21),
+    ("square4-7", "square", 4, 15, "right", 50, 21),
+    ("rect6-6", "rect", 6, 16, "right", 84, 21),
+    ("rect4-2", "rect", 4, 17, "right", 14, 33),
+    ("square4-8", "square", 4, 18, "right", 50, 33),
+    ("rect4-3", "rect", 4, 19, "right", 84, 33),
+    ("rect10-1", "rect", 10, 20, "right", 48, 48),
+    ("rect4-4", "rect", 4, 21, "right", 16, 63),
+    ("square4-9", "square", 4, 22, "right", 52, 69),
+    ("rect4-5", "rect", 4, 23, "right", 82, 68),
+    ("rect4-6", "rect", 4, 24, "right", 24, 78),
+    ("rect4-7", "rect", 4, 25, "right", 81, 81),
+    ("rect12-1", "rect", 12, 26, "right", 47, 91),
 ]
+
+# Orden en que se dibujan los salones en el panel, de izquierda a derecha.
+ROOM_ORDER = ["left", "right"]
 
 
 def _build_tables():
-    tables = []
-    for shape, seats, numbers in TABLE_LAYOUT:
-        for i, number in enumerate(numbers, start=1):
-            tables.append(
-                {"id": f"{shape}{seats}-{i}", "shape": shape, "seats": seats, "number": number}
-            )
+    tables = [
+        {
+            "id": table_id,
+            "shape": shape,
+            "seats": seats,
+            "number": number,
+            "room": room,
+            "x": x,
+            "y": y,
+        }
+        for table_id, shape, seats, number, room, x, y in TABLE_LAYOUT
+    ]
 
     # El rótulo que ve el staff es este número: si se repite, dos mesas
     # distintas se ven iguales y alguien saca de servicio la que no era.
-    labels = [t["number"] for t in tables]
-    if len(set(labels)) != len(labels):
-        raise ValueError("TABLE_LAYOUT tiene números de mesa repetidos.")
+    # Lo mismo con el id, que es con lo que se guarda el estado.
+    for field in ("number", "id"):
+        values = [t[field] for t in tables]
+        if len(set(values)) != len(values):
+            raise ValueError(f"TABLE_LAYOUT tiene {field} repetidos.")
     return tables
 
 
@@ -498,7 +546,12 @@ class Handler(BaseHTTPRequestHandler):
                 t["seats"] for t in TABLES if t["id"] in unavailable_ids
             )
             self._send_json(
-                {"tables": tables, "totalSeats": TOTAL_SEATS, "availableSeats": available_seats}
+                {
+                    "tables": tables,
+                    "rooms": ROOM_ORDER,
+                    "totalSeats": TOTAL_SEATS,
+                    "availableSeats": available_seats,
+                }
             )
             return
         if parsed.path == "/api/reservations":

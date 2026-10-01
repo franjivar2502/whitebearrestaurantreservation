@@ -32,7 +32,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 
 **✅ Ya construido y probado:**
 - Formulario de reservaciones con validación de horario por día y tamaño de grupo.
-- **Disponibilidad real por asientos** (122 en 24 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
+- **Disponibilidad real por asientos** (130 en 26 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
 - Preferencia de mesa adentro/afuera (opcional) en el formulario de reservación.
 - Panel de tablet en tiempo real (se actualiza solo, sin recargar), con una pestaña nueva "Tables"/"Mesas" para que el staff marque mesas fuera de servicio.
 - Preorden para grupos de 20+ personas (menú aún placeholder, ver más abajo).
@@ -51,7 +51,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 1. **Menú real para el preorden de grupos grandes** — hoy son 3 platillos placeholder.
 2. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
 3. **Cambiar `ADMIN_PASSWORD`** (panel de fotos) a una contraseña definitiva — hoy sigue siendo la de prueba (`whitebear123`).
-4. Confirmar con el cliente que el total de 122 asientos (calculado de las 24 mesas que dio) es correcto, ya que mencionó 130 de palabra.
+4. **Confirmar el plano del salón con el cliente** — el panel ya dibuja los dos salones tal como están en el local (`TABLE_LAYOUT` en `server.py`), pero el mapa que entregó no trae números de mesa, no dice cuáles rectangulares son de 4 asientos y cuáles de 6, ni cuál de las dos grandes es la de 12. Esos tres datos están puestos por lectura del mapa, no confirmados. (El total de asientos sí quedó resuelto: son **130, no 122** — en el mapa aparecieron dos mesas cuadradas más en el grupo de la entrada, que son justo los 8 asientos que el cliente decía de palabra.)
 5. **13 fotos reales que el cliente quiso subir no se pudieron procesar** (2026-09-29) — eran archivos temporales de Fotos.app en macOS, protegidos por el sistema de permisos; ni siquiera la app de Claude pudo abrirlos. Hace falta que el cliente las re-exporte a una carpeta normal (Escritorio, Descargas) para poder editarlas y subirlas -- algunas son fotos del comedor/exterior (van a "Gallery") y otras del menú (van a "Our Menu"), hay que clasificarlas al agregarlas.
 6. Revisar y ampliar `NEGATIVE_REVIEW_KEYWORDS` en `server.py` si empiezan a llegar reseñas reales -- la lista actual es un punto de partida razonable, no exhaustiva.
 5. Decidir si el panel de tablet necesita más idiomas o queda así.
@@ -338,11 +338,12 @@ local (útil para desarrollo, pero no para producción en Render).
 El sitio ya sabe cuántos asientos hay libres a la hora que alguien está
 reservando -- no deja pasar una reservación que no cabe.
 
-**Inventario de mesas** (dato real del restaurante, en `server.py`):
-9 cuadradas de 4, 7 rectangulares de 4, 6 rectangulares de 6, 1
-rectangular de 12 y 1 rectangular de 10 -- **122 asientos en total** (24
-mesas). Si el número de mesas o sillas cambia, edita `_build_tables()` en
-`server.py`.
+**Inventario de mesas** (dato real del restaurante, en `TABLE_LAYOUT` de
+`server.py`): 11 cuadradas de 4, 7 rectangulares de 4, 6 rectangulares de
+6, 1 rectangular de 12 y 1 rectangular de 10 -- **130 asientos en total**
+(26 mesas). Cada mesa lleva además en qué salón está y su posición en el
+plano. Si cambia el número de mesas, las sillas, o dónde está una mesa,
+edita `TABLE_LAYOUT` -- es el único lugar.
 
 **Cómo se calcula la disponibilidad:** en vez de exigir una mesa exacta
 del tamaño del grupo, se suman los asientos libres -- así una reserva de
@@ -354,11 +355,15 @@ cruza (cada reservación ocupa su mesa 90 minutos, editable en
 `RESERVATION_DURATION_MINUTES`). Si no alcanza, el sitio de clientes
 rechaza la reservación con un mensaje claro en vez de aceptarla a ciegas.
 
-**Panel de staff (`tablet.html` → pestaña "Tables"/"Mesas"):** una
-cuadrícula con las 24 mesas agrupadas por tipo; tocar una mesa la marca
+**Panel de staff (`tablet.html` → pestaña "Tables"/"Mesas"):** un plano
+de los dos salones como están en el local, con la barra, la entrada, el
+baño y las ventanas, y cada mesa en su lugar -- el staff la busca por
+dónde está parada, no leyendo una lista. Tocar una mesa la marca
 disponible/no disponible (por ejemplo, para un evento privado o una
 silla rota) y eso baja la capacidad que ve el sitio de clientes al
-instante. No pide contraseña, igual que el resto del panel de tablet.
+instante; las fuera de servicio van en rojo y tachadas, para que no
+dependa solo del color. No pide contraseña, igual que el resto del panel
+de tablet.
 
 ## Galería de fotos y pantalla de bienvenida
 

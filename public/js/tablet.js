@@ -11,7 +11,7 @@
   const reservationsView = document.getElementById("reservations-view");
   const tablesView = document.getElementById("tables-view");
   const tablesSummary = document.getElementById("tables-summary");
-  const tablesGroups = document.getElementById("tables-groups");
+  const floorPlan = document.getElementById("floor-plan");
 
   const dateTabs = document.querySelectorAll(".tab[data-filter]");
   const statusTabs = document.querySelectorAll(".tab[data-status]");
@@ -41,6 +41,7 @@
   let firstLoad = true;
   let currentView = "reservations"; // reservations | tables
   let tables = [];
+  let rooms = [];
   let totalSeats = 0;
   let availableSeats = 0;
 
@@ -131,10 +132,41 @@
     }
   }
 
-  const TABLE_GROUP_ORDER = ["square4", "rect4", "rect6", "rect12", "rect10"];
+  /*
+   * Plano del salón. Las mesas llegan del servidor con su salón y su posición
+   * (x,y en % del salón, ver TABLE_LAYOUT en server.py); aquí solo se dibujan.
+   * El tamaño sale de la forma y los asientos, para que la de 12 se vea como
+   * una de 12 y el staff la reconozca sin leer el número.
+   *
+   * Lo que no es mesa -- barra, entrada, baño, ventanas -- es decorado para
+   * orientarse y vive solo aquí: no tiene estado ni lo toca nadie por la API.
+   * Su x/y/w/h va en % desde la esquina superior izquierda del salón; los
+   * valores fuera de 0-100 son a propósito, para montarse sobre la pared.
+   */
+  const ROOM_FIXTURES = {
+    left: [
+      { kind: "bar", x: 3, y: 26, w: 16, h: 66, labelKey: "tables.bar" },
+      { kind: "door", x: 36, y: -3, w: 17, h: 6, labelKey: "tables.entrance" },
+      { kind: "door", x: 41, y: 97, w: 19, h: 6, labelKey: "tables.bathroom" },
+      { kind: "window", x: -1.5, y: 5, w: 3, h: 18 },
+      { kind: "window", x: 13, y: -1.5, w: 16, h: 3 },
+      { kind: "window", x: 60, y: -1.5, w: 22, h: 3 },
+    ],
+    right: [
+      { kind: "window", x: 8, y: -1.5, w: 26, h: 3 },
+      { kind: "window", x: 44, y: -1.5, w: 32, h: 3 },
+      { kind: "window", x: 98.5, y: 14, w: 3, h: 15 },
+      { kind: "window", x: 98.5, y: 41, w: 3, h: 15 },
+      { kind: "window", x: 98.5, y: 64, w: 3, h: 13 },
+      { kind: "window", x: 98.5, y: 85, w: 3, h: 11 },
+    ],
+  };
 
-  function groupKeyFor(t) {
-    return `${t.shape}${t.seats}`;
+  function tableSize(t) {
+    if (t.seats >= 12) return { w: 36, h: 9 };
+    if (t.seats >= 10) return { w: 30, h: 9 };
+    if (t.shape === "square") return { w: 12, h: 9 };
+    return t.seats >= 6 ? { w: 20, h: 8 } : { w: 16, h: 8 };
   }
 
   async function fetchTables() {
@@ -143,6 +175,7 @@
       if (!res.ok) throw new Error("bad status");
       const data = await res.json();
       tables = data.tables || [];
+      rooms = data.rooms || [];
       totalSeats = data.totalSeats;
       availableSeats = data.availableSeats;
       renderTables(totalSeats, availableSeats);
@@ -157,35 +190,44 @@
       total: totalSeats,
     });
 
-    const groups = {};
-    tables.forEach((t) => {
-      const key = groupKeyFor(t);
-      (groups[key] = groups[key] || []).push(t);
-    });
-
-    tablesGroups.innerHTML = TABLE_GROUP_ORDER.filter((key) => groups[key])
-      .map((key) => {
-        const groupTables = groups[key].sort((a, b) => a.number - b.number);
-        const tiles = groupTables
-          .map(
-            (t) => `
-            <button type="button" class="table-tile ${t.unavailable ? "unavailable" : "available"}" data-id="${t.id}">
-              <span class="table-tile-num">${escapeHtml(tabletI18n.t("tables.table", { n: t.number }))}</span>
-              <span class="table-tile-state">${escapeHtml(
-                tabletI18n.t(t.unavailable ? "tables.unavailable" : "tables.available")
-              )}</span>
-            </button>`
-          )
+    floorPlan.innerHTML = rooms
+      .map((room) => {
+        const fixtures = (ROOM_FIXTURES[room] || [])
+          .map((f) => {
+            const label = f.labelKey
+              ? `<span class="floor-fixture-label">${escapeHtml(tabletI18n.t(f.labelKey))}</span>`
+              : "";
+            return `<div class="floor-fixture floor-fixture--${f.kind}" style="left:${f.x}%;top:${f.y}%;width:${f.w}%;height:${f.h}%">${label}</div>`;
+          })
           .join("");
+
+        const tiles = tables
+          .filter((t) => t.room === room)
+          .map((t) => {
+            const size = tableSize(t);
+            const label = tabletI18n.t("tables.table", { n: t.number });
+            const state = tabletI18n.t(t.unavailable ? "tables.unavailable" : "tables.available");
+            return `
+              <button type="button"
+                class="floor-table ${t.unavailable ? "unavailable" : "available"} ${t.shape === "square" ? "is-square" : "is-rect"}"
+                style="left:${t.x}%;top:${t.y}%;width:${size.w}%;height:${size.h}%"
+                data-id="${t.id}"
+                aria-label="${escapeHtml(`${label} — ${tabletI18n.t("tables.seats", { n: t.seats })} — ${state}`)}">
+                <span class="floor-table-num">${escapeHtml(String(t.number))}</span>
+                <span class="floor-table-seats">${escapeHtml(tabletI18n.t("tables.seats", { n: t.seats }))}</span>
+              </button>`;
+          })
+          .join("");
+
         return `
-          <div class="table-group">
-            <p class="table-group-title">${escapeHtml(tabletI18n.t(`tables.${key}`))}</p>
-            <div class="table-tile-grid">${tiles}</div>
+          <div class="floor-room floor-room--${room}">
+            <p class="floor-room-title">${escapeHtml(tabletI18n.t(`tables.room_${room}`))}</p>
+            <div class="floor-room-box">${fixtures}${tiles}</div>
           </div>`;
       })
       .join("");
 
-    tablesGroups.querySelectorAll(".table-tile").forEach((btn) => {
+    floorPlan.querySelectorAll(".floor-table").forEach((btn) => {
       btn.addEventListener("click", () => toggleTable(btn.getAttribute("data-id")));
     });
   }

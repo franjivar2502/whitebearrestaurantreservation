@@ -573,68 +573,193 @@ body.tablet-body :focus-visible {
   max-width: 640px;
 }
 
-.table-group {
-  margin-bottom: 26px;
-}
-
-.table-group-title {
-  font-size: 0.78rem;
+/* ---------- plano del salón ----------
+ * El panel dibuja los dos salones tal como están en el local: el staff busca
+ * la mesa por dónde está parada, no leyendo una lista. Las posiciones vienen
+ * del servidor en % (TABLE_LAYOUT), así que aquí no hay ninguna medida del
+ * salón escrita a mano -- solo cómo se ve.
+ */
+.floor-legend {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 14px;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin: 0 0 10px;
 }
 
-.table-tile-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 10px;
+.floor-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
-.table-tile {
+.floor-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.floor-swatch.available {
+  background: color-mix(in srgb, var(--confirmed) 26%, #fff);
+  border-color: color-mix(in srgb, var(--confirmed) 60%, transparent);
+}
+
+.floor-swatch.unavailable {
+  background: color-mix(in srgb, var(--cancelled) 26%, #fff);
+  border-color: color-mix(in srgb, var(--cancelled) 60%, transparent);
+}
+
+.floor-plan {
+  display: flex;
+  gap: 26px;
+  align-items: flex-start;
+  padding-bottom: 30px;
+}
+
+/* El salón de la entrada es más ancho que el del fondo, como en el mapa. */
+.floor-room--left { flex: 1.25; }
+.floor-room--right { flex: 1; }
+
+.floor-room-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+}
+
+.floor-room-box {
+  position: relative;
+  height: min(66vh, 720px);
+  min-height: 420px;
+  border: 2px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-solid);
+  /* Las ventanas y las puertas se montan sobre la pared, así que asoman
+     fuera de la caja a propósito. */
+  overflow: visible;
+}
+
+.floor-fixture {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Hueco en la pared: se pinta del color del fondo para que corte el muro. */
+.floor-fixture--window {
+  background: color-mix(in srgb, var(--brand-dark) 22%, var(--bg));
+  border-radius: 2px;
+}
+
+.floor-fixture--door {
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floor-fixture--bar {
+  background: color-mix(in srgb, var(--brand-dark) 12%, var(--surface-solid));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floor-fixture-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.floor-fixture--bar .floor-fixture-label {
+  writing-mode: vertical-rl;
+  rotate: 180deg;
+}
+
+.floor-table {
+  position: absolute;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  border-radius: 12px;
+  gap: 1px;
   border: 1px solid var(--border);
   background: var(--surface-solid);
-  padding: 14px 10px;
+  padding: 2px;
   font: inherit;
   cursor: pointer;
-  min-height: 72px;
+  overflow: hidden;
 }
 
-.table-tile-num {
+.floor-table.is-square { border-radius: 7px; }
+.floor-table.is-rect { border-radius: 5px; }
+
+.floor-table-num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.1;
 }
 
-.table-tile-state {
-  font-size: 0.66rem;
+.floor-table-seats {
+  font-size: 0.56rem;
   font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  opacity: 0.75;
+  line-height: 1.1;
 }
 
-.table-tile.available {
-  background: rgb(232, 240, 230);
+.floor-table.available {
   background: color-mix(in srgb, var(--confirmed) 10%, #fff);
-  border-color: rgba(63, 107, 52, 0.35);
-  border-color: color-mix(in srgb, var(--confirmed) 35%, transparent);
+  border-color: color-mix(in srgb, var(--confirmed) 38%, transparent);
   color: var(--confirmed);
 }
 
-.table-tile.unavailable {
-  background: rgb(249, 232, 233);
-  background: color-mix(in srgb, var(--cancelled) 10%, #fff);
-  border-color: rgba(163, 50, 63, 0.35);
-  border-color: color-mix(in srgb, var(--cancelled) 35%, transparent);
+/* Fuera de servicio: además del color va tachada, porque en un turno con
+   prisa el color solo no alcanza -- y hay gente que no lo distingue. */
+.floor-table.unavailable {
+  background: color-mix(in srgb, var(--cancelled) 12%, #fff);
+  border-color: color-mix(in srgb, var(--cancelled) 45%, transparent);
   color: var(--cancelled);
+}
+
+.floor-table.unavailable .floor-table-num {
+  text-decoration: line-through;
+}
+
+.floor-table:active {
+  transform: translate(-50%, -50%) scale(0.96);
+}
+
+/* En pantallas angostas los dos salones no caben lado a lado. */
+@media (max-width: 900px) {
+  .floor-plan {
+    flex-direction: column;
+    gap: 30px;
+  }
+  .floor-room--left,
+  .floor-room--right {
+    flex: none;
+    width: 100%;
+  }
+  .floor-room-box {
+    height: 78vw;
+    min-height: 380px;
+  }
 }
 
 /* ---------- aviso flotante ---------- */
