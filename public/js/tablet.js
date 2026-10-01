@@ -165,12 +165,12 @@
 
     tablesGroups.innerHTML = TABLE_GROUP_ORDER.filter((key) => groups[key])
       .map((key) => {
-        const groupTables = groups[key].sort((a, b) => a.index - b.index);
+        const groupTables = groups[key].sort((a, b) => a.number - b.number);
         const tiles = groupTables
           .map(
             (t) => `
             <button type="button" class="table-tile ${t.unavailable ? "unavailable" : "available"}" data-id="${t.id}">
-              <span class="table-tile-num">${escapeHtml(tabletI18n.t("tables.table", { n: t.index }))}</span>
+              <span class="table-tile-num">${escapeHtml(tabletI18n.t("tables.table", { n: t.number }))}</span>
               <span class="table-tile-state">${escapeHtml(
                 tabletI18n.t(t.unavailable ? "tables.unavailable" : "tables.available")
               )}</span>

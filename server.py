@@ -164,23 +164,40 @@ def _parse_multipart(body, boundary):
     return fields
 
 
+# Inventario real de mesas del restaurante (dato dado por el cliente):
+# 9 cuadradas de 4, 7 rectangulares de 4, 6 rectangulares de 6,
+# 1 rectangular de 12 y 1 rectangular de 10.
+#
+# El tercer valor es el número con el que cada mesa aparece en el panel del
+# staff, y tiene que ser el mismo con el que el personal la llama en el salón:
+# el cliente confirmó que las mesas se identifican por número y va a entregar
+# el mapa del salón para fijar cuál es cuál. Hasta que llegue ese mapa los
+# números siguen el orden del inventario, que es provisional -- cuando llegue,
+# se corrigen solo aquí. Los ids no dependen del número, así que reordenarlos
+# no invalida las mesas ya marcadas como no disponibles en table_status.json.
+TABLE_LAYOUT = [
+    # (forma, asientos, números visibles en el salón)
+    ("square", 4, [1, 2, 3, 4, 5, 6, 7, 8, 9]),
+    ("rect", 4, [10, 11, 12, 13, 14, 15, 16]),
+    ("rect", 6, [17, 18, 19, 20, 21, 22]),
+    ("rect", 12, [23]),
+    ("rect", 10, [24]),
+]
+
+
 def _build_tables():
-    """
-    Inventario real de mesas del restaurante (dato dado por el cliente):
-    9 cuadradas de 4, 7 rectangulares de 4, 6 rectangulares de 6,
-    1 rectangular de 12 y 1 rectangular de 10.
-    """
     tables = []
+    for shape, seats, numbers in TABLE_LAYOUT:
+        for i, number in enumerate(numbers, start=1):
+            tables.append(
+                {"id": f"{shape}{seats}-{i}", "shape": shape, "seats": seats, "number": number}
+            )
 
-    def add(shape, seats, count):
-        for i in range(1, count + 1):
-            tables.append({"id": f"{shape}{seats}-{i}", "shape": shape, "seats": seats, "index": i})
-
-    add("square", 4, 9)
-    add("rect", 4, 7)
-    add("rect", 6, 6)
-    add("rect", 12, 1)
-    add("rect", 10, 1)
+    # El rótulo que ve el staff es este número: si se repite, dos mesas
+    # distintas se ven iguales y alguien saca de servicio la que no era.
+    labels = [t["number"] for t in tables]
+    if len(set(labels)) != len(labels):
+        raise ValueError("TABLE_LAYOUT tiene números de mesa repetidos.")
     return tables
 
 

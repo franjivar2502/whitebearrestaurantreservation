@@ -55,6 +55,7 @@
         thanks: "Thanks for sharing! Your review is now live.",
         by: "by {name}",
       },
+      heroPhoto: { caption: "Whiteface Mountain · Adirondack High Peaks" },
       about: {
         title: "About us",
         description:
@@ -218,6 +219,7 @@
         thanks: "¡Gracias por compartir! Tu reseña ya está publicada.",
         by: "por {name}",
       },
+      heroPhoto: { caption: "Montaña Whiteface · Altas Cumbres de los Adirondacks" },
       about: {
         title: "Sobre nosotros",
         description:
@@ -381,6 +383,7 @@
         thanks: "Merci d'avoir partagé ! Votre avis est maintenant publié.",
         by: "par {name}",
       },
+      heroPhoto: { caption: "Mont Whiteface · Hautes Cimes des Adirondacks" },
       about: {
         title: "À propos",
         description:

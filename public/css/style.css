@@ -106,6 +106,73 @@ body::before {
   );
 }
 
+/* La foto de la cumbre de Whiteface, a quince minutos del restaurante, en una
+   banda propia a ancho completo.
+ *
+ * Detrás del formulario no funcionaba: el bosque de la mitad inferior es casi
+ * negro, y el velo necesario para que las etiquetas se leyeran dejaba la foto
+ * irreconocible. Aquí se ve entera y a plena fuerza, y el texto conserva su
+ * fondo limpio -- que es exactamente lo que hacen los sitios de referencia:
+ * la fotografía va en bloques propios, nunca debajo del texto. */
+/* figure trae margin: 1em 40px del navegador, y una banda a sangre no puede
+   heredarlo. */
+.hero-photo-figure {
+  margin: 0;
+}
+
+.hero-photo {
+  position: relative;
+  width: 100%;
+  height: clamp(240px, 40vh, 420px);
+  overflow: hidden;
+  background: var(--surface-alt);
+}
+
+.hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* El original es vertical y la banda apaisada. El recorte se centra en la
+     línea del horizonte -- la cumbre y las Altas Cumbres al fondo -- y no en
+     el cielo ni en la barandilla del mirador. */
+  object-position: center 46%;
+  display: block;
+}
+
+/* Difumina el canto inferior hacia el marfil para que la banda no termine en
+   una línea dura contra el formulario. */
+.hero-photo::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 30%;
+  background: linear-gradient(to bottom, rgba(251, 249, 244, 0), var(--bg));
+  pointer-events: none;
+}
+
+/* El pie va debajo de la foto, sobre el marfil, no encima de ella: sobre la
+   imagen cambiaba de legibilidad según el píxel que le tocara detrás. */
+.hero-photo-caption {
+  margin: 14px 0 0;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0 16px;
+  text-wrap: balance;
+}
+
+@media (max-width: 560px) {
+  /* En teléfono el pie se parte en dos líneas; se afloja el tracking para
+     que entre completo antes de recurrir a cortarlo. */
+  .hero-photo-caption {
+    letter-spacing: 0.1em;
+    font-size: 0.64rem;
+  }
+}
+
 a {
   color: inherit;
 }
