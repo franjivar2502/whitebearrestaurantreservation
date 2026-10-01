@@ -1,40 +1,69 @@
 /*
- * Tema "Adirondack Night": interfaz espacial de paneles de vidrio flotando
- * sobre un cielo 3D en WebGL (ver js/bg-3d.js). La paleta sale de la marca
- * real del restaurante -- borgoña y verde bosque -- llevada a un registro
- * nocturno, con oro como color de acento y acción.
+ * Tema "Lake Placid Ivory".
+ *
+ * La paleta y la tipografía salen de analizar cómo se presentan de verdad los
+ * restaurantes de lujo y los hoteles de los Adirondacks -- Mirror Lake Inn
+ * (AAA cuatro diamantes, en Lake Placid), Lake Placid Lodge, The Point, y de
+ * referencia en alta cocina Eleven Madison Park. Los cuatro coinciden en lo
+ * mismo:
+ *
+ *   - fondo claro y cálido, no oscuro;
+ *   - un solo color profundo y desaturado como ancla (verde bosque o marino);
+ *   - acento apagado, usado con cuentagotas, nunca un oro brillante;
+ *   - un serif de estilo antiguo para los títulos;
+ *   - casi nada de color en la interfaz: el color fuerte lo ponen las fotos.
+ *
+ * El verde bosque ancla ya estaba en la marca de White Bear, así que la paleta
+ * no es prestada: es la del restaurante, llevada al registro de sus vecinos.
  */
 :root {
-  --bg: #060a16;
-  --surface: rgba(18, 24, 44, 0.62);
-  --surface-solid: #121a2c;
-  --surface-alt: rgba(255, 255, 255, 0.07);
-  --border: rgba(255, 255, 255, 0.14);
-  --border-strong: rgba(255, 255, 255, 0.26);
-  --text: #f2f5ff;
-  --text-muted: #a8b2cc;
-  --brand: #d9a441;
-  --brand-dark: #a87b26;
-  --brand-light: #f0c877;
-  --on-brand: #12131a;
-  --accent: #6f9e63;
-  --burgundy: #b8536a;
-  --danger: #e0788a;
-  --warning: #dca94a;
-  --pending: #dca94a;
-  --confirmed: #6f9e63;
-  --seated: #d9a441;
-  --completed: #8d97b3;
-  --cancelled: #e0788a;
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-  --glass-blur: 22px;
-  --radius: 18px;
-  --font-display: "Syncopate", "Inter", system-ui, sans-serif;
-  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-body: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --bg: #fbf9f4;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-solid: #ffffff;
+  /* Los neutros van sesgados hacia el verde del ancla en vez de ser grises
+     puros: es lo que hace que la pantalla se lea elegida y no por defecto. */
+  --surface-alt: rgba(32, 48, 31, 0.05);
+  --border: rgba(32, 48, 31, 0.16);
+  --border-strong: rgba(32, 48, 31, 0.34);
+  --text: #1c2420;
+  --text-muted: #5f6b60;
+
+  /* Verde bosque: el ancla. Es el color de los botones y del pie. */
+  --forest: #20301f;
+  --forest-light: #2e4529;
+
+  /* Latón apagado. Sustituye al oro saturado: mismo origen, media saturación. */
+  --brand: #7e6433;
+  --brand-dark: #5e4a24;
+  --brand-light: #9a7b3f;
+  --on-brand: #ffffff;
+
+  --accent: #41603c;
+  --burgundy: #7a3b49;
+  --danger: #8c2f39;
+  --warning: #8a6206;
+  --pending: #8a6206;
+  --confirmed: #41603c;
+  --seated: #8a5a1c;
+  --completed: #5f6b60;
+  --cancelled: #8c2f39;
+
+  --shadow: 0 10px 34px rgba(28, 36, 32, 0.09);
+  --glass-blur: 16px;
+  --radius: 14px;
+
+  /* EB Garamond es el serif que usa Eleven Madison Park, y es de la misma
+     familia de estilo antiguo que el Orpheus del Mirror Lake Inn y el Minerva
+     del Lake Placid Lodge: contraste moderado, nada de Didone llamativo.
+     Outfit es literalmente la sans del Mirror Lake Inn. */
+  --font-display: "EB Garamond", Georgia, "Times New Roman", serif;
+  --font-body: "Outfit", "Inter", system-ui, -apple-system, Roboto, sans-serif;
+  /* Para cifras que tienen que alinearse en columna. No es una mono: es la
+     misma sans con cifras de ancho fijo, para no meter una tercera voz. */
+  --font-mono: "Outfit", "Inter", system-ui, sans-serif;
 }
 
-/* Este tema es nocturno por diseño (el fondo es un cielo 3D), así que no
+/* El tema es claro por diseño (el fondo es una montaña brumosa), así que no
    cambia con la preferencia de color del sistema: se ve igual en ambos. */
 
 * {
@@ -60,9 +89,9 @@ body {
   pointer-events: none;
 }
 
-/* Velo sobre el fondo 3D. Como el formulario ya no vive dentro de un panel,
-   el texto cae directo sobre la aurora: esto oscurece la columna central
-   lo justo para que se lea, y deja los bordes despejados. */
+/* Velo sobre el fondo 3D. Como el formulario no vive dentro de un panel, el
+   texto cae directo sobre la montaña: esto aclara la columna central lo justo
+   para que se lea, y deja las cordilleras asomar por los bordes. */
 body::before {
   content: "";
   position: fixed;
@@ -70,10 +99,10 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background: radial-gradient(
-    ellipse 62% 72% at 50% 45%,
-    rgba(4, 7, 16, 0.68) 0%,
-    rgba(4, 7, 16, 0.38) 58%,
-    rgba(4, 7, 16, 0.08) 100%
+    ellipse 62% 72% at 50% 42%,
+    rgba(251, 249, 244, 0.88) 0%,
+    rgba(251, 249, 244, 0.62) 58%,
+    rgba(251, 249, 244, 0.2) 100%
   );
 }
 
@@ -98,25 +127,26 @@ header.hero h1,
   letter-spacing: -0.02em;
 }
 
-/* Los títulos de sección se leen como etiquetas técnicas: Syncopate es
-   muy ancha, así que va en tamaño chico, mayúsculas y con tracking. */
+/* Los títulos de sección van en el serif, en redonda y en minúsculas: en los
+   sitios de referencia el título de sección es una línea de libro, no una
+   etiqueta de interfaz. */
 .section-title {
   font-family: var(--font-display);
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--brand);
+  font-size: 1.6rem;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  /* Latón oscuro: es el único sitio donde el acento aparece en texto, y por
+     eso funciona. En las referencias el color se gasta en un solo lugar. */
+  color: var(--brand-dark);
+  text-transform: none;
 }
 
-/* Datos (horarios, calificación, códigos, badges) en monoespaciada:
-   se leen como una lectura de instrumento, no como prosa. */
+/* Cifras que se comparan o se alinean en columna. */
 .hero-hours,
 .rating-value,
 .review-stars,
-.ai-badge,
 .confirmation .details dd {
-  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 label,
@@ -271,9 +301,9 @@ label,
 
 /* ---------- header ---------- */
 header.hero {
-  background: rgba(10, 14, 28, 0.55);
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  background: rgba(251, 249, 244, 0.86);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
   color: var(--text);
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
@@ -317,16 +347,16 @@ header.hero .hero-inner {
 header.hero h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 0.85rem;
-  font-weight: 700;
-  line-height: 1.35;
-  letter-spacing: 0.04em;
+  font-size: 1.05rem;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 @media (min-width: 560px) {
   header.hero h1 {
-    font-size: 1rem;
+    font-size: 1.25rem;
   }
 }
 
@@ -404,7 +434,9 @@ header.hero h1 {
   inset: 0;
   overflow: hidden;
   white-space: nowrap;
-  color: #e0a233;
+  /* El oro brillante se quedaba en 2.2:1 sobre marfil. El latón de la paleta
+     llega a 5.3:1 y además deja de ser el amarillo chillón de reseña. */
+  color: var(--brand);
 }
 
 .rating-value {
@@ -431,15 +463,16 @@ header.hero h1 {
 }
 
 /* ---------- cards / sections ---------- */
-/* Panel de vidrio: la unidad base de la interfaz. Flota sobre el cielo 3D
-   con desenfoque de fondo, un borde de luz arriba y sombra de profundidad. */
+/* La unidad base: una lámina blanca sobre el marfil, apenas despegada. Las
+   referencias de lujo no apilan sombras ni bordes brillantes -- el papel está
+   casi plano y lo que separa las secciones es el aire entre ellas. */
 .card {
   background: var(--surface);
-  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  box-shadow: var(--shadow);
   padding: 22px;
   margin-top: 14px;
   position: relative;
@@ -448,7 +481,7 @@ header.hero h1 {
 
 .card:hover {
   border-color: var(--border-strong);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  box-shadow: 0 14px 40px rgba(28, 36, 32, 0.13);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -457,11 +490,11 @@ header.hero h1 {
   }
 }
 
+/* El resto de .section-title vive arriba, con la tipografía. Aquí solo
+   queda el margen: tener dos bloques peleándose por el mismo selector es
+   justo como se pierde un color sin darse cuenta. */
 .section-title {
-  font-size: 1.05rem;
-  font-weight: 700;
   margin: 0 0 14px;
-  color: var(--brand-dark);
 }
 
 .highlights {
@@ -641,11 +674,11 @@ header.hero h1 {
 form {
   margin-top: 24px;
   background: var(--surface);
-  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  box-shadow: var(--shadow);
   padding: 24px;
 }
 
@@ -674,18 +707,19 @@ form {
 }
 
 #reservation-form label {
-  font-size: 0.78rem;
-  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--brand-light);
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 #reservation-form input,
 #reservation-form select,
 #reservation-form textarea {
-  /* Sin panel detrás, el campo necesita su propio fondo para que el
-     texto se lea sobre las estrellas y la aurora. */
-  background: rgba(6, 10, 22, 0.78);
+  /* Sin panel detrás, el campo necesita su propio fondo blanco para
+     recortarse del marfil y de la montaña. */
+  background: rgba(255, 255, 255, 0.94);
   padding: 15px 16px;
   font-size: 1.02rem;
 }
@@ -695,9 +729,11 @@ form {
 }
 
 #reservation-form .section-title {
-  font-size: 1.05rem;
-  letter-spacing: 0.14em;
-  margin-bottom: 26px;
+  font-size: 2.4rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin-bottom: 30px;
+  text-wrap: balance;
 }
 
 #reservation-form #submit-btn {
@@ -727,22 +763,19 @@ label {
   color: var(--text-muted);
 }
 
-/* Los campos van hundidos en el panel (sombra interior) en vez de
-   elevados: contrastan con los botones, que sobresalen. */
 input, select, textarea {
   font: inherit;
   padding: 12px 13px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(4, 8, 18, 0.55);
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+  background: var(--surface-solid);
   color: var(--text);
   width: 100%;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 input::placeholder, textarea::placeholder {
-  color: rgba(168, 178, 204, 0.6);
+  color: rgba(95, 107, 96, 0.72);
 }
 
 input:hover, select:hover, textarea:hover {
@@ -750,8 +783,9 @@ input:hover, select:hover, textarea:hover {
 }
 
 input:focus, select:focus, textarea:focus {
-  outline: 2px solid var(--brand-light);
+  outline: 2px solid var(--forest);
   outline-offset: 1px;
+  border-color: var(--forest);
 }
 
 textarea {
@@ -833,22 +867,28 @@ textarea {
   transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
 }
 
+/* El botón es el verde bosque macizo, no un degradado dorado: en las
+   referencias el color de acción es el ancla profunda de la marca. Se
+   conserva la ilusión de hundimiento al pulsar, que ya pedías antes. */
 .btn-primary {
-  background: linear-gradient(180deg, var(--brand-light), var(--brand));
+  background: var(--forest);
   color: var(--on-brand);
   width: 100%;
-  letter-spacing: 0.02em;
-  box-shadow: 0 4px 0 var(--brand-dark), 0 10px 24px rgba(217, 164, 65, 0.28);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.86rem;
+  box-shadow: 0 3px 0 #16210f, 0 8px 20px rgba(32, 48, 31, 0.22);
 }
 
 .btn-primary:hover {
-  filter: brightness(1.07);
-  box-shadow: 0 4px 0 var(--brand-dark), 0 12px 30px rgba(217, 164, 65, 0.4);
+  background: var(--forest-light);
+  box-shadow: 0 3px 0 #16210f, 0 10px 26px rgba(32, 48, 31, 0.3);
 }
 
 .btn-primary:active {
   transform: translateY(3px);
-  box-shadow: 0 0 0 var(--brand-dark), 0 1px 2px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 0 0 #16210f, 0 1px 2px rgba(28, 36, 32, 0.14);
 }
 
 .btn-primary:disabled {

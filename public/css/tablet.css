@@ -1,46 +1,26 @@
 /*
- * Panel del personal -- "Adirondack Morning".
+ * Panel del personal.
  *
- * Misma escena 3D y misma marca que el sitio del cliente, pero de día: el
- * comedor tiene mucha luz y el panel está abierto durante todo el turno, así
- * que sobre fondo claro se lee mejor y cansa menos la vista. Todo el tema se
- * define aquí reasignando los tokens de style.css, para que los componentes
- * que ya existían sigan funcionando sin tocarlos uno por uno.
+ * Hereda la paleta "Lake Placid Ivory" del sitio del cliente (ver style.css)
+ * y solo ajusta lo que una herramienta de trabajo necesita y una carta no:
+ * un fondo algo más frío y neutro para mirarlo durante todo un turno, y el
+ * velo del fondo más cerrado, porque aquí hay mucha más densidad de datos
+ * encima que en la página de reserva.
  */
 html, body.tablet-body {
   height: 100%;
 }
 
 body.tablet-body {
-  /* Superficies y tinta */
-  --bg: #eef1f7;
-  --surface: rgba(255, 255, 255, 0.82);
-  --surface-solid: #ffffff;
-  --surface-alt: rgba(17, 28, 52, 0.05);
-  --border: rgba(20, 32, 58, 0.14);
-  --border-strong: rgba(20, 32, 58, 0.3);
-  --text: #131b2e;
-  --text-muted: #5b6784;
+  /* Marfil levemente enfriado: el del cliente es cálido de carta, este se
+     mira horas seguidas bajo las luces del comedor. */
+  --bg: #f4f4f1;
+  --surface: rgba(255, 255, 255, 0.86);
+  --border: rgba(32, 48, 31, 0.15);
+  --border-strong: rgba(32, 48, 31, 0.32);
 
-  /* Marca: el mismo oro, oscurecido hasta contrastar sobre blanco */
-  --brand: #b07d1c;
-  --brand-dark: #7d5709;
-  --brand-light: #d9a441;
-  --on-brand: #ffffff;
-  --accent: #3f6b34;
-  --burgundy: #8c3346;
-
-  /* Estado. Todos pasan 4.5:1 sobre blanco, y en blanco sobre el color. */
-  --danger: #a3323f;
-  --warning: #8a6206;
-  --pending: #8a6206;
-  --confirmed: #3f6b34;
-  --seated: #9a5a10;
-  --completed: #5b6784;
-  --cancelled: #a3323f;
-
-  --shadow: 0 10px 30px rgba(18, 28, 54, 0.1);
-  --glass-blur: 18px;
+  --shadow: 0 8px 24px rgba(28, 36, 32, 0.08);
+  --glass-blur: 16px;
 
   /* Alturas de la barra fija. Están aquí y no repartidas por el archivo
      porque las tres franjas pegajosas se apilan una debajo de otra: si una
@@ -54,19 +34,19 @@ body.tablet-body {
   user-select: none;
 }
 
-/* El velo del sitio del cliente oscurece; aquí, al revés, aclara: el panel
-   necesita que el texto negro se lea sobre el cielo. */
+/* El velo del fondo va más cerrado que en el sitio del cliente: aquí hay
+   listas densas encima y la montaña no puede competir con ellas. */
 body.tablet-body::before {
   background: linear-gradient(
     to bottom,
-    rgba(238, 241, 247, 0.32) 0%,
-    rgba(238, 241, 247, 0.62) 40%,
-    rgba(238, 241, 247, 0.78) 100%
+    rgba(244, 244, 241, 0.5) 0%,
+    rgba(244, 244, 241, 0.78) 40%,
+    rgba(244, 244, 241, 0.9) 100%
   );
 }
 
 body.tablet-body :focus-visible {
-  outline: 2px solid var(--brand-dark);
+  outline: 2px solid var(--forest);
   outline-offset: 2px;
 }
 
@@ -82,7 +62,7 @@ body.tablet-body :focus-visible {
   backdrop-filter: blur(var(--glass-blur)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(176, 125, 28, 0.35);
+  box-shadow: 0 1px 0 rgba(126, 100, 51, 0.3);
   color: var(--text);
   position: sticky;
   top: 0;
@@ -120,18 +100,18 @@ body.tablet-body :focus-visible {
 .tablet-header h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .clock {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
   margin-top: 3px;
   white-space: nowrap;
 }
@@ -158,10 +138,10 @@ body.tablet-body :focus-visible {
 
 .stat-value {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1;
-  font-variant-numeric: tabular-nums;
   color: var(--text);
 }
 
@@ -179,12 +159,12 @@ body.tablet-body :focus-visible {
   margin-left: 4px;
 }
 
-/* Sobre blanco, el oro de marca se queda en 3.6:1 y no llega al mínimo
-   legible, así que el idioma activo usa el tono oscuro. */
+/* El idioma activo usa el latón oscuro: el claro no llega al mínimo
+   legible sobre blanco. */
 .tablet-header .lang-switcher button.active {
   background: var(--surface-solid);
   color: var(--brand-dark);
-  box-shadow: 0 1px 2px rgba(18, 28, 54, 0.14);
+  box-shadow: 0 1px 2px rgba(28, 36, 32, 0.14);
 }
 
 .btn-refresh {
@@ -257,7 +237,7 @@ body.tablet-body :focus-visible {
 }
 
 .view-tab.active {
-  color: var(--brand-dark);
+  color: var(--forest);
   border-bottom-color: var(--brand);
 }
 
@@ -303,9 +283,9 @@ body.tablet-body :focus-visible {
 }
 
 .tab.active {
-  background: var(--brand-dark);
+  background: var(--forest);
   color: var(--on-brand);
-  border-color: var(--brand-dark);
+  border-color: var(--forest);
 }
 
 .tab.status-tab.active {
@@ -412,10 +392,10 @@ body.tablet-body :focus-visible {
 
 .res-time .t {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 1.2rem;
   font-weight: 700;
   line-height: 1.1;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -424,6 +404,7 @@ body.tablet-body :focus-visible {
   align-items: center;
   gap: 5px;
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 0.82rem;
   color: var(--text-muted);
   margin-top: 6px;
@@ -628,9 +609,9 @@ body.tablet-body :focus-visible {
 
 .table-tile-num {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: 1rem;
-  font-variant-numeric: tabular-nums;
 }
 
 .table-tile-state {

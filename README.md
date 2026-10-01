@@ -59,6 +59,47 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 
 Dime en qué de esto quieres que sigamos y retomamos justo ahí.
 
+## 🎨 Sistema de diseño — "Lake Placid Ivory" (2026-09-30)
+
+La paleta y la tipografía **no son inventadas**: salen de analizar cómo se
+presentan los restaurantes de lujo y los hoteles de la zona. Se midieron los
+estilos computados de cuatro sitios de referencia:
+
+| Sitio | Ancla oscura | Fondo | Acento | Display | Texto |
+|---|---|---|---|---|---|
+| Mirror Lake Inn (Lake Placid, AAA 4 diamantes) | verde `#222E22` | marfil `#FEFAF2` | salvia `#617A61` | Orpheus Pro | Outfit |
+| Lake Placid Lodge | marino `#002045` | `#F5F5F2` | salvia `#D2E8D1` | Minerva | Synonym |
+| The Point (Adirondacks) | negro | marfil `#FFF8ED` | champán `#EDC787` | Cinzel | Quattrocento |
+| Eleven Madison Park | casi negro | blanco | ninguno | EB Garamond | nobel |
+
+Lo que comparten y se aplicó aquí: fondo claro y cálido, **un solo** color
+profundo y desaturado como ancla, acento apagado usado con cuentagotas, un
+serif de estilo antiguo para los títulos, y casi nada de color en la interfaz
+— el color fuerte lo ponen las fotos del restaurante.
+
+Tokens (definidos en `public/css/style.css`, el panel los hereda):
+
+- Fondo `#fbf9f4` marfil · tinta `#1c2420` · apagado `#5f6b60`
+- **Ancla: verde bosque `#20301f`** — es el color de los botones. Ya estaba en
+  la marca de White Bear, así que la paleta no es prestada.
+- **Acento: latón `#7e6433`** — el oro anterior (`#d9a441`) a media saturación;
+  solo aparece en los títulos de sección y en las estrellas de reseña.
+- Los neutros van sesgados hacia el verde del ancla, no son grises puros.
+- Display **EB Garamond**, texto **Outfit**. No hay tercera fuente: las cifras
+  que se alinean usan `font-variant-numeric: tabular-nums` sobre Outfit.
+
+**Fondo 3D** (`public/js/bg-3d.js`): un amanecer brumoso de los Adirondacks en
+WebGL, sin librerías (~4KB en vez de ~600KB de Three.js, que en el plan gratis
+de Render se nota en el arranque en frío). Cuatro cordilleras en perspectiva
+aérea y bancos de niebla. **La versión con aurora boreal y estrellas sobre
+cielo negro se retiró a propósito**: hacía que el sitio pareciera un local
+nocturno, y ninguna de las referencias pone luces de colores detrás del
+contenido.
+
+Si se vuelve a tocar el tema, respetar dos cosas: el acento se gasta en un
+solo sitio, y todo par de texto tiene que pasar 4.5:1 (hay un script de
+auditoría de contraste en el historial de la sesión).
+
 ## 🎨 Plan de mejora visual/UX — próxima sesión ("nivel app de $10k")
 
 Lo funcional ya está sólido (reservaciones, tablet, notificaciones,
