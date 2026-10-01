@@ -55,7 +55,7 @@
         thanks: "Thanks for sharing! Your review is now live.",
         by: "by {name}",
       },
-      heroPhoto: { caption: "Whiteface Mountain · Adirondack High Peaks" },
+      establishment: "White Bear Restaurant · Lake Placid, NY · Since 2023",
       about: {
         title: "About us",
         description:
@@ -219,7 +219,7 @@
         thanks: "¡Gracias por compartir! Tu reseña ya está publicada.",
         by: "por {name}",
       },
-      heroPhoto: { caption: "Montaña Whiteface · Altas Cumbres de los Adirondacks" },
+      establishment: "White Bear Restaurant · Lake Placid, NY · Desde 2023",
       about: {
         title: "Sobre nosotros",
         description:
@@ -383,7 +383,7 @@
         thanks: "Merci d'avoir partagé ! Votre avis est maintenant publié.",
         by: "par {name}",
       },
-      heroPhoto: { caption: "Mont Whiteface · Hautes Cimes des Adirondacks" },
+      establishment: "White Bear Restaurant · Lake Placid, NY · Depuis 2023",
       about: {
         title: "À propos",
         description:
