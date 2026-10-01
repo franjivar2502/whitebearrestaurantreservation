@@ -1,0 +1,19 @@
+# White Bear Restaurant
+#
+# El panel del personal (/tablet.html) y el de fotos (/admin-photos.html) NO
+# se bloquean aquí a propósito, aunque no deban salir en Google.
+#
+# Parece al revés, pero es como funciona: si se bloquean en este archivo, el
+# rastreador no entra, no llega a ver la etiqueta "noindex" de esas páginas, y
+# puede acabar indexando la URL igual porque está enlazada desde el pie del
+# sitio. Encima, nombrarlas aquí las anuncia: robots.txt es público y lo lee
+# cualquiera, incluido quien busca paneles de administración ajenos.
+#
+# Lo correcto es dejar pasar al rastreador y que lea el "noindex" que llevan
+# esas páginas en su propio <head>. Eso sí saca la URL del índice.
+
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://whitebearrestaurantreservation.onrender.com/sitemap.xml

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  El sitio del cliente es una sola página: la reserva y las secciones
+  desplegables (About us, Our Menu, reseñas, información) viven todas en "/".
+  Las páginas del personal no van aquí: llevan "noindex" en su propio <head>.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://whitebearrestaurantreservation.onrender.com/</loc>
+    <lastmod>2026-10-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

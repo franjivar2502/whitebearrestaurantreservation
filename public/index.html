@@ -4,17 +4,80 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>White Bear Restaurant — Reservations</title>
-<meta name="description" content="Reserve a table at White Bear Restaurant, 2793 Wilmington Rd, Lake Placid, NY. Rated 4.2 (243 reviews). Book online in seconds." />
+<meta name="description" content="Reserve a table at White Bear Restaurant, 2793 Wilmington Rd, Lake Placid, NY. Steak, seafood and Italian classics, with tables for large groups. Book online in seconds." />
+<link rel="canonical" href="https://whitebearrestaurantreservation.onrender.com/" />
+<meta name="robots" content="index, follow, max-image-preview:large" />
 <meta property="og:type" content="restaurant" />
+<meta property="og:site_name" content="White Bear Restaurant" />
+<meta property="og:url" content="https://whitebearrestaurantreservation.onrender.com/" />
 <meta property="og:title" content="White Bear Restaurant — Book a table" />
-<meta property="og:description" content="2793 Wilmington Rd, Lake Placid, NY · ⭐ 4.2 (243 reviews) · Reserve your table online in seconds." />
-<meta property="og:image" content="https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkC8LdTYLIoCJ0Ma3amLrSrvJZYu5ygW9poDsycV1EQ0QE-tO_Vf7b55PeXvoQumTGtpegZxnn4kwyiJtLFlvZCaLTX9MeeGSm4Gvq0dyZMYgMfG_15fXY62ZOocVtfhqnFXmiR6kF969Oi=w1600-h1000-k-no" />
+<meta property="og:description" content="Steak, seafood and Italian classics on the road between Lake Placid and Whiteface. Reserve your table online in seconds." />
+<!-- Imagen propia, servida desde este sitio. Antes apuntaba a una URL de
+     googleusercontent.com: Google rota esas direcciones sin avisar, y el día
+     que lo hiciera, compartir el enlace dejaría de mostrar imagen. -->
+<meta property="og:image" content="https://whitebearrestaurantreservation.onrender.com/images/og-card.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Filet mignon and lobster tail at White Bear Restaurant" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/style.css" />
+
+<!--
+  Datos estructurados para Google. Es lo que alimenta la ficha enriquecida en
+  los resultados: dirección, teléfono, horario y el botón de reservar.
+
+  Todo lo de aquí sale de datos reales del proyecto (RESTAURANT_INFO y el
+  horario en server.py, las fotos del menú). No lleva "aggregateRating" a
+  propósito: la calificación de 4.2 viene de Google, no de las reseñas de esta
+  página, y declararla aquí incumple las normas de Google sobre reseñas
+  propias. Tampoco lleva "priceRange" porque nadie ha confirmado el rango.
+-->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Restaurant",
+  "@id": "https://whitebearrestaurantreservation.onrender.com/#restaurant",
+  "name": "White Bear Restaurant",
+  "url": "https://whitebearrestaurantreservation.onrender.com/",
+  "logo": "https://whitebearrestaurantreservation.onrender.com/images/bear-logo.jpg",
+  "image": [
+    "https://whitebearrestaurantreservation.onrender.com/images/og-card.jpg",
+    "https://whitebearrestaurantreservation.onrender.com/images/menu/filet-mignon-lobster-tail.jpg",
+    "https://whitebearrestaurantreservation.onrender.com/images/menu/pan-seared-scallops.jpg",
+    "https://whitebearrestaurantreservation.onrender.com/images/menu/baked-haddock.jpg"
+  ],
+  "telephone": "+1-518-302-5235",
+  "foundingDate": "2023",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "2793 Wilmington Rd",
+    "addressLocality": "Lake Placid",
+    "addressRegion": "NY",
+    "postalCode": "12946",
+    "addressCountry": "US"
+  },
+  "servesCuisine": ["American", "Seafood", "Italian"],
+  "acceptsReservations": "https://whitebearrestaurantreservation.onrender.com/",
+  "openingHoursSpecification": [
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Sunday"],
+      "opens": "11:00",
+      "closes": "21:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Friday", "Saturday"],
+      "opens": "11:00",
+      "closes": "21:30"
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
@@ -266,7 +329,7 @@
 
 <footer class="site-footer">
   White Bear Restaurant · 2793 Wilmington Rd, Lake Placid, NY 12946 · (518) 302-5235<br/>
-  <span data-i18n="footer.staffQuestion">Are you staff?</span> <a href="tablet.html" data-i18n="footer.staffLinkText">Open the reservations panel</a>
+  <span data-i18n="footer.staffQuestion">Are you staff?</span> <a href="tablet.html" rel="nofollow" data-i18n="footer.staffLinkText">Open the reservations panel</a>
   <div class="ai-badge"><span aria-hidden="true">✦</span> <span data-i18n="footer.aiBadge">Built with AI</span></div>
 </footer>
 
