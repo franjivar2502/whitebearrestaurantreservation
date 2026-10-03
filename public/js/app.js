@@ -77,8 +77,12 @@
 
   welcomeSplash.hidden = false;
 
+  /* La URL va escapada igual que el texto. Antes se interpolaba cruda dentro
+     de src="...": una URL con una comilla se salía del atributo y podía meter
+     un onerror. El servidor exige que empiece por http:// o https://, pero
+     eso no impide que lleve una comilla más adelante. */
   const photoImgTag = (p) =>
-    `<img src="${p.url}" alt="${(p.caption || "").replace(/"/g, "&quot;")}" loading="lazy">`;
+    `<img src="${escapeAttr(p.url)}" alt="${escapeAttr(p.caption || "")}" loading="lazy">`;
 
   /* Carrusel de platos que acompaña al formulario en pantalla ancha.
      Solo arranca si hay fotos de la sección "menu": sin contenido se queda
@@ -102,7 +106,7 @@
     frame.innerHTML = shuffled
       .map(
         (p, i) =>
-          `<img src="${p.url}" alt="${(p.caption || "").replace(/"/g, "&quot;")}"` +
+          `<img src="${escapeAttr(p.url)}" alt="${escapeAttr(p.caption || "")}"` +
           `${i === 0 ? ' class="is-current"' : ""}` +
           `${i > 1 ? ' loading="lazy"' : ""}>`
       )
@@ -268,6 +272,19 @@
     return d.innerHTML;
   }
 
+  /* Para texto dentro de un atributo hace falta otra cosa que escapeHtml.
+     Aquel pasa por textContent/innerHTML, que escapa < y & pero deja pasar
+     las comillas -- y la comilla es justo el carácter con el que se sale uno
+     de src="..." para colar un onerror. */
+  function escapeAttr(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function showFormAlert(box, kind, message) {
     box.innerHTML = "";
     const div = document.createElement("div");
@@ -294,7 +311,7 @@
               <span class="review-name">${escapeHtml(i18n.t("reviews.by", { name: r.name }))}</span>
             </div>
             <p class="review-text">${escapeHtml(r.text)}</p>
-            ${r.photoUrl ? `<img class="review-photo" src="${escapeHtml(r.photoUrl)}" alt="" loading="lazy">` : ""}
+            ${r.photoUrl ? `<img class="review-photo" src="${escapeAttr(r.photoUrl)}" alt="" loading="lazy">` : ""}
           </div>`;
       })
       .join("");

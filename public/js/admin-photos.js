@@ -24,6 +24,19 @@
     return d.innerHTML;
   }
 
+  /* Para texto dentro de un atributo hace falta otra cosa que escapeHtml.
+     Aquel pasa por textContent/innerHTML, que escapa < y & pero deja pasar
+     las comillas -- y la comilla es el carácter con el que uno se sale de
+     src="..." para colar un onerror. */
+  function escapeAttr(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function getPassword() {
     try {
       return sessionStorage.getItem(STORAGE_KEY) || "";
@@ -105,8 +118,8 @@
         const category = p.category === "menu" ? "menu" : "gallery";
         const categoryLabel = category === "menu" ? "Nuestro Menú" : "Galería general";
         return `
-        <div class="photo-row" data-id="${escapeHtml(p.id)}">
-          <img class="photo-thumb" src="${escapeHtml(p.url)}" alt="" />
+        <div class="photo-row" data-id="${escapeAttr(p.id)}">
+          <img class="photo-thumb" src="${escapeAttr(p.url)}" alt="" />
           <div class="photo-info">
             <div class="photo-caption">${escapeHtml(p.caption) || "(sin descripción)"}</div>
             <div class="photo-url">${escapeHtml(p.url)}</div>

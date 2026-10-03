@@ -100,6 +100,19 @@
     return d.innerHTML;
   }
 
+  /* Para texto dentro de un atributo hace falta otra cosa que escapeHtml.
+     Aquel pasa por textContent/innerHTML, que escapa < y & pero deja pasar
+     las comillas -- y la comilla es el carácter con el que uno se sale de
+     src="..." para colar un onerror. */
+  function escapeAttr(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function showToast(msg) {
     toastEl.textContent = msg;
     toastEl.classList.add("show");
@@ -143,9 +156,24 @@
    * Su x/y/w/h va en % desde la esquina superior izquierda del salón; los
    * valores fuera de 0-100 son a propósito, para montarse sobre la pared.
    */
+  /* Banquetas de la barra. Se generan en vez de escribir once objetos casi
+     iguales: así cambiar el número o el tramo que ocupan es tocar un dato.
+     El bar va pegado a la pared izquierda (x 3-19%), de modo que las sillas
+     solo caben por su lado abierto, el derecho.
+
+     Son decorativas: ayudan al personal a reconocer el salón, pero NO suman
+     asientos reservables. La barra se ocupa sin reserva. */
+  const BAR_STOOLS = 11;
+  const barStools = Array.from({ length: BAR_STOOLS }, (_, i) => ({
+    kind: "stool",
+    x: 20.5,
+    y: 29 + (i * 58) / (BAR_STOOLS - 1),
+  }));
+
   const ROOM_FIXTURES = {
     left: [
       { kind: "bar", x: 3, y: 26, w: 16, h: 66, labelKey: "tables.bar" },
+      ...barStools,
       { kind: "door", x: 36, y: -3, w: 17, h: 6, labelKey: "tables.entrance" },
       { kind: "door", x: 41, y: 97, w: 19, h: 6, labelKey: "tables.bathroom" },
       { kind: "window", x: -1.5, y: 5, w: 3, h: 18 },
@@ -197,7 +225,15 @@
             const label = f.labelKey
               ? `<span class="floor-fixture-label">${escapeHtml(tabletI18n.t(f.labelKey))}</span>`
               : "";
-            return `<div class="floor-fixture floor-fixture--${f.kind}" style="left:${f.x}%;top:${f.y}%;width:${f.w}%;height:${f.h}%">${label}</div>`;
+            /* Las banquetas no llevan ancho ni alto en %: un círculo definido
+               en porcentajes se deforma en óvalo al cambiar el tamaño del
+               salón, porque el % de ancho y el de alto miden cosas distintas.
+               Van con tamaño fijo en el CSS y aquí solo su posición. */
+            const box =
+              f.kind === "stool"
+                ? ""
+                : `width:${f.w}%;height:${f.h}%;`;
+            return `<div class="floor-fixture floor-fixture--${f.kind}" style="left:${f.x}%;top:${f.y}%;${box}">${label}</div>`;
           })
           .join("");
 
@@ -211,8 +247,8 @@
               <button type="button"
                 class="floor-table ${t.unavailable ? "unavailable" : "available"} ${t.shape === "square" ? "is-square" : "is-rect"}"
                 style="left:${t.x}%;top:${t.y}%;width:${size.w}%;height:${size.h}%"
-                data-id="${t.id}"
-                aria-label="${escapeHtml(`${label} — ${tabletI18n.t("tables.seats", { n: t.seats })} — ${state}`)}">
+                data-id="${escapeAttr(t.id)}"
+                aria-label="${escapeAttr(`${label} — ${tabletI18n.t("tables.seats", { n: t.seats })} — ${state}`)}">
                 <span class="floor-table-num">${escapeHtml(String(t.number))}</span>
                 <span class="floor-table-seats">${escapeHtml(tabletI18n.t("tables.seats", { n: t.seats }))}</span>
               </button>`;
@@ -328,20 +364,20 @@
 
     let actions = "";
     if (r.status === "pending") {
-      actions += `<button class="action-btn action-confirm" data-id="${r.id}" data-status="confirmed">${escapeHtml(tabletI18n.t("actions.confirm"))}</button>`;
+      actions += `<button class="action-btn action-confirm" data-id="${escapeAttr(r.id)}" data-status="confirmed">${escapeHtml(tabletI18n.t("actions.confirm"))}</button>`;
     }
     if (r.status === "confirmed") {
-      actions += `<button class="action-btn action-seat" data-id="${r.id}" data-status="seated">${escapeHtml(tabletI18n.t("actions.seat"))}</button>`;
+      actions += `<button class="action-btn action-seat" data-id="${escapeAttr(r.id)}" data-status="seated">${escapeHtml(tabletI18n.t("actions.seat"))}</button>`;
     }
     if (r.status === "seated") {
-      actions += `<button class="action-btn action-complete" data-id="${r.id}" data-status="completed">${escapeHtml(tabletI18n.t("actions.complete"))}</button>`;
+      actions += `<button class="action-btn action-complete" data-id="${escapeAttr(r.id)}" data-status="completed">${escapeHtml(tabletI18n.t("actions.complete"))}</button>`;
     }
     if (!["completed", "cancelled"].includes(r.status)) {
-      actions += `<button class="action-btn action-cancel" data-id="${r.id}" data-status="cancelled">${escapeHtml(tabletI18n.t("actions.cancel"))}</button>`;
+      actions += `<button class="action-btn action-cancel" data-id="${escapeAttr(r.id)}" data-status="cancelled">${escapeHtml(tabletI18n.t("actions.cancel"))}</button>`;
     }
 
     return `
-      <div class="res-card status-${escapeHtml(r.status)}" data-id="${r.id}">
+      <div class="res-card status-${escapeHtml(r.status)}" data-id="${escapeAttr(r.id)}">
         <div class="res-time">
           <span class="t">${escapeHtml(tabletI18n.formatTime(r.time))}</span>
           <span class="party">${icon("people")}${escapeHtml(String(r.partySize))}</span>
@@ -419,6 +455,153 @@
   refreshBtn.addEventListener("click", () => {
     fetchReservations();
     if (currentView === "tables") fetchTables();
+  });
+
+  /* ---------- alta rápida de reserva ----------
+     Para cuando entra una llamada: el encargado apunta la mesa sin salir de
+     la lista del turno. Usa el mismo endpoint que el formulario público, así
+     que pasa por las mismas validaciones y por el control de asientos -- una
+     reserva tomada por teléfono no puede saltarse el aforo. */
+  const newResBtn = document.getElementById("new-res-btn");
+  const newResPopover = document.getElementById("new-res-popover");
+  const newResForm = document.getElementById("new-res-form");
+  const newResAlert = document.getElementById("new-res-alert");
+  const newResSave = document.getElementById("new-res-save");
+  const newResCancel = document.getElementById("new-res-cancel");
+
+  function closeNewRes({ devolverFoco = true } = {}) {
+    newResPopover.hidden = true;
+    newResBtn.setAttribute("aria-expanded", "false");
+    newResAlert.hidden = true;
+    if (devolverFoco) newResBtn.focus();
+  }
+
+  // Horario real del local, para no proponer horas a las que está cerrado.
+  const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  let horario = null;
+  fetch("/api/restaurant", { cache: "no-store" })
+    .then((r) => r.json())
+    .then((d) => {
+      horario = d.hours || null;
+    })
+    .catch(() => {});
+
+  function horasDelDia(iso) {
+    if (!horario) return null;
+    const [y, m, d] = iso.split("-").map(Number);
+    return horario[DAY_KEYS[new Date(y, m - 1, d).getDay()]] || null;
+  }
+
+  function aplicarHorario(iso) {
+    const h = horasDelDia(iso);
+    const campo = newResForm.elements.time;
+    if (h) {
+      campo.min = h.open;
+      campo.max = h.close;
+    } else {
+      campo.removeAttribute("min");
+      campo.removeAttribute("max");
+    }
+    return h;
+  }
+
+  function openNewRes() {
+    newResForm.reset();
+    newResAlert.hidden = true;
+    const hoy = todayIso();
+    newResForm.elements.date.value = hoy;
+    newResForm.elements.date.min = hoy;
+
+    const h = aplicarHorario(hoy);
+    // Se propone la próxima franja de cuarto de hora, porque la mayoría de
+    // las llamadas son para dentro de un rato. Pero solo si a esa hora el
+    // local está abierto: a las 23:47 proponía las 00:15, que nunca vale.
+    const ahora = new Date();
+    ahora.setMinutes(Math.ceil((ahora.getMinutes() + 15) / 15) * 15, 0, 0);
+    const propuesta =
+      `${String(ahora.getHours()).padStart(2, "0")}:${String(ahora.getMinutes()).padStart(2, "0")}`;
+    newResForm.elements.time.value =
+      !h || propuesta < h.open || propuesta > h.close ? "" : propuesta;
+
+    newResPopover.hidden = false;
+    newResBtn.setAttribute("aria-expanded", "true");
+    newResForm.elements.name.focus();
+  }
+
+  // Si cambia la fecha, el rango horario que admite el campo cambia con ella.
+  newResForm.elements.date.addEventListener("change", (e) => aplicarHorario(e.target.value));
+
+  newResBtn.addEventListener("click", () => {
+    if (newResPopover.hidden) openNewRes();
+    else closeNewRes();
+  });
+
+  newResCancel.addEventListener("click", () => closeNewRes());
+
+  // Cerrar al tocar fuera o con Escape, como se espera de un recuadro así.
+  document.addEventListener("click", (e) => {
+    if (newResPopover.hidden) return;
+    if (!e.target.closest(".new-res-wrap")) closeNewRes({ devolverFoco: false });
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !newResPopover.hidden) closeNewRes();
+  });
+
+  newResForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = newResForm.elements;
+    const payload = {
+      name: f.name.value.trim(),
+      phone: f.phone.value.trim(),
+      date: f.date.value,
+      time: f.time.value,
+      partySize: Number(f.partySize.value),
+      seatingPreference: f.seatingPreference.value,
+      notes: f.notes.value.trim(),
+    };
+
+    newResSave.disabled = true;
+    newResAlert.hidden = true;
+    try {
+      const res = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        const errs = Array.isArray(data.errors) ? data.errors : [];
+        newResAlert.textContent = errs
+          .map((er) => tabletI18n.t(`errors.${er.code || er}`))
+          .join(" · ");
+        newResAlert.hidden = false;
+        return;
+      }
+
+      // La toma el personal por teléfono, así que ya está confirmada: no
+      // tiene sentido que aparezca "pendiente" y haya que confirmarla a mano.
+      try {
+        await fetch(`/api/reservations/${data.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "confirmed" }),
+        });
+      } catch (err) {
+        /* Si esto falla, la reserva ya existe: se queda pendiente y se
+           confirma con un toque desde la lista. No se pierde nada. */
+      }
+
+      closeNewRes();
+      showToast(tabletI18n.t("newRes.added", { name: data.name }));
+      fetchReservations();
+      if (currentView === "tables") fetchTables();
+    } catch (err) {
+      newResAlert.textContent = tabletI18n.t("newRes.failed");
+      newResAlert.hidden = false;
+    } finally {
+      newResSave.disabled = false;
+    }
   });
 
   updateClock();

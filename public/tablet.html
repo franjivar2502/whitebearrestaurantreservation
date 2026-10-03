@@ -49,6 +49,62 @@
 <nav class="view-tabs" id="view-tabs">
   <button type="button" class="view-tab active" data-view="reservations" data-i18n="views.reservations">Reservations</button>
   <button type="button" class="view-tab" data-view="tables" data-i18n="views.tables">Tables</button>
+
+  <!-- Alta rápida de reserva, para cuando entra una llamada. Abre un
+       recuadro anclado a este botón, no una pantalla completa: el personal
+       sigue viendo la lista del turno detrás mientras apunta. -->
+  <div class="new-res-wrap">
+    <button type="button" class="btn-new-res" id="new-res-btn" aria-expanded="false" aria-controls="new-res-popover">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+      <span data-i18n="newRes.open">New reservation</span>
+    </button>
+
+    <div class="new-res-popover" id="new-res-popover" role="dialog" aria-modal="false"
+         aria-labelledby="new-res-title" hidden>
+      <p class="new-res-title" id="new-res-title" data-i18n="newRes.title">New reservation</p>
+      <form id="new-res-form" novalidate>
+        <div class="new-res-grid">
+          <label class="new-res-field new-res-field--full">
+            <span data-i18n="newRes.name">Name</span>
+            <input type="text" name="name" required autocomplete="off" />
+          </label>
+          <label class="new-res-field new-res-field--full">
+            <span data-i18n="newRes.phone">Phone</span>
+            <input type="tel" name="phone" required autocomplete="off" />
+          </label>
+          <label class="new-res-field">
+            <span data-i18n="newRes.date">Date</span>
+            <input type="date" name="date" required />
+          </label>
+          <label class="new-res-field">
+            <span data-i18n="newRes.time">Time</span>
+            <input type="time" name="time" required step="900" />
+          </label>
+          <label class="new-res-field">
+            <span data-i18n="newRes.partySize">Guests</span>
+            <input type="number" name="partySize" min="1" max="40" value="2" required />
+          </label>
+          <label class="new-res-field">
+            <span data-i18n="newRes.seating">Seating</span>
+            <select name="seatingPreference">
+              <option value="" data-i18n="newRes.seatingNone">No preference</option>
+              <option value="inside" data-i18n="newRes.seatingInside">Inside</option>
+              <option value="outside" data-i18n="newRes.seatingOutside">Outside</option>
+            </select>
+          </label>
+          <label class="new-res-field new-res-field--full">
+            <span data-i18n="newRes.notes">Notes</span>
+            <input type="text" name="notes" autocomplete="off" />
+          </label>
+        </div>
+        <div class="new-res-alert" id="new-res-alert" hidden></div>
+        <div class="new-res-actions">
+          <button type="button" class="btn-ghost" id="new-res-cancel" data-i18n="newRes.cancel">Cancel</button>
+          <button type="submit" class="btn-save" id="new-res-save" data-i18n="newRes.save">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </nav>
 
 <section id="reservations-view">
