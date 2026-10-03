@@ -230,8 +230,8 @@ TABLE_LAYOUT = [
     ("rect6-1", "rect", 6, 6, "left", 78, 24),
     ("rect6-2", "rect", 6, 7, "left", 78, 35),
     ("rect6-3", "rect", 6, 8, "left", 78, 46),
-    ("rect6-4", "rect", 6, 9, "left", 78, 68),
-    ("rect6-5", "rect", 6, 10, "left", 78, 83),
+    ("rect4-8", "rect", 4, 9, "left", 78, 68),
+    ("rect4-9", "rect", 4, 10, "left", 78, 83),
     # --- Salón del fondo ---
     ("square4-4", "square", 4, 11, "right", 14, 7),
     ("square4-5", "square", 4, 12, "right", 49, 7),
@@ -240,14 +240,13 @@ TABLE_LAYOUT = [
     ("square4-7", "square", 4, 15, "right", 50, 21),
     ("rect6-6", "rect", 6, 16, "right", 84, 21),
     ("rect4-2", "rect", 4, 17, "right", 14, 33),
-    ("square4-8", "square", 4, 18, "right", 50, 33),
     ("rect4-3", "rect", 4, 19, "right", 84, 33),
     ("rect10-1", "rect", 10, 20, "right", 48, 48),
     ("rect4-4", "rect", 4, 21, "right", 16, 63),
     ("square4-9", "square", 4, 22, "right", 52, 69),
-    ("rect4-5", "rect", 4, 23, "right", 82, 68),
-    ("rect4-6", "rect", 4, 24, "right", 24, 78),
-    ("rect4-7", "rect", 4, 25, "right", 81, 81),
+    ("rect6-7", "rect", 6, 23, "right", 82, 68),
+    ("rect6-8", "rect", 6, 24, "right", 24, 78),
+    ("rect6-9", "rect", 6, 25, "right", 81, 81),
     ("rect12-1", "rect", 12, 26, "right", 47, 91),
 ]
 
