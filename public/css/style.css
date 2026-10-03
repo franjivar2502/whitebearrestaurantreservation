@@ -1222,3 +1222,64 @@ footer.site-footer a {
     font-size: 1.25rem;
   }
 }
+
+/* ---------- consentimiento y enlaces legales ---------- */
+.consent {
+  margin: 4px 0 16px;
+}
+
+.consent-check,
+#reservation-form .consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  cursor: pointer;
+  /* Es una frase para leer, no el rótulo de un campo: sin las mayúsculas
+     ni el espaciado de los <label> normales. */
+  font-family: var(--font-body);
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.consent-check input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--forest);
+}
+
+.consent .hint {
+  margin: 8px 0 0 28px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.consent a {
+  color: var(--brand-dark);
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin-top: 10px;
+}
+
+footer.site-footer .footer-links a,
+.confirm-legal a {
+  color: var(--text-muted);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.confirm-legal {
+  font-size: 0.75rem;
+  margin-top: 14px;
+}
