@@ -73,6 +73,7 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password }),
     });
+    if (res.status === 429) return "too-many";
     return res.ok;
   }
 
@@ -89,7 +90,9 @@
     loginBtn.disabled = true;
     try {
       const ok = await tryLogin(password);
-      if (ok) {
+      if (ok === "too-many") {
+        showAlert(loginAlert, "Demasiados intentos fallidos. Espera 15 minutos y vuelve a intentarlo.");
+      } else if (ok) {
         setPassword(password);
         showPanel();
       } else {
