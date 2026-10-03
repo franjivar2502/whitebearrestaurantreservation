@@ -9,14 +9,12 @@ tablet del restaurante.
 **Ubicación permanente del proyecto (original):**
 `/Users/mgabriella98/WhiteBearRest.PROYECT./white-bear-reservations`
 
-**⚠️ Nota (2026-09-29): existe una segunda copia clonada** en
-`/Users/mgabriella98/whitebearrestaurantreservation` (desde otra sesión de
-Claude, misma Mac). Se clonó por HTTPS desde GitHub, así que **no tiene
-configuradas credenciales para hacer `git push`** todavía -- para subir
-cambios desde ahí hace falta generar una llave SSH nueva (agregarla como
-Deploy Key del repo) o autenticar `gh` con un token. Antes de seguir
-trabajando desde cualquiera de las dos copias, correr `git pull` para no
-perder cambios hechos en la otra.
+**⚠️ Hay dos copias del proyecto en esta Mac.** La que se usa a diario es
+`/Users/mgabriella98/whitebearrestaurantreservation`; ya tiene acceso de
+escritura a GitHub mediante una llave SSH dedicada (`~/.ssh/id_ed25519_whitebear`,
+con el alias `github.com-whitebear` en `~/.ssh/config`). **Antes de ponerse a
+trabajar en cualquiera de las dos, hacer `git pull`**, o se pierden cambios
+hechos en la otra.
 
 **Para arrancarlo:**
 ```bash
@@ -32,7 +30,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 
 **✅ Ya construido y probado:**
 - Formulario de reservaciones con validación de horario por día y tamaño de grupo.
-- **Disponibilidad real por asientos** (130 en 26 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
+- **Disponibilidad real por asientos** (128 en 25 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
 - Preferencia de mesa adentro/afuera (opcional) en el formulario de reservación.
 - Panel de tablet en tiempo real (se actualiza solo, sin recargar), con una pestaña nueva "Tables"/"Mesas" para que el staff marque mesas fuera de servicio.
 - Preorden para grupos de 20+ personas (menú aún placeholder, ver más abajo).
@@ -50,12 +48,34 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 **⏳ Pendiente para que el proyecto esté 100% terminado:**
 1. **Menú real para el preorden de grupos grandes** — hoy son 3 platillos placeholder.
 2. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
-3. **Cambiar `ADMIN_PASSWORD`** (panel de fotos) a una contraseña definitiva — hoy sigue siendo la de prueba (`whitebear123`).
-4. **Confirmar el plano del salón con el cliente** — el panel ya dibuja los dos salones tal como están en el local (`TABLE_LAYOUT` en `server.py`), pero el mapa que entregó no trae números de mesa, no dice cuáles rectangulares son de 4 asientos y cuáles de 6, ni cuál de las dos grandes es la de 12. Esos tres datos están puestos por lectura del mapa, no confirmados. (El total de asientos sí quedó resuelto: son **130, no 122** — en el mapa aparecieron dos mesas cuadradas más en el grupo de la entrada, que son justo los 8 asientos que el cliente decía de palabra.)
-5. **13 fotos reales que el cliente quiso subir no se pudieron procesar** (2026-09-29) — eran archivos temporales de Fotos.app en macOS, protegidos por el sistema de permisos; ni siquiera la app de Claude pudo abrirlos. Hace falta que el cliente las re-exporte a una carpeta normal (Escritorio, Descargas) para poder editarlas y subirlas -- algunas son fotos del comedor/exterior (van a "Gallery") y otras del menú (van a "Our Menu"), hay que clasificarlas al agregarlas.
-6. Revisar y ampliar `NEGATIVE_REVIEW_KEYWORDS` en `server.py` si empiezan a llegar reseñas reales -- la lista actual es un punto de partida razonable, no exhaustiva.
-5. Decidir si el panel de tablet necesita más idiomas o queda así.
-6. **Subir (`git push`) el commit del logo nuevo del oso** desde esta segunda copia del proyecto -- quedó hecho localmente pero bloqueado por falta de credenciales de GitHub en esta sesión (ver nota de arriba). Una vez resuelto el acceso, hacer `git push` y luego confirmar que Render lo despliegue.
+3. ~~Cambiar `ADMIN_PASSWORD`~~ — **hecho (2026-10-03).** La contraseña está
+   solo en las variables de entorno de Render y no se escribe en ningún
+   archivo del repositorio. Si hace falta consultarla: Render → el servicio →
+   Environment → el icono del ojo. **Nunca la pegues aquí**: este repositorio
+   es público.
+4. **Cuadrar los dos asientos que bailan.** El plano se revisó con el cliente
+   el 2026-10-02 (se quitó la mesa 18, las 23/24/25 pasaron a 6 asientos y las
+   9/10 a 4) y queda en **128**. El cliente dice 130 de palabra, así que falta
+   encontrar dos sillas en alguna parte -- o confirmar que su cifra incluye la
+   barra. La numeración tiene un hueco en el 18: queda así a propósito, para no
+   cambiarle el rótulo a ocho mesas si el personal ya las llama por su número.
+5. **Faltan fotos de "Gallery"** (comedor, exterior). Las **6 del menú ya
+   están** subidas (`public/images/menu/`, 2026-10-01) y se ven tanto en
+   "Our Menu" como en el carrusel junto al formulario. La de los mejillones
+   vino a 384x512, muy por debajo de las otras cinco: si el cliente tiene el
+   original, conviene reemplazarla. Aviso para la próxima tanda: las fotos
+   exportadas desde Fotos.app en macOS son archivos temporales protegidos por
+   el sistema y no se pueden leer -- hay que pedirle que las guarde en
+   Escritorio o Descargas.
+6. Revisar y ampliar `NEGATIVE_REVIEW_KEYWORDS` en `server.py` si empiezan a
+   llegar reseñas reales -- la lista actual es un punto de partida, no es
+   exhaustiva. **Importante:** las palabras se buscan por palabra completa, no
+   por subcadena. Si se vuelve a buscar por subcadena, "rat" bloquea "trato" y
+   se rechazan reseñas buenas (pasó, ver DURABILIDAD.md).
+7. Decidir si el panel de tablet necesita más idiomas o queda así.
+8. **Leer `DURABILIDAD.md`** antes de hablar de mantenimiento con el cliente:
+   ahí está qué hace falta para que esto siga en pie dentro de diez años, y el
+   aviso sobre la norma de la FTC en materia de reseñas.
 
 Dime en qué de esto quieres que sigamos y retomamos justo ahí.
 
@@ -338,10 +358,11 @@ local (útil para desarrollo, pero no para producción en Render).
 El sitio ya sabe cuántos asientos hay libres a la hora que alguien está
 reservando -- no deja pasar una reservación que no cabe.
 
-**Inventario de mesas** (dato real del restaurante, en `TABLE_LAYOUT` de
-`server.py`): 11 cuadradas de 4, 7 rectangulares de 4, 6 rectangulares de
-6, 1 rectangular de 12 y 1 rectangular de 10 -- **130 asientos en total**
-(26 mesas). Cada mesa lleva además en qué salón está y su posición en el
+**Inventario de mesas** (en `TABLE_LAYOUT` de `server.py`, revisado con el
+cliente sobre el plano el 2026-10-02): 10 cuadradas de 4, 6 rectangulares de
+4, 7 rectangulares de 6, 1 rectangular de 10 y 1 rectangular de 12 --
+**128 asientos en total** (25 mesas). Las 11 banquetas de la barra se dibujan
+en el plano pero NO suman aforo: la barra se ocupa sin reserva. Cada mesa lleva además en qué salón está y su posición en el
 plano. Si cambia el número de mesas, las sillas, o dónde está una mesa,
 edita `TABLE_LAYOUT` -- es el único lugar.
 
