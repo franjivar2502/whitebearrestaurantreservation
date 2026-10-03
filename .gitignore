@@ -7,3 +7,5 @@ data/table_status.json
 data/reviews.json
 public/uploads/
 .env
+backups/
+data/*.corrupt-*

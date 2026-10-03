@@ -20,9 +20,10 @@ import threading
 import time
 import unicodedata
 import uuid
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import notifications
 import storage
@@ -292,6 +293,28 @@ RESERVATION_DURATION_MINUTES = 90
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
 
+# Hora del restaurante. El servidor en la nube corre en UTC: sin esto, a
+# partir de las 8 de la noche en Lake Placid el servidor ya creía que era
+# "mañana" (y rechazaba reservas para esa misma noche como fecha pasada), y
+# los recordatorios salían con 4-5 horas de desfase. Todas las fechas y horas
+# guardadas son de reloj local del restaurante, así que "ahora" también.
+RESTAURANT_TIMEZONE = os.environ.get("RESTAURANT_TIMEZONE", "America/New_York")
+try:
+    _RESTAURANT_TZ = ZoneInfo(RESTAURANT_TIMEZONE)
+except (ZoneInfoNotFoundError, ValueError):
+    print(f"[ERROR] Zona horaria {RESTAURANT_TIMEZONE!r} no disponible; se usa la del servidor.")
+    _RESTAURANT_TZ = None
+
+
+def _now():
+    """Fecha y hora actuales en el restaurante (sin tzinfo, como las guardadas)."""
+    return datetime.now(_RESTAURANT_TZ).replace(tzinfo=None)
+
+
+def _today():
+    return _now().date()
+
+
 def _hours_for_date(d):
     """Devuelve (hora_apertura, hora_cierre, última_hora_para_reservar) para la fecha dada."""
     day_hours = RESTAURANT["hours"][DAY_KEYS[d.weekday()]]
@@ -319,7 +342,7 @@ def _seats_committed(res_date, res_time, exclude_id=None):
     start = _time_to_minutes(res_time)
     end = start + RESERVATION_DURATION_MINUTES
     total = 0
-    for r in storage.list_reservations():
+    for r in storage.list_reservations(on_date=res_date):
         if exclude_id and r.get("id") == exclude_id:
             continue
         if r.get("status") in ("cancelled", "completed") or r.get("date") != res_date:
@@ -410,13 +433,13 @@ def _validate_reservation(payload):
         parsed_date = None
         errors.append({"code": "DATE_INVALID"})
 
-    if parsed_date and parsed_date < date.today():
+    if parsed_date and parsed_date < _today():
         errors.append({"code": "DATE_PAST"})
 
     # Tope por arriba: sin él se aceptaban reservas a 400 días vista. Ningún
     # restaurante toma mesa para dentro de un año, y esas filas se quedan
     # ensuciando el panel durante meses.
-    if parsed_date and parsed_date > date.today() + timedelta(days=MAX_BOOKING_DAYS_AHEAD):
+    if parsed_date and parsed_date > _today() + timedelta(days=MAX_BOOKING_DAYS_AHEAD):
         errors.append({"code": "DATE_TOO_FAR"})
 
     try:
@@ -567,6 +590,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_GET(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/healthz":
+            health, status = _health()
+            self._send_json(health, status=status)
+            return
         if parsed.path == "/api/restaurant":
             self._send_json(RESTAURANT)
             return
@@ -688,7 +715,7 @@ class Handler(BaseHTTPRequestHandler):
                 "rating": rating,
                 "photoUrl": photo_url,
                 "status": "approved",
-                "createdAt": datetime.now().isoformat(timespec="seconds"),
+                "createdAt": _now().isoformat(timespec="seconds"),
             }
             with _lock:
                 storage.save_review(review)
@@ -704,22 +731,25 @@ class Handler(BaseHTTPRequestHandler):
             if errors:
                 self._send_json({"errors": errors}, status=400)
                 return
-            with _lock:
-                available = _available_seats(clean["date"], clean["time"])
-            if available < clean["partySize"]:
-                self._send_json({"errors": [{"code": "NO_AVAILABILITY"}]}, status=400)
-                return
             reservation = {
                 "id": uuid.uuid4().hex[:8],
                 "status": "pending",
-                "createdAt": datetime.now().isoformat(timespec="seconds"),
+                "createdAt": _now().isoformat(timespec="seconds"),
                 "reminderSent": False,
                 "attendanceReminderSent": False,
                 "attendanceConfirmed": None,
                 **clean,
             }
+            # Comprobar y guardar bajo el mismo candado. Antes eran dos
+            # bloques separados: dos clientes reservando a la vez el último
+            # hueco pasaban los dos la comprobación y ambos quedaban dentro.
             with _lock:
-                storage.save_reservation(reservation)
+                available = _available_seats(clean["date"], clean["time"])
+                if available >= clean["partySize"]:
+                    storage.save_reservation(reservation)
+            if available < clean["partySize"]:
+                self._send_json({"errors": [{"code": "NO_AVAILABILITY"}]}, status=400)
+                return
             threading.Thread(
                 target=notifications.notify_confirmation, args=(reservation,), daemon=True
             ).start()
@@ -781,7 +811,7 @@ class Handler(BaseHTTPRequestHandler):
                     "caption": caption,
                     "category": category,
                     "sort_order": len(existing),
-                    "created_at": datetime.now().isoformat(timespec="seconds"),
+                    "created_at": _now().isoformat(timespec="seconds"),
                 }
                 storage.add_photo(photo)
             self._send_json(photo, status=201)
@@ -915,6 +945,11 @@ class Handler(BaseHTTPRequestHandler):
         try:
             parsed = urlparse(self.path)
             path = parsed.path
+            if path == "/healthz":
+                # Los monitores de disponibilidad (UptimeRobot) usan HEAD.
+                self.send_response(_health()[1])
+                self.end_headers()
+                return
             if path == "/":
                 path = "/index.html"
             safe_path = os.path.normpath(path).lstrip("/")
@@ -947,7 +982,7 @@ def _check_and_send_attendance_confirmations():
     Si la persona no responde, el mensaje le indica que debe llamar al
     restaurante; el estado de la reserva no cambia hasta que responda.
     """
-    now = datetime.now()
+    now = _now()
     with _lock:
         reservations = storage.list_reservations()
         due = []
@@ -976,7 +1011,7 @@ def _check_and_send_attendance_confirmations():
 
 
 def _check_and_send_reminders():
-    now = datetime.now()
+    now = _now()
     with _lock:
         reservations = storage.list_reservations()
         due = []
@@ -996,17 +1031,78 @@ def _check_and_send_reminders():
         notifications.notify_reminder(r)
 
 
+# Cuántos días se guardan las reservaciones pasadas antes de borrarlas. Sin
+# configurar no se borra nada: es una decisión del dueño (y de la política de
+# privacidad), no algo que el código deba decidir solo. Ver OPERACION.md.
+RESERVATION_RETENTION_DAYS = os.environ.get("RESERVATION_RETENTION_DAYS", "").strip()
+
+
+def _purge_old_reservations():
+    if not RESERVATION_RETENTION_DAYS:
+        return 0
+    days = int(RESERVATION_RETENTION_DAYS)
+    if days < 30:
+        # Protección contra un error de dedo (p. ej. "3" en vez de "365").
+        raise ValueError("RESERVATION_RETENTION_DAYS debe ser 30 o más.")
+    cutoff = (_today() - timedelta(days=days)).isoformat()
+    with _lock:
+        removed = storage.purge_reservations_before(cutoff)
+    if removed:
+        print(f"[INFO] Limpieza: {removed} reservaciones anteriores a {cutoff} borradas.")
+    return removed
+
+
+_started_at = time.time()
+_last_loop_ok = None  # última vuelta del hilo de recordatorios sin errores
+
+
+def _health():
+    """Estado para /healthz: 200 si el almacenamiento responde, 503 si no."""
+    health = {
+        "ok": True,
+        "uptimeSeconds": int(time.time() - _started_at),
+        "time": _now().isoformat(timespec="seconds"),
+        "timezone": RESTAURANT_TIMEZONE if _RESTAURANT_TZ else "servidor",
+        "remindersLastRun": (
+            datetime.fromtimestamp(_last_loop_ok, _RESTAURANT_TZ).isoformat(timespec="seconds")
+            if _last_loop_ok
+            else None
+        ),
+    }
+    try:
+        health["storage"] = storage.ping()
+    except Exception as exc:  # noqa: BLE001
+        print(f"[ERROR] healthz: almacenamiento no responde: {exc!r}")
+        health["ok"] = False
+        health["storage"] = "error"
+    return health, 200 if health["ok"] else 503
+
+
 def _reminder_loop():
+    global _last_loop_ok
+    last_purge_day = None
     while True:
         time.sleep(60)
-        try:
-            _check_and_send_attendance_confirmations()
-        except Exception:  # noqa: BLE001 - el hilo de fondo no debe morir por un error puntual
-            pass
-        try:
-            _check_and_send_reminders()
-        except Exception:  # noqa: BLE001
-            pass
+        ok = True
+        # Cada tarea por separado: que falle una no debe impedir las demás, ni
+        # matar el hilo. Pero el error se imprime -- antes se tragaba en
+        # silencio y un fallo de Supabase dejaba de mandar recordatorios sin
+        # que nadie se enterara.
+        for task in (_check_and_send_attendance_confirmations, _check_and_send_reminders):
+            try:
+                task()
+            except Exception as exc:  # noqa: BLE001
+                ok = False
+                print(f"[ERROR] {task.__name__}: {exc!r}")
+        if last_purge_day != _today():
+            try:
+                _purge_old_reservations()
+                last_purge_day = _today()
+            except Exception as exc:  # noqa: BLE001
+                ok = False
+                print(f"[ERROR] limpieza de reservaciones: {exc!r}")
+        if ok:
+            _last_loop_ok = time.time()
 
 
 def main():
