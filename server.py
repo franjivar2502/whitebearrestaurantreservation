@@ -98,14 +98,18 @@ RESTAURANT = {
 VALID_STATUSES = {"pending", "confirmed", "seated", "completed", "cancelled"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 VALID_SEATING_PREFERENCES = {"", "inside", "outside"}
+# Estados de una reseña: "approved" se ve en el sitio, "pending" espera al
+# staff, "hidden" la ocultó el staff (se conserva, no se borra).
+VALID_REVIEW_STATUSES = {"approved", "pending", "hidden"}
 
-# Moderación de reseñas de clientes por palabras clave: cualquier reseña que
-# contenga una palabra de esta lista (español o inglés) se rechaza -- nunca
-# llega a publicarse, para no afectar la reputación del restaurante con
-# comentarios ofensivos, acusaciones graves o spam evidente. Es una barrera
-# simple a propósito (sin servicio externo, sin dependencias) -- no
-# reemplaza el criterio del staff, pero filtra lo obviamente dañino antes de
-# que se publique solo.
+# Moderación de reseñas de clientes por palabras clave: una reseña que
+# contenga una palabra de esta lista (español o inglés) NO se publica sola,
+# pero tampoco se descarta: se guarda como "pending" y llega a la cola de
+# moderación del panel (/admin-photos.html), donde el staff decide si la
+# publica o la oculta. Así el restaurante se entera y puede responder o
+# llamar, y no se suprimen críticas en silencio (ver la norma de la FTC en
+# DURABILIDAD.md). La calificación en estrellas no influye: una reseña de una
+# estrella sin palabras de la lista se publica igual que una de cinco.
 # Topes de longitud y de antelación. En un sitio abierto a internet, todo
 # campo libre necesita un techo: si no, cualquiera llena la base del cliente.
 MAX_NAME_LENGTH = 120
@@ -581,6 +585,13 @@ class Handler(BaseHTTPRequestHandler):
             approved = [r for r in reviews if r.get("status") == "approved"]
             self._send_json(approved)
             return
+        if parsed.path == "/api/admin/reviews":
+            if not self._require_admin():
+                return
+            with _lock:
+                reviews = storage.list_reviews()
+            self._send_json(reviews)
+            return
         if parsed.path == "/api/tables":
             with _lock:
                 unavailable_ids = storage.list_unavailable_table_ids()
@@ -659,9 +670,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"errors": errors}, status=400)
                 return
 
-            if not _review_text_allowed(text):
-                self._send_json({"errors": [{"code": "REVIEW_REJECTED"}]}, status=400)
-                return
+            # Ya no se rechaza: si trae una palabra de la lista, queda
+            # retenida para que el staff la vea y decida.
+            needs_moderation = not _review_text_allowed(text)
 
             photo_url = ""
             photo_field = fields.get("photo")
@@ -687,7 +698,7 @@ class Handler(BaseHTTPRequestHandler):
                 "text": text,
                 "rating": rating,
                 "photoUrl": photo_url,
-                "status": "approved",
+                "status": "pending" if needs_moderation else "approved",
                 "createdAt": datetime.now().isoformat(timespec="seconds"),
             }
             with _lock:
@@ -825,6 +836,28 @@ class Handler(BaseHTTPRequestHandler):
             with _lock:
                 storage.update_photo_category(photo_id, category)
             self._send_json({"id": photo_id, "category": category})
+            return
+
+        m = re.match(r"^/api/admin/reviews/([a-f0-9]+)$", parsed.path)
+        if m:
+            if not self._require_admin():
+                return
+            review_id = m.group(1)
+            payload = self._read_json_body() or {}
+            new_status = payload.get("status")
+            if new_status not in VALID_REVIEW_STATUSES:
+                self._send_json({"errors": ["Estado inválido."]}, status=400)
+                return
+            with _lock:
+                found = next((r for r in storage.list_reviews() if r["id"] == review_id), None)
+                if found:
+                    found["status"] = new_status
+                    found["moderatedAt"] = datetime.now().isoformat(timespec="seconds")
+                    storage.save_review(found)
+            if found:
+                self._send_json(found)
+            else:
+                self._send_json({"errors": ["Reseña no encontrada."]}, status=404)
             return
 
         m = re.match(r"^/api/tables/([a-z0-9-]+)$", parsed.path)
