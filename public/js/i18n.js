@@ -137,8 +137,6 @@
         newReservation: "Make another reservation",
       },
       footer: {
-        staffQuestion: "Are you staff?",
-        staffLinkText: "Open the reservations panel",
         aiBadge: "Built with AI",
       },
       errors: {
@@ -304,8 +302,6 @@
         newReservation: "Hacer otra reservación",
       },
       footer: {
-        staffQuestion: "¿Eres del staff?",
-        staffLinkText: "Abrir panel de reservaciones",
         aiBadge: "Construido con IA",
       },
       errors: {
@@ -471,8 +467,6 @@
         newReservation: "Faire une autre réservation",
       },
       footer: {
-        staffQuestion: "Vous faites partie du personnel ?",
-        staffLinkText: "Ouvrir le panneau des réservations",
         aiBadge: "Conçu avec l'IA",
       },
       errors: {
