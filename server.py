@@ -13,6 +13,7 @@ para que cualquier reservación hecha desde una computadora, celular o
 la propia tablet se refleje al instante en la tablet del restaurante.
 """
 
+import hmac
 import json
 import os
 import re
@@ -291,6 +292,20 @@ RESERVATION_DURATION_MINUTES = 90
 # Sin esto configurado, los endpoints de administración quedan bloqueados.
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
+# Contraseña del panel de staff (/tablet.html) y de la API privada de
+# reservaciones y mesas, que expone nombres y teléfonos de los clientes.
+# Si no se define, se usa ADMIN_PASSWORD; si tampoco hay esa, la API
+# privada queda bloqueada por completo (nunca abierta por omisión).
+STAFF_PASSWORD = os.environ.get("STAFF_PASSWORD", "") or ADMIN_PASSWORD
+
+
+def _password_matches(given, expected):
+    """Compara contraseñas sin filtrar por tiempo cuántos caracteres acertó.
+    Sin contraseña configurada, nada coincide (ni siquiera la vacía)."""
+    if not expected or not isinstance(given, str):
+        return False
+    return hmac.compare_digest(given.encode("utf-8"), expected.encode("utf-8"))
+
 
 def _hours_for_date(d):
     """Devuelve (hora_apertura, hora_cierre, última_hora_para_reservar) para la fecha dada."""
@@ -525,12 +540,23 @@ class Handler(BaseHTTPRequestHandler):
         return self.rfile.read(length) if length else b""
 
     def _is_admin(self):
-        if not ADMIN_PASSWORD:
-            return False
-        return self.headers.get("X-Admin-Password") == ADMIN_PASSWORD
+        return _password_matches(self.headers.get("X-Admin-Password"), ADMIN_PASSWORD)
 
     def _require_admin(self):
         if self._is_admin():
+            return True
+        self._send_json({"errors": ["No autorizado."]}, status=401)
+        return False
+
+    def _is_staff(self):
+        # La contraseña de administración también abre el panel de staff:
+        # quien puede tocar las fotos del sitio puede ver las reservaciones.
+        return _password_matches(
+            self.headers.get("X-Staff-Password"), STAFF_PASSWORD
+        ) or _password_matches(self.headers.get("X-Staff-Password"), ADMIN_PASSWORD)
+
+    def _require_staff(self):
+        if self._is_staff():
             return True
         self._send_json({"errors": ["No autorizado."]}, status=401)
         return False
@@ -582,6 +608,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(approved)
             return
         if parsed.path == "/api/tables":
+            if not self._require_staff():
+                return
             with _lock:
                 unavailable_ids = storage.list_unavailable_table_ids()
             tables = [{**t, "unavailable": t["id"] in unavailable_ids} for t in TABLES]
@@ -598,6 +626,8 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
         if parsed.path == "/api/reservations":
+            if not self._require_staff():
+                return
             qs = parse_qs(parsed.query)
             date_filter = qs.get("date", [None])[0]
             with _lock:
@@ -755,7 +785,16 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/admin/login":
             payload = self._read_json_body()
             password = (payload or {}).get("password", "")
-            if ADMIN_PASSWORD and password == ADMIN_PASSWORD:
+            if _password_matches(password, ADMIN_PASSWORD):
+                self._send_json({"ok": True})
+            else:
+                self._send_json({"errors": ["Contraseña incorrecta."]}, status=401)
+            return
+
+        if parsed.path == "/api/staff/login":
+            payload = self._read_json_body()
+            password = (payload or {}).get("password", "")
+            if _password_matches(password, STAFF_PASSWORD) or _password_matches(password, ADMIN_PASSWORD):
                 self._send_json({"ok": True})
             else:
                 self._send_json({"errors": ["Contraseña incorrecta."]}, status=401)
@@ -829,6 +868,8 @@ class Handler(BaseHTTPRequestHandler):
 
         m = re.match(r"^/api/tables/([a-z0-9-]+)$", parsed.path)
         if m:
+            if not self._require_staff():
+                return
             table_id = m.group(1)
             if not any(t["id"] == table_id for t in TABLES):
                 self._send_json({"errors": ["Mesa no encontrada."]}, status=404)
@@ -844,6 +885,8 @@ class Handler(BaseHTTPRequestHandler):
 
         m = re.match(r"^/api/reservations/([a-f0-9]+)$", parsed.path)
         if m:
+            if not self._require_staff():
+                return
             res_id = m.group(1)
             payload = self._read_json_body()
             if payload is None:
@@ -895,6 +938,8 @@ class Handler(BaseHTTPRequestHandler):
 
         m = re.match(r"^/api/reservations/([a-f0-9]+)$", parsed.path)
         if m:
+            if not self._require_staff():
+                return
             res_id = m.group(1)
             with _lock:
                 deleted = storage.delete_reservation(res_id)
@@ -1036,6 +1081,11 @@ def main():
         f"  Notificaciones: correo {'ACTIVO' if notifications.email_enabled() else 'modo prueba (dry-run)'}, "
         f"SMS {'ACTIVO' if notifications.sms_enabled() else 'modo prueba (dry-run)'}"
     )
+    if not STAFF_PASSWORD:
+        print(
+            "  AVISO: sin STAFF_PASSWORD ni ADMIN_PASSWORD el panel de tablet queda "
+            "bloqueado. Define STAFF_PASSWORD para poder entrar."
+        )
     print(f"Presiona Ctrl+C para detener.")
     try:
         server.serve_forever()

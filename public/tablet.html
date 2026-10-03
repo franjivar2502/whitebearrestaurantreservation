@@ -145,8 +145,25 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Pantalla de acceso del staff. Tapa todo el panel hasta que se entra
+     con la contraseña (STAFF_PASSWORD en el servidor); ver staff-auth.js. -->
+<div class="staff-login" id="staff-login" role="dialog" aria-modal="true" aria-labelledby="staff-login-title" hidden>
+  <form class="staff-login-card" id="staff-login-form" novalidate>
+    <img src="images/bear-logo.jpg" alt="" class="staff-login-logo" />
+    <h2 class="staff-login-title" id="staff-login-title" data-i18n="login.title">Staff access</h2>
+    <p class="staff-login-hint" data-i18n="login.hint">Enter the staff password to see reservations.</p>
+    <label class="new-res-field new-res-field--full">
+      <span data-i18n="login.password">Password</span>
+      <input type="password" id="staff-login-password" autocomplete="current-password" required />
+    </label>
+    <div class="new-res-alert" id="staff-login-alert" role="alert" hidden></div>
+    <button type="submit" class="btn-save staff-login-submit" data-i18n="login.submit">Sign in</button>
+  </form>
+</div>
+
 <script src="js/bg-3d.js" defer></script>
 <script src="js/tablet-i18n.js"></script>
+<script src="js/staff-auth.js"></script>
 <script src="js/tablet.js"></script>
 </body>
 </html>

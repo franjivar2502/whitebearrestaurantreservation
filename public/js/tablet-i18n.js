@@ -45,6 +45,14 @@
         active: "Unfinished",
         needsCall: "Needs confirmation",
       },
+      login: {
+        title: "Staff access",
+        hint: "Enter the staff password to see reservations.",
+        password: "Password",
+        submit: "Sign in",
+        wrong: "Wrong password.",
+        failed: "Couldn't reach the server. Try again.",
+      },
       newRes: {
         open: "New reservation",
         title: "New reservation",
@@ -129,6 +137,14 @@
         active: "Sin finalizar",
         needsCall: "Por confirmar",
       },
+      login: {
+        title: "Acceso del personal",
+        hint: "Escribe la contraseña del personal para ver las reservaciones.",
+        password: "Contraseña",
+        submit: "Entrar",
+        wrong: "Contraseña incorrecta.",
+        failed: "No se pudo conectar con el servidor. Inténtalo de nuevo.",
+      },
       newRes: {
         open: "Nueva reservación",
         title: "Nueva reservación",
@@ -212,6 +228,14 @@
         confirmed: "Potvrđene",
         active: "Nezavršene",
         needsCall: "Treba potvrdu",
+      },
+      login: {
+        title: "Pristup za osoblje",
+        hint: "Unesite lozinku osoblja da biste videli rezervacije.",
+        password: "Lozinka",
+        submit: "Prijava",
+        wrong: "Pogrešna lozinka.",
+        failed: "Server nije dostupan. Pokušajte ponovo.",
       },
       newRes: {
         open: "Nova rezervacija",

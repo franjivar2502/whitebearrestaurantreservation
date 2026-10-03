@@ -50,7 +50,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 **⏳ Pendiente para que el proyecto esté 100% terminado:**
 1. **Menú real para el preorden de grupos grandes** — hoy son 3 platillos placeholder.
 2. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
-3. **Cambiar `ADMIN_PASSWORD`** (panel de fotos) a una contraseña definitiva — hoy sigue siendo la de prueba (`whitebear123`).
+3. **Definir `STAFF_PASSWORD` y `ADMIN_PASSWORD`** en Render con contraseñas definitivas (ver "Acceso del staff" más abajo). Las contraseñas viven solo en las variables de entorno; no se escriben en este README ni en el código.
 4. **Confirmar el plano del salón con el cliente** — el panel ya dibuja los dos salones tal como están en el local (`TABLE_LAYOUT` en `server.py`), pero el mapa que entregó no trae números de mesa, no dice cuáles rectangulares son de 4 asientos y cuáles de 6, ni cuál de las dos grandes es la de 12. Esos tres datos están puestos por lectura del mapa, no confirmados. (El total de asientos sí quedó resuelto: son **130, no 122** — en el mapa aparecieron dos mesas cuadradas más en el grupo de la entrada, que son justo los 8 asientos que el cliente decía de palabra.)
 5. **13 fotos reales que el cliente quiso subir no se pudieron procesar** (2026-09-29) — eran archivos temporales de Fotos.app en macOS, protegidos por el sistema de permisos; ni siquiera la app de Claude pudo abrirlos. Hace falta que el cliente las re-exporte a una carpeta normal (Escritorio, Descargas) para poder editarlas y subirlas -- algunas son fotos del comedor/exterior (van a "Gallery") y otras del menú (van a "Our Menu"), hay que clasificarlas al agregarlas.
 6. Revisar y ampliar `NEGATIVE_REVIEW_KEYWORDS` en `server.py` si empiezan a llegar reseñas reales -- la lista actual es un punto de partida razonable, no exhaustiva.
@@ -362,8 +362,33 @@ dónde está parada, no leyendo una lista. Tocar una mesa la marca
 disponible/no disponible (por ejemplo, para un evento privado o una
 silla rota) y eso baja la capacidad que ve el sitio de clientes al
 instante; las fuera de servicio van en rojo y tachadas, para que no
-dependa solo del color. No pide contraseña, igual que el resto del panel
-de tablet.
+dependa solo del color. Como todo el panel de tablet, pide la contraseña
+de staff (ver "Acceso del staff").
+
+## Acceso del staff (panel de tablet)
+
+Las reservaciones guardan nombre y teléfono de cada cliente, así que el
+panel de tablet (`/tablet.html`) y la API privada piden una contraseña.
+Al abrir el panel aparece una pantalla de acceso; una vez dentro, la
+tablet la recuerda (en el navegador de ese dispositivo) y no la vuelve a
+pedir hasta que la contraseña cambie en el servidor.
+
+Para activarlo, define esta variable de entorno (en Render: **Environment**):
+```
+STAFF_PASSWORD=una-contraseña-para-el-personal
+```
+Si no se define, el panel acepta la de `ADMIN_PASSWORD`; si no hay
+ninguna de las dos, el panel queda bloqueado por completo. La contraseña
+de administración siempre abre también el panel de staff.
+
+**Qué queda protegido:** ver la lista de reservaciones
+(`GET /api/reservations`), cambiar su estado o borrarlas
+(`PATCH`/`DELETE /api/reservations/<id>`), y ver o marcar mesas
+(`/api/tables`). **Qué sigue público, a propósito:** reservar
+(`POST /api/reservations`), la página de confirmación de asistencia a la
+que llega el cliente desde su SMS/correo (`/api/reservations/<id>` y
+`.../confirm-attendance`, que solo funcionan con el código de esa
+reservación), el menú, las fotos y las reseñas.
 
 ## Galería de fotos y pantalla de bienvenida
 
@@ -446,6 +471,5 @@ Render).
 
 - Añadir notificación por correo/SMS al restaurante cuando llega una
   reservación nueva.
-- Agregar login para el panel de tablet si se va a exponer públicamente.
 - Resolver el almacenamiento persistente (ver arriba) antes de usarlo en
   producción.
