@@ -112,25 +112,26 @@ y no una excusa.
 
 ---
 
-## Una advertencia sobre las reseñas
+## Sobre las reseñas negativas
 
-El sistema bloquea la publicación de cualquier reseña con una palabra
-negativa. Lo pidió el cliente y está implementado, pero conviene que sepa dos
-cosas antes de enseñarlo:
+Antes, cualquier reseña con una palabra negativa se descartaba y nadie la veía.
+Ya no: ahora **no se publica automáticamente pero sí llega al panel**
+(`/admin-photos.html`, sección "Reseñas de clientes"), donde el staff decide si
+la publica o la oculta, y puede responder o llamar al cliente. Ocultar no
+borra: la reseña queda guardada.
+
+Por qué el cambio, para explicárselo al cliente:
 
 1. **En Estados Unidos hay norma al respecto.** Desde 2024 la FTC regula la
    supresión de reseñas negativas cuando eso da una imagen engañosa del
    negocio (16 CFR Parte 465). Un muro donde solo hay cincos no es creíble, y
-   además puede acarrear problemas.
-2. **Por eso no se declaró la calificación en los datos estructurados.** La
+   además puede acarrear problemas. Conviene que el staff publique las
+   críticas legítimas y oculte solo lo ofensivo, falso o spam.
+2. **La calificación no decide nada.** Una reseña de una estrella sin palabras
+   de la lista se publica igual que una de cinco; no se filtra por nota.
+3. **Por eso no se declaró la calificación en los datos estructurados.** La
    nota de 4.2 venía de Google, no de las reseñas de la página; publicarla
    como propia incumple las normas de Google sobre reseñas.
-
-Alternativa que conserva la intención del cliente sin el riesgo: que las
-reseñas negativas **no se publiquen automáticamente pero sí lleguen al
-panel**, para que el restaurante pueda responder o llamar. Se protege la
-reputación y no se engaña a nadie. Es un cambio pequeño; hoy la reseña
-negativa se descarta y nadie la ve.
 
 ---
 

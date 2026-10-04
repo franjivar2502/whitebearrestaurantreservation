@@ -41,7 +41,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - Idiomas: sitio de clientes en EN/ES/FR (inglés por defecto); panel de tablet en EN/ES/SR (inglés por defecto).
 - Galería de fotos con pantalla de bienvenida (fondo de 1 segundo al entrar) y panel de administración para agregar/reordenar/eliminar fotos (`/admin-photos.html`, ver sección más abajo).
 - **Galería separada en dos secciones**: "Gallery" (fotos generales) y "Our Menu"/"Nuestro Menú" (fotos del menú) — el panel de admin ahora tiene un campo "Sección" al agregar una foto, y un botón ⇄ para cambiar la sección de una foto ya existente.
-- **Reseñas de clientes con fotos**, moderadas automáticamente (`public/js/app.js` + `server.py`) — cualquier visitante puede dejar una reseña con calificación de 1 a 5 estrellas y subir una foto directo desde su celular. Cualquier reseña que contenga una palabra clave negativa (lista en `NEGATIVE_REVIEW_KEYWORDS` en `server.py`) se rechaza automáticamente con un mensaje que invita a llamar al restaurante en vez de publicarse; el resto se publica al instante. Las fotos se guardan en Supabase Storage (bucket `review-photos`, ya creado) o en `public/uploads/reviews/` en desarrollo local sin Supabase.
+- **Reseñas de clientes con fotos**, moderadas automáticamente (`public/js/app.js` + `server.py`) — cualquier visitante puede dejar una reseña con calificación de 1 a 5 estrellas y subir una foto directo desde su celular. Cualquier reseña que contenga una palabra clave negativa (lista en `NEGATIVE_REVIEW_KEYWORDS` en `server.py`) no se publica sola: se guarda como pendiente y aparece en la sección "Reseñas de clientes" de `/admin-photos.html`, donde el staff la publica o la oculta (ocultar no la borra). Al cliente se le avisa que el equipo la leerá y se le invita a llamar. El resto se publica al instante; la calificación en estrellas no influye. Las fotos se guardan en Supabase Storage (bucket `review-photos`, ya creado) o en `public/uploads/reviews/` en desarrollo local sin Supabase.
 - **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones, fotos, reseñas y estado de mesas ya no se pierden cuando Render reinicia el servicio.
 - Repositorio en GitHub, desplegado en Render y funcionando en vivo: https://whitebearrestaurantreservation.onrender.com
 
@@ -73,7 +73,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
    llegar reseñas reales -- la lista actual es un punto de partida, no es
    exhaustiva. **Importante:** las palabras se buscan por palabra completa, no
    por subcadena. Si se vuelve a buscar por subcadena, "rat" bloquea "trato" y
-   se rechazan reseñas buenas (pasó, ver DURABILIDAD.md).
+   se retienen reseñas buenas (pasó, ver DURABILIDAD.md).
 7. Decidir si el panel de tablet necesita más idiomas o queda así.
 8. **Leer `DURABILIDAD.md`** antes de hablar de mantenimiento con el cliente:
    ahí está qué hace falta para que esto siga en pie dentro de diez años, y el
