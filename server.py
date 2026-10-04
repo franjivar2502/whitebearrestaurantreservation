@@ -26,6 +26,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
 import notifications
+import security
 import storage
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -113,6 +114,35 @@ MAX_NAME_LENGTH = 120
 MAX_NOTES_LENGTH = 1000
 MAX_REVIEW_LENGTH = 2000
 MAX_BOOKING_DAYS_AHEAD = 180
+MAX_PHONE_LENGTH = 40
+MAX_EMAIL_LENGTH = 254
+MAX_PREORDER_LINES = 50
+MAX_PREORDER_QUANTITY = 500
+MAX_PHOTO_BYTES = 8 * 1024 * 1024
+
+# Tamaño máximo del cuerpo de una petición. Sin techo, cualquiera manda un
+# "Content-Length: 2000000000" y el servidor intenta leerlo todo en memoria.
+MAX_JSON_BODY_BYTES = 64 * 1024
+MAX_MULTIPART_BODY_BYTES = MAX_PHOTO_BYTES + 512 * 1024
+
+# Límites por IP. Holgados para una persona real, cortos para un script:
+# - Contraseña de staff/admin: 10 fallos cada 15 minutos. Una contraseña de
+#   12+ caracteres no se adivina a ese ritmo ni en siglos.
+# - Reservaciones: 10 por hora desde la misma conexión (el staff no cuenta).
+# - Reseñas: 5 por hora.
+# - Consultar/confirmar una reservación por su código: 60 cada 10 minutos,
+#   para que nadie barra códigos buscando datos de otros clientes.
+LOGIN_FAILURES = security.RateLimiter(10, 15 * 60)
+RESERVATION_LIMIT = security.RateLimiter(10, 60 * 60)
+REVIEW_LIMIT = security.RateLimiter(5, 60 * 60)
+LOOKUP_LIMIT = security.RateLimiter(60, 10 * 60)
+
+# Campos de una reservación que puede ver quien tiene solo el código (el link
+# de confirmación de asistencia). Teléfono, correo y notas quedan fuera: el
+# código viaja por SMS y correo, y si se reenvía no debe arrastrar esos datos.
+PUBLIC_RESERVATION_FIELDS = (
+    "id", "name", "date", "time", "partySize", "status", "attendanceConfirmed",
+)
 
 NEGATIVE_REVIEW_KEYWORDS = {
     "terrible", "horrible", "pesimo", "pésimo", "asqueroso", "asquerosa",
@@ -367,7 +397,7 @@ def _validate_preorder(raw_pre_order):
 
     menu_by_id = {item["id"]: item for item in RESTAURANT["groupMenu"]["items"]}
     cleaned = []
-    for entry in raw_pre_order:
+    for entry in raw_pre_order[:MAX_PREORDER_LINES]:
         if not isinstance(entry, dict):
             continue
         item = menu_by_id.get(entry.get("itemId"))
@@ -379,6 +409,7 @@ def _validate_preorder(raw_pre_order):
             quantity = 0
         if quantity <= 0:
             continue
+        quantity = min(quantity, MAX_PREORDER_QUANTITY)
         cleaned.append({"itemId": item["id"], "name": item["name"], "quantity": quantity})
 
     return cleaned, []
@@ -394,18 +425,27 @@ def _validate_reservation(payload):
     """
     errors = []
 
-    name = (payload.get("name") or "").strip()
-    phone = (payload.get("phone") or "").strip()
-    email = (payload.get("email") or "").strip()
-    res_date = (payload.get("date") or "").strip()
-    res_time = (payload.get("time") or "").strip()
+    if not isinstance(payload, dict):
+        return None, [{"code": "GENERIC"}]
+
+    def text(key):
+        # Un número o una lista donde se espera texto no debe tumbar el
+        # servidor con un AttributeError: se trata como vacío.
+        value = payload.get(key)
+        return value.strip() if isinstance(value, str) else ""
+
+    name = text("name")
+    phone = text("phone")
+    email = text("email")
+    res_date = text("date")
+    res_time = text("time")
     party_size = payload.get("partySize")
-    notes = (payload.get("notes") or "").strip()
-    seating_preference = (payload.get("seatingPreference") or "").strip().lower()
+    notes = text("notes")
+    seating_preference = text("seatingPreference").lower()
     if seating_preference not in VALID_SEATING_PREFERENCES:
         seating_preference = ""
     pre_order, pre_order_errors = _validate_preorder(payload.get("preOrder"))
-    pre_order_notes = (payload.get("preOrderNotes") or "").strip()
+    pre_order_notes = text("preOrderNotes")
     errors.extend(pre_order_errors)
 
     # Los topes de longitud no son cosmética: sin ellos cabe un nombre de
@@ -414,9 +454,9 @@ def _validate_reservation(payload):
         errors.append({"code": "NAME_REQUIRED"})
     if len(notes) > MAX_NOTES_LENGTH or len(pre_order_notes) > MAX_NOTES_LENGTH:
         errors.append({"code": "NOTES_TOO_LONG"})
-    if not phone or len(re.sub(r"\D", "", phone)) < 7:
+    if not phone or len(re.sub(r"\D", "", phone)) < 7 or len(phone) > MAX_PHONE_LENGTH:
         errors.append({"code": "PHONE_INVALID"})
-    if email and not EMAIL_RE.match(email):
+    if email and (len(email) > MAX_EMAIL_LENGTH or not EMAIL_RE.match(email)):
         errors.append({"code": "EMAIL_INVALID"})
 
     try:
@@ -454,6 +494,8 @@ def _validate_reservation(payload):
             )
 
     try:
+        if isinstance(party_size, bool):
+            raise TypeError
         party_size = int(party_size)
         if not (1 <= party_size <= RESTAURANT["maxPartySize"]):
             errors.append(
@@ -509,13 +551,123 @@ CONTENT_TYPES = {
 }
 
 
+def _static_file(path):
+    """Ruta absoluta del archivo de public/ que corresponde a la URL, o None.
+    Nunca sale de public/ (ni con ../ ni con un directorio hermano llamado
+    "public-algo") y nunca sirve archivos ocultos (.env, .git...)."""
+    if path == "/":
+        path = "/index.html"
+    safe_path = os.path.normpath("/" + path).lstrip("/")
+    if any(part.startswith(".") for part in safe_path.split(os.sep)):
+        return None
+    full_path = os.path.realpath(os.path.join(PUBLIC_DIR, safe_path))
+    if not full_path.startswith(os.path.realpath(PUBLIC_DIR) + os.sep):
+        return None
+    return full_path if os.path.isfile(full_path) else None
+
+
+def _public_reservation(r):
+    return {k: r.get(k) for k in PUBLIC_RESERVATION_FIELDS}
+
+
+class BodyTooLarge(Exception):
+    pass
+
+
+class BadRequest(Exception):
+    pass
+
+
 class Handler(BaseHTTPRequestHandler):
-    server_version = "WhiteBearReservations/1.0"
+    # Sin versión de Python ni del servidor en la cabecera Server: no le
+    # regalamos a un escáner qué vulnerabilidades probar primero.
+    server_version = "WhiteBear"
+    sys_version = ""
+
+    def version_string(self):
+        return self.server_version
+    # Una conexión que no manda nada en 30 s se cierra. Sin esto, unas
+    # cuantas conexiones abiertas a propósito y mudas (ataque "slowloris")
+    # dejan al servidor sin hilos para los clientes de verdad.
+    timeout = 30
 
     def log_message(self, fmt, *args):
         pass  # silencia el log por defecto (ruidoso)
 
+    def end_headers(self):
+        # Cabeceras de seguridad en todas las respuestas (HTML, API y 404).
+        for name, value in security.SECURITY_HEADERS.items():
+            self.send_header(name, value)
+        if (self.headers.get("X-Forwarded-Proto") or "").lower() == "https":
+            self.send_header(*security.HSTS_HEADER)
+        super().end_headers()
+
     # ---------- helpers ----------
+    def _client_ip(self):
+        return security.client_ip(self.headers, self.client_address[0])
+
+    def _send_internal_error(self, method, exc):
+        # El detalle va al log del servidor (Render -> Logs), nunca al
+        # navegador: un mensaje de excepción puede revelar rutas, nombres de
+        # tablas o fragmentos de la configuración.
+        print(f"[ERROR] {method} {urlparse(self.path).path}: {exc!r}")
+        try:
+            self._send_json({"errors": [{"code": "GENERIC"}]}, status=500)
+        except Exception:  # noqa: BLE001 - la conexión ya puede estar rota
+            pass
+
+    def _handle(self, method, fn):
+        try:
+            if method in ("POST", "PATCH", "DELETE") and not self._same_origin():
+                self._send_json({"errors": ["Origen no permitido."]}, status=403)
+                return
+            fn()
+        except BodyTooLarge:
+            self.close_connection = True
+            self._send_json({"errors": ["La petición es demasiado grande."]}, status=413)
+        except BadRequest:
+            self.close_connection = True
+            self._send_json({"errors": ["Petición inválida."]}, status=400)
+        except Exception as exc:  # noqa: BLE001
+            self._send_internal_error(method, exc)
+
+    def _same_origin(self):
+        """
+        Los navegadores mandan Origin en toda petición que modifica datos. Si
+        viene de otro sitio (una página ajena que intenta crear reservas o
+        reseñas a nombre de quien la visita), se rechaza. Sin Origin (curl,
+        apps) se deja pasar: esos clientes no llevan la sesión de nadie.
+        """
+        origin = self.headers.get("Origin")
+        if not origin:
+            return True
+        origin_host = urlparse(origin).netloc.lower()
+        allowed = {
+            (self.headers.get("Host") or "").strip().lower(),
+            (self.headers.get("X-Forwarded-Host") or "").strip().lower(),
+            urlparse(PUBLIC_BASE_URL or "").netloc.lower(),
+        }
+        allowed.discard("")
+        return origin_host in allowed
+
+    def _content_length(self, limit):
+        raw = self.headers.get("Content-Length", "0") or "0"
+        try:
+            length = int(raw)
+        except ValueError:
+            raise BadRequest()
+        if length < 0:
+            raise BadRequest()
+        if length > limit:
+            raise BodyTooLarge()
+        return length
+
+    def _too_many(self, params=None):
+        self._send_json(
+            {"errors": [{"code": "REQUEST_BLOCKED", "params": {"phone": RESTAURANT["phone"], **(params or {})}}]},
+            status=429,
+        )
+
     def _send_json(self, obj, status=200):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -526,26 +678,47 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _read_json_body(self):
-        length = int(self.headers.get("Content-Length", 0))
+        length = self._content_length(MAX_JSON_BODY_BYTES)
         if length == 0:
             return {}
         raw = self.rfile.read(length)
         try:
-            return json.loads(raw.decode("utf-8"))
-        except json.JSONDecodeError:
+            data = json.loads(raw.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
             return None
+        # Todas las rutas esperan un objeto; una lista o un número suelto
+        # se trata igual que JSON inválido.
+        return data if isinstance(data, dict) else None
 
-    def _read_raw_body(self):
-        length = int(self.headers.get("Content-Length", 0))
+    def _read_raw_body(self, limit=MAX_MULTIPART_BODY_BYTES):
+        length = self._content_length(limit)
         return self.rfile.read(length) if length else b""
 
-    def _is_admin(self):
-        return _password_matches(self.headers.get("X-Admin-Password"), ADMIN_PASSWORD)
+    def _check_password(self, given, *expected):
+        """
+        Compara una contraseña con protección contra fuerza bruta: tras
+        demasiados fallos desde la misma IP se responde 429 sin siquiera
+        mirar la contraseña, también si esta vez es la correcta (si no, el
+        atacante sabría cuándo acertó). Devuelve True, False o None (=429 ya
+        enviado). Una cabecera vacía no cuenta como intento: es la tablet
+        recién abierta, sin contraseña guardada.
+        """
+        ip = self._client_ip()
+        if LOGIN_FAILURES.blocked(ip):
+            self._too_many()
+            return None
+        if any(_password_matches(given, e) for e in expected):
+            return True
+        if given:
+            LOGIN_FAILURES.hit(ip)
+        return False
 
     def _require_admin(self):
-        if self._is_admin():
+        ok = self._check_password(self.headers.get("X-Admin-Password"), ADMIN_PASSWORD)
+        if ok:
             return True
-        self._send_json({"errors": ["No autorizado."]}, status=401)
+        if ok is False:
+            self._send_json({"errors": ["No autorizado."]}, status=401)
         return False
 
     def _is_staff(self):
@@ -556,18 +729,20 @@ class Handler(BaseHTTPRequestHandler):
         ) or _password_matches(self.headers.get("X-Staff-Password"), ADMIN_PASSWORD)
 
     def _require_staff(self):
-        if self._is_staff():
+        ok = self._check_password(self.headers.get("X-Staff-Password"), STAFF_PASSWORD, ADMIN_PASSWORD)
+        if ok:
             return True
-        self._send_json({"errors": ["No autorizado."]}, status=401)
+        if ok is False:
+            self._send_json({"errors": ["No autorizado."]}, status=401)
         return False
 
     def _serve_static(self, path):
         if path == "/":
             path = "/index.html"
-        safe_path = os.path.normpath(path).lstrip("/")
-        full_path = os.path.join(PUBLIC_DIR, safe_path)
-        if not full_path.startswith(PUBLIC_DIR) or not os.path.isfile(full_path):
+        full_path = _static_file(path)
+        if not full_path:
             self.send_response(404)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.end_headers()
             self.wfile.write(b"404 Not Found")
             return
@@ -580,16 +755,16 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
+        if ext == ".html":
+            # Las páginas siempre frescas: tras un arreglo de seguridad nadie
+            # debe quedarse con la versión vieja en caché.
+            self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         self.wfile.write(body)
 
     # ---------- routing ----------
     def do_GET(self):
-        try:
-            self._do_GET()
-        except Exception as exc:  # noqa: BLE001 - queremos ver el error, no un 502 genérico
-            print(f"[ERROR] GET {self.path}: {exc!r}")
-            self._send_json({"errors": [f"Error interno: {exc}"]}, status=500)
+        self._handle("GET", self._do_GET)
 
     def _do_GET(self):
         parsed = urlparse(self.path)
@@ -637,29 +812,31 @@ class Handler(BaseHTTPRequestHandler):
             reservations.sort(key=lambda r: (r["date"], r["time"]))
             self._send_json(reservations)
             return
-        m = re.match(r"^/api/reservations/([a-f0-9]+)$", parsed.path)
+        m = re.match(r"^/api/reservations/([a-f0-9]{8,32})$", parsed.path)
         if m:
+            if not LOOKUP_LIMIT.hit(self._client_ip()):
+                self._too_many()
+                return
             res_id = m.group(1)
             with _lock:
                 reservations = storage.list_reservations()
             found = next((r for r in reservations if r["id"] == res_id), None)
             if found:
-                self._send_json(found)
+                self._send_json(_public_reservation(found))
             else:
                 self._send_json({"errors": ["Reservación no encontrada."]}, status=404)
             return
         self._serve_static(parsed.path)
 
     def do_POST(self):
-        try:
-            self._do_POST()
-        except Exception as exc:  # noqa: BLE001
-            print(f"[ERROR] POST {self.path}: {exc!r}")
-            self._send_json({"errors": [f"Error interno: {exc}"]}, status=500)
+        self._handle("POST", self._do_POST)
 
     def _do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/reviews":
+            if REVIEW_LIMIT.blocked(self._client_ip()):
+                self._too_many()
+                return
             content_type_header = self.headers.get("Content-Type", "")
             boundary_match = re.search(r'boundary="?([^";]+)"?', content_type_header)
             if "multipart/form-data" not in content_type_header or not boundary_match:
@@ -671,6 +848,10 @@ class Handler(BaseHTTPRequestHandler):
             name = (fields.get("name", {}).get("data") or b"").decode("utf-8", "ignore").strip()
             text = (fields.get("text", {}).get("data") or b"").decode("utf-8", "ignore").strip()
             rating_raw = (fields.get("rating", {}).get("data") or b"").decode("utf-8", "ignore").strip()
+            if (fields.get("website", {}).get("data") or b"").strip():
+                # Campo trampa lleno: es un bot. Se rechaza sin dar pistas.
+                self._too_many()
+                return
 
             errors = []
             if not name or len(name) < 2 or len(name) > MAX_NAME_LENGTH:
@@ -693,21 +874,26 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"errors": [{"code": "REVIEW_REJECTED"}]}, status=400)
                 return
 
+            if not REVIEW_LIMIT.hit(self._client_ip()):
+                self._too_many()
+                return
+
             photo_url = ""
             photo_field = fields.get("photo")
-            if photo_field and photo_field.get("filename"):
+            if photo_field and photo_field.get("filename") and photo_field.get("data"):
                 photo_bytes = photo_field["data"]
-                photo_content_type = photo_field.get("content_type") or "application/octet-stream"
-                if not photo_content_type.startswith("image/"):
-                    self._send_json({"errors": [{"code": "REVIEW_PHOTO_INVALID"}]}, status=400)
-                    return
-                if len(photo_bytes) > 8 * 1024 * 1024:
+                if len(photo_bytes) > MAX_PHOTO_BYTES:
                     self._send_json({"errors": [{"code": "REVIEW_PHOTO_TOO_LARGE"}]}, status=400)
                     return
-                ext = os.path.splitext(photo_field["filename"])[1].lower() or ".jpg"
-                if ext not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
-                    ext = ".jpg"
-                filename = f"{uuid.uuid4().hex[:12]}{ext}"
+                # El tipo y la extensión se deducen del contenido, nunca de lo
+                # que declara el navegador: así un SVG con script o un HTML
+                # renombrado a .jpg no llega a publicarse.
+                sniffed = security.sniff_image(photo_bytes)
+                if not sniffed:
+                    self._send_json({"errors": [{"code": "REVIEW_PHOTO_INVALID"}]}, status=400)
+                    return
+                ext, photo_content_type = sniffed
+                filename = f"{uuid.uuid4().hex}{ext}"
                 with _lock:
                     photo_url = storage.upload_review_photo(filename, photo_bytes, photo_content_type)
 
@@ -726,9 +912,19 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/api/reservations":
+            # El staff (tablet) no tiene tope: un sábado puede cargar decenas
+            # de reservaciones por teléfono desde la misma conexión.
+            is_staff = self._is_staff()
+            ip = self._client_ip()
+            if not is_staff and RESERVATION_LIMIT.blocked(ip):
+                self._too_many()
+                return
             payload = self._read_json_body()
             if payload is None:
                 self._send_json({"errors": ["JSON inválido."]}, status=400)
+                return
+            if isinstance(payload.get("website"), str) and payload["website"].strip():
+                self._too_many()
                 return
             clean, errors = _validate_reservation(payload)
             if errors:
@@ -739,8 +935,15 @@ class Handler(BaseHTTPRequestHandler):
             if available < clean["partySize"]:
                 self._send_json({"errors": [{"code": "NO_AVAILABILITY"}]}, status=400)
                 return
+            if not is_staff and not RESERVATION_LIMIT.hit(ip):
+                self._too_many()
+                return
             reservation = {
-                "id": uuid.uuid4().hex[:8],
+                # 32 caracteres hex (128 bits): el código va en el link de
+                # confirmación y es lo único que lo protege, así que no debe
+                # poder adivinarse. Los códigos cortos ya enviados siguen
+                # funcionando.
+                "id": uuid.uuid4().hex,
                 "status": "pending",
                 "createdAt": datetime.now().isoformat(timespec="seconds"),
                 "reminderSent": False,
@@ -756,8 +959,11 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(reservation, status=201)
             return
 
-        m = re.match(r"^/api/reservations/([a-f0-9]+)/confirm-attendance$", parsed.path)
+        m = re.match(r"^/api/reservations/([a-f0-9]{8,32})/confirm-attendance$", parsed.path)
         if m:
+            if not LOOKUP_LIMIT.hit(self._client_ip()):
+                self._too_many()
+                return
             res_id = m.group(1)
             payload = self._read_json_body()
             if payload is None or not isinstance(payload.get("confirmed"), bool):
@@ -777,7 +983,7 @@ class Handler(BaseHTTPRequestHandler):
                 if found:
                     storage.save_reservation(found)
             if found:
-                self._send_json(found)
+                self._send_json(_public_reservation(found))
             else:
                 self._send_json({"errors": ["Reservación no encontrada."]}, status=404)
             return
@@ -785,18 +991,20 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/admin/login":
             payload = self._read_json_body()
             password = (payload or {}).get("password", "")
-            if _password_matches(password, ADMIN_PASSWORD):
+            ok = self._check_password(password, ADMIN_PASSWORD)
+            if ok:
                 self._send_json({"ok": True})
-            else:
+            elif ok is False:
                 self._send_json({"errors": ["Contraseña incorrecta."]}, status=401)
             return
 
         if parsed.path == "/api/staff/login":
             payload = self._read_json_body()
             password = (payload or {}).get("password", "")
-            if _password_matches(password, STAFF_PASSWORD) or _password_matches(password, ADMIN_PASSWORD):
+            ok = self._check_password(password, STAFF_PASSWORD, ADMIN_PASSWORD)
+            if ok:
                 self._send_json({"ok": True})
-            else:
+            elif ok is False:
                 self._send_json({"errors": ["Contraseña incorrecta."]}, status=401)
             return
 
@@ -804,12 +1012,12 @@ class Handler(BaseHTTPRequestHandler):
             if not self._require_admin():
                 return
             payload = self._read_json_body() or {}
-            url = (payload.get("url") or "").strip()
-            caption = (payload.get("caption") or "").strip()
+            url = str(payload.get("url") or "").strip()
+            caption = str(payload.get("caption") or "").strip()[:300]
             category = (payload.get("category") or "gallery").strip()
             if category not in ("gallery", "menu"):
                 category = "gallery"
-            if not url.startswith(("http://", "https://")):
+            if not url.startswith(("http://", "https://")) or len(url) > 2000 or re.search(r"\s", url):
                 self._send_json({"errors": ["La URL de la imagen no es válida."]}, status=400)
                 return
             with _lock:
@@ -831,7 +1039,12 @@ class Handler(BaseHTTPRequestHandler):
                 return
             payload = self._read_json_body() or {}
             order = payload.get("order")
-            if not isinstance(order, list) or not order:
+            # Los ids terminan en la URL de la consulta a Supabase: solo hex.
+            if (
+                not isinstance(order, list)
+                or not order
+                or not all(isinstance(i, str) and re.fullmatch(r"[a-f0-9]{1,32}", i) for i in order)
+            ):
                 self._send_json({"errors": ["Falta el nuevo orden."]}, status=400)
                 return
             with _lock:
@@ -843,11 +1056,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_PATCH(self):
-        try:
-            self._do_PATCH()
-        except Exception as exc:  # noqa: BLE001
-            print(f"[ERROR] PATCH {self.path}: {exc!r}")
-            self._send_json({"errors": [f"Error interno: {exc}"]}, status=500)
+        self._handle("PATCH", self._do_PATCH)
 
     def _do_PATCH(self):
         parsed = urlparse(self.path)
@@ -915,11 +1124,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_DELETE(self):
-        try:
-            self._do_DELETE()
-        except Exception as exc:  # noqa: BLE001
-            print(f"[ERROR] DELETE {self.path}: {exc!r}")
-            self._send_json({"errors": [f"Error interno: {exc}"]}, status=500)
+        self._handle("DELETE", self._do_DELETE)
 
     def _do_DELETE(self):
         parsed = urlparse(self.path)
@@ -962,16 +1167,15 @@ class Handler(BaseHTTPRequestHandler):
             path = parsed.path
             if path == "/":
                 path = "/index.html"
-            safe_path = os.path.normpath(path).lstrip("/")
-            full_path = os.path.join(PUBLIC_DIR, safe_path)
-            if full_path.startswith(PUBLIC_DIR) and os.path.isfile(full_path):
+            full_path = _static_file(path)
+            if full_path:
                 ext = os.path.splitext(full_path)[1].lower()
                 self.send_response(200)
                 self.send_header("Content-Type", CONTENT_TYPES.get(ext, "application/octet-stream"))
                 self.send_header("Content-Length", str(os.path.getsize(full_path)))
                 self.end_headers()
             else:
-                self.send_response(200)
+                self.send_response(404)
                 self.end_headers()
         except Exception as exc:  # noqa: BLE001
             print(f"[ERROR] HEAD {self.path}: {exc!r}")
@@ -1081,6 +1285,9 @@ def main():
         f"  Notificaciones: correo {'ACTIVO' if notifications.email_enabled() else 'modo prueba (dry-run)'}, "
         f"SMS {'ACTIVO' if notifications.sms_enabled() else 'modo prueba (dry-run)'}"
     )
+    for var, value in (("STAFF_PASSWORD", STAFF_PASSWORD), ("ADMIN_PASSWORD", ADMIN_PASSWORD)):
+        if value and len(value) < 12:
+            print(f"  AVISO: {var} es corta ({len(value)} caracteres). Usa 12 o más.")
     if not STAFF_PASSWORD:
         print(
             "  AVISO: sin STAFF_PASSWORD ni ADMIN_PASSWORD el panel de tablet queda "

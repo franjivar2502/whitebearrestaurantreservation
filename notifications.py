@@ -134,7 +134,7 @@ def confirmation_message(reservation):
         f"White Bear Restaurant: hola {reservation['name']}, tu reservacion para "
         f"el {reservation['date']} a las {reservation['time']} "
         f"({reservation['partySize']} personas) fue recibida. "
-        f"Codigo #{reservation['id']}. Te esperamos!"
+        f"Codigo #{reservation['id'][:8]}. Te esperamos!"
     )
 
 

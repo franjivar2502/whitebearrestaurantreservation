@@ -52,6 +52,7 @@
         submit: "Sign in",
         wrong: "Wrong password.",
         failed: "Couldn't reach the server. Try again.",
+        tooMany: "Too many wrong attempts. Wait 15 minutes and try again.",
       },
       newRes: {
         open: "New reservation",
@@ -144,6 +145,7 @@
         submit: "Entrar",
         wrong: "Contraseña incorrecta.",
         failed: "No se pudo conectar con el servidor. Inténtalo de nuevo.",
+        tooMany: "Demasiados intentos fallidos. Espera 15 minutos y vuelve a intentarlo.",
       },
       newRes: {
         open: "Nueva reservación",
@@ -236,6 +238,7 @@
         submit: "Prijava",
         wrong: "Pogrešna lozinka.",
         failed: "Server nije dostupan. Pokušajte ponovo.",
+        tooMany: "Previše neuspešnih pokušaja. Sačekajte 15 minuta i pokušajte ponovo.",
       },
       newRes: {
         open: "Nova rezervacija",
