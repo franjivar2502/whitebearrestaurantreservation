@@ -466,7 +466,13 @@ def _write_local_settings(settings):
 def get_setting(key, default=None):
     """Devuelve el valor guardado para ese ajuste, o `default` si no hay fila."""
     if enabled():
-        rows = _request("GET", f"settings?select=data&id=eq.{key}") or []
+        try:
+            rows = _request("GET", f"settings?select=data&id=eq.{key}") or []
+        except (urllib.error.URLError, OSError):
+            # Tabla aún sin crear en Supabase (404) o Supabase caído: se usa
+            # el valor por omisión en vez de tumbar las reservaciones. Con el
+            # interruptor, el valor por omisión es "abierto".
+            return default
         if not rows:
             return default
         data = rows[0].get("data") or {}
