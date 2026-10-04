@@ -1,0 +1,29 @@
+name: Pruebas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # La versión más vieja que sigue soportada y la más nueva: si una
+        # actualización de Python rompe algo (como pasó con el módulo cgi en
+        # 3.13), se ve aquí antes que en el sitio en vivo.
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Compilar
+        run: python -m compileall -q server.py storage.py notifications.py scripts tests
+      - name: Pruebas
+        run: python -m unittest discover -s tests -v
