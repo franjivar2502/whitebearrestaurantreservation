@@ -79,6 +79,14 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
    ahí está qué hace falta para que esto siga en pie dentro de diez años, y el
    aviso sobre la norma de la FTC en materia de reseñas.
 
+9. **Políticas legales (`public/legal.html`) — borrador.** Privacidad,
+   condiciones de reserva, condiciones de SMS/correo, política de reseñas y
+   fotos, y accesibilidad, en EN/ES/FR. Antes de publicarlas: completar cada
+   `<mark class="fill">` (razón social, correo de contacto, fecha, plazos),
+   que las revise un abogado de Nueva York y quitar el aviso de borrador.
+   Ojo: la política de reseñas dice que no se ocultan las negativas, así que
+   no puede salir antes que el cambio de moderación de reseñas (PR #2).
+
 Dime en qué de esto quieres que sigamos y retomamos justo ahí.
 
 ## 🎨 Sistema de diseño — "Lake Placid Ivory" (2026-09-30)

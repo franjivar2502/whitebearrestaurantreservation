@@ -12,6 +12,8 @@ body.confirm-body {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* En columna para que los enlaces legales queden debajo de la ventana. */
+  flex-direction: column;
   padding: 24px 16px;
   background: radial-gradient(circle at top, rgb(232, 218, 214), var(--bg));
   background: radial-gradient(circle at top, color-mix(in srgb, var(--brand) 12%, var(--bg)), var(--bg));

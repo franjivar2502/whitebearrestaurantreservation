@@ -463,6 +463,11 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearAlert();
+    // El formulario lleva novalidate, así que la casilla se comprueba aquí.
+    if (!form.termsConsent.checked) {
+      showAlert([{ code: "CONSENT_REQUIRED" }]);
+      return;
+    }
     submitBtn.disabled = true;
     submitBtn.classList.add("btn-loading");
     submitBtn.textContent = i18n.t("form.submitting");
@@ -542,6 +547,10 @@
   reviewForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     reviewAlertBox.innerHTML = "";
+    if (!reviewForm.reviewConsent.checked) {
+      showFormAlert(reviewAlertBox, "error", escapeHtml(i18n.t("errors.REVIEW_CONSENT_REQUIRED")));
+      return;
+    }
     reviewSubmitBtn.disabled = true;
     reviewSubmitBtn.classList.add("btn-loading");
     reviewSubmitBtn.textContent = i18n.t("reviews.submitting");
