@@ -56,9 +56,6 @@ RESTAURANT = {
         "sat": {"open": "11:00", "close": "21:30"},
         "sun": {"open": "11:00", "close": "21:00"},
     },
-    # Última hora para reservar: unos minutos antes del cierre, para que
-    # los comensales alcancen a disfrutar la mesa antes de que cerremos.
-    "lastSeatingBufferMinutes": 30,
     "maxPartySize": 40,
     "highlights": [
         "Crispy Calamari with Marinara Sauce",
@@ -307,15 +304,24 @@ def _password_matches(given, expected):
     return hmac.compare_digest(given.encode("utf-8"), expected.encode("utf-8"))
 
 
-def _hours_for_date(d):
-    """Devuelve (hora_apertura, hora_cierre, última_hora_para_reservar) para la fecha dada."""
-    day_hours = RESTAURANT["hours"][DAY_KEYS[d.weekday()]]
-    open_t = datetime.strptime(day_hours["open"], "%H:%M").time()
-    close_t = datetime.strptime(day_hours["close"], "%H:%M").time()
-    last_seating_dt = datetime.combine(d, close_t) - timedelta(
-        minutes=RESTAURANT["lastSeatingBufferMinutes"]
-    )
-    return open_t, close_t, last_seating_dt.time()
+# Interruptor global de reservaciones. El staff lo apaga desde el panel
+# (/tablet.html) cuando no quiere más reservaciones del público: noche de
+# evento privado, cocina saturada, obra en el salón. Apagado, el sitio de
+# clientes deja de aceptar reservaciones nuevas, pero el alta rápida del
+# panel sigue funcionando -- apagarlo es cerrar la agenda al público, no
+# impedir que el encargado apunte la mesa que acaba de entrar por teléfono.
+#
+# Las reservaciones ya tomadas no se tocan: siguen en la lista del turno.
+BOOKING_SETTING_KEY = "bookingEnabled"
+
+
+def _bookings_open():
+    """True si se aceptan reservaciones nuevas del público.
+
+    Por omisión está encendido: una base recién creada (sin la fila del
+    ajuste) debe comportarse como siempre, aceptando reservaciones."""
+    return storage.get_setting(BOOKING_SETTING_KEY, True) is not False
+
 
 _lock = threading.Lock()
 
@@ -440,18 +446,12 @@ def _validate_reservation(payload):
         parsed_time = None
         errors.append({"code": "TIME_INVALID"})
 
-    if parsed_date and parsed_time:
-        open_t, _close_t, last_t = _hours_for_date(parsed_date)
-        if not (open_t <= parsed_time <= last_t):
-            errors.append(
-                {
-                    "code": "TIME_OUT_OF_HOURS",
-                    "params": {
-                        "open": open_t.strftime("%H:%M"),
-                        "close": last_t.strftime("%H:%M"),
-                    },
-                }
-            )
+    # A propósito no se valida que la hora caiga dentro del horario de
+    # apertura: el servidor acepta reservaciones para cualquier hora de
+    # cualquier día (24/7). El horario de RESTAURANT["hours"] sigue
+    # publicándose en el sitio, pero como información para el cliente, no
+    # como una regla que rechace la reserva. Lo que sí limita es el aforo
+    # (asientos libres a esa hora) y el interruptor de reservaciones.
 
     try:
         party_size = int(party_size)
@@ -594,7 +594,12 @@ class Handler(BaseHTTPRequestHandler):
     def _do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/restaurant":
-            self._send_json(RESTAURANT)
+            # bookingEnabled viaja aquí (y no en un endpoint privado) porque
+            # el formulario público necesita saberlo para avisar que la
+            # agenda está cerrada antes de que el cliente llene todo.
+            with _lock:
+                booking_enabled = _bookings_open()
+            self._send_json({**RESTAURANT, "bookingEnabled": booking_enabled})
             return
         if parsed.path == "/api/photos":
             with _lock:
@@ -606,6 +611,12 @@ class Handler(BaseHTTPRequestHandler):
                 reviews = storage.list_reviews()
             approved = [r for r in reviews if r.get("status") == "approved"]
             self._send_json(approved)
+            return
+        if parsed.path == "/api/settings":
+            if not self._require_staff():
+                return
+            with _lock:
+                self._send_json({"bookingEnabled": _bookings_open()})
             return
         if parsed.path == "/api/tables":
             if not self._require_staff():
@@ -730,6 +741,15 @@ class Handler(BaseHTTPRequestHandler):
             if payload is None:
                 self._send_json({"errors": ["JSON inválido."]}, status=400)
                 return
+            # El interruptor cierra la agenda al público; el panel de staff
+            # (que manda su contraseña en X-Staff-Password) sigue pudiendo
+            # apuntar una reserva tomada por teléfono.
+            if not self._is_staff():
+                with _lock:
+                    accepting = _bookings_open()
+                if not accepting:
+                    self._send_json({"errors": [{"code": "BOOKING_CLOSED"}]}, status=403)
+                    return
             clean, errors = _validate_reservation(payload)
             if errors:
                 self._send_json({"errors": errors}, status=400)
@@ -864,6 +884,18 @@ class Handler(BaseHTTPRequestHandler):
             with _lock:
                 storage.update_photo_category(photo_id, category)
             self._send_json({"id": photo_id, "category": category})
+            return
+
+        if parsed.path == "/api/settings":
+            if not self._require_staff():
+                return
+            payload = self._read_json_body()
+            if payload is None or not isinstance(payload.get("bookingEnabled"), bool):
+                self._send_json({"errors": ["Falta indicar si se aceptan reservaciones."]}, status=400)
+                return
+            with _lock:
+                storage.set_setting(BOOKING_SETTING_KEY, payload["bookingEnabled"])
+            self._send_json({"bookingEnabled": payload["bookingEnabled"]})
             return
 
         m = re.match(r"^/api/tables/([a-z0-9-]+)$", parsed.path)

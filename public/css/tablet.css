@@ -241,6 +241,80 @@ body.tablet-body :focus-visible {
   border-bottom-color: var(--brand);
 }
 
+/* ---------- interruptor de reservaciones ----------
+   Empujado a la derecha con margin-left:auto. El alta rápida venía con el
+   mismo truco; ahora que son dos, el segundo se pega al primero con un
+   margen fijo -- con dos márgenes "auto" el espacio libre se repartiría
+   entre ambos y el interruptor acabaría flotando en medio de la barra. */
+.btn-booking {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  margin-left: auto;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--forest);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.btn-booking:hover {
+  border-color: var(--forest);
+}
+
+/* El punto es el estado de un vistazo: verde encendido, rojo apagado. En
+   una tablet que se mira de pasada, el color se lee antes que el texto --
+   pero el texto va igualmente, porque el color por sí solo no basta para
+   quien no lo distingue. */
+.booking-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  flex: none;
+}
+
+.btn-booking.is-off {
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger);
+}
+
+.btn-booking.is-off .booking-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+.btn-booking:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.btn-booking + .new-res-wrap {
+  margin-left: 8px;
+}
+
+/* Aviso fijo mientras la agenda está cerrada: el botón ya lo dice, pero
+   quien llega a la tablet a media tarde mira la lista, no la barra. */
+.booking-banner {
+  margin: 0;
+  padding: 10px 24px;
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color: var(--danger);
+  border-bottom: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-align: center;
+}
+
 /* ---------- alta rápida de reserva ---------- */
 .new-res-wrap {
   position: relative;
@@ -406,6 +480,14 @@ body.tablet-body :focus-visible {
 @media (max-width: 560px) {
   .btn-new-res span {
     display: none;
+  }
+  /* En pantalla estrecha el interruptor se queda solo con su punto de
+     color: el rótulo no cabe junto a las pestañas y el botón de alta. */
+  .btn-booking .booking-label {
+    display: none;
+  }
+  .btn-booking {
+    padding: 0 12px;
   }
   .btn-new-res {
     padding: 0 12px;

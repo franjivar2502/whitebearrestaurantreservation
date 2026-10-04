@@ -8,6 +8,7 @@
   const dateInput = document.getElementById("date");
   const timeInput = document.getElementById("time");
   const timeHint = document.getElementById("time-hint");
+  const bookingClosedNotice = document.getElementById("booking-closed-notice");
   const heroHours = document.getElementById("hero-hours");
   const partySizeInput = document.getElementById("partySize");
   const partySizeHint = document.getElementById("party-size-hint");
@@ -241,7 +242,6 @@
       sat: { open: "11:00", close: "21:30" },
       sun: { open: "11:00", close: "21:00" },
     },
-    lastSeatingBufferMinutes: 30,
     maxPartySize: 40,
     phone: "(518) 302-5235",
     groupMenu: { threshold: 20, items: [] },
@@ -327,15 +327,6 @@
       .catch(() => {});
   }
 
-  function subtractMinutes(hhmm, minutes) {
-    const [h, m] = hhmm.split(":").map(Number);
-    let total = h * 60 + m - minutes;
-    total = Math.max(total, 0);
-    const hh = String(Math.floor(total / 60)).padStart(2, "0");
-    const mm2 = String(total % 60).padStart(2, "0");
-    return `${hh}:${mm2}`;
-  }
-
   function renderHeroHours() {
     const groups = [];
     for (const key of DAY_ORDER) {
@@ -363,20 +354,31 @@
       .join("");
   }
 
+  /* El campo de hora no lleva min/max: se reservan mesas a cualquier hora
+     de cualquier día (el servidor también las acepta así). El horario de
+     apertura se sigue mostrando arriba, como información, pero ya no
+     rechaza una reserva fuera de él. */
   function updateTimeConstraints() {
-    const dayKey = i18n.dayKeyForDate(dateInput.value);
-    const dayHours = restaurantInfo.hours[dayKey];
-    const lastSeating = subtractMinutes(dayHours.close, restaurantInfo.lastSeatingBufferMinutes);
-    timeInput.min = dayHours.open;
-    timeInput.max = lastSeating;
-    timeHint.textContent = i18n.t("form.timeHint", {
-      day: i18n.dayName(dayKey),
-      open: i18n.formatTime(dayHours.open),
-      close: i18n.formatTime(lastSeating),
-    });
+    timeInput.removeAttribute("min");
+    timeInput.removeAttribute("max");
+    timeHint.textContent = i18n.t("form.timeHintAnyHour");
   }
 
-  dateInput.addEventListener("change", updateTimeConstraints);
+  /* ---------- agenda abierta / cerrada ----------
+     El staff apaga las reservaciones desde su panel. Cuando están apagadas,
+     el formulario se deshabilita con un aviso arriba: más honesto que
+     dejarlo llenar para devolver un error al enviarlo. */
+  function applyBookingState() {
+    const open = restaurantInfo.bookingEnabled !== false;
+    bookingClosedNotice.textContent = open
+      ? ""
+      : i18n.t("form.bookingClosed", { phone: restaurantInfo.phone });
+    bookingClosedNotice.hidden = open;
+    submitBtn.disabled = !open;
+    Array.from(form.elements).forEach((el) => {
+      if (el !== submitBtn) el.disabled = !open;
+    });
+  }
 
   function renderGroupMenu() {
     const menu = restaurantInfo.groupMenu;
@@ -445,6 +447,7 @@
     renderReviewsList();
     renderHeroHours();
     updateTimeConstraints();
+    applyBookingState();
     renderPartySizeHint();
     renderGroupMenu();
     updateGroupMenuVisibility();
@@ -498,6 +501,13 @@
 
       if (!res.ok) {
         showAlert(data.errors);
+        // La agenda pudo cerrarse mientras el cliente llenaba el formulario:
+        // en ese caso no basta el error, hay que bloquearlo como al cargar.
+        if ((data.errors || []).some((er) => er && er.code === "BOOKING_CLOSED")) {
+          restaurantInfo.bookingEnabled = false;
+          applyBookingState();
+          return;
+        }
         submitBtn.disabled = false;
         submitBtn.classList.remove("btn-loading");
         submitBtn.textContent = i18n.t("form.submit");

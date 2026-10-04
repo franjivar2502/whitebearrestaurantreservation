@@ -271,13 +271,24 @@ computadora que corre el servidor en tu red local (por ejemplo
 
 ## Horario y reglas configuradas
 
-- Lunes a jueves y domingo: 11:00 a.m. – 9:00 p.m. Viernes y sábado: 11:00
-  a.m. – 9:30 p.m. (la hora exacta de cierre varía por día; la última hora
-  para reservar es 30 minutos antes de cerrar).
+- **Se reservan mesas a cualquier hora, cualquier día (24/7).** El servidor
+  no rechaza una reserva por caer fuera del horario de apertura, y el campo
+  de hora del formulario no tiene tope ni por arriba ni por abajo.
+- El horario publicado (lunes a jueves y domingo 11:00 a.m. – 9:00 p.m.;
+  viernes y sábado 11:00 a.m. – 9:30 p.m.) se sigue mostrando en el sitio,
+  pero como **información para el cliente**, no como una regla que rechace
+  la reserva.
 - Grupos de 1 a 40 personas (para grupos más grandes se sugiere llamar).
-- No se permiten fechas pasadas.
+- No se permiten fechas pasadas, ni más de 6 meses de anticipación.
+- Lo que sí limita una reserva: los asientos libres a esa hora (ver "Mesas
+  y disponibilidad real") y el interruptor de reservaciones del panel (ver
+  "Acceso del staff").
 
 Estos valores están en el diccionario `RESTAURANT` al inicio de `server.py`.
+Si algún día se quiere volver a cerrar la reserva fuera de horario, hay que
+reponer la validación en `_validate_reservation` (hoy lleva un comentario
+en el sitio exacto donde iba) y devolver los `min`/`max` al campo de hora
+en `public/js/app.js` y `public/js/tablet.js`.
 
 ## Menú de preorden para grupos grandes
 
@@ -334,6 +345,12 @@ nueva, solo `urllib` de la librería estándar.
    );
 
    create table reviews (
+     id text primary key,
+     data jsonb not null,
+     created_at timestamptz not null default now()
+   );
+
+   create table settings (
      id text primary key,
      data jsonb not null,
      created_at timestamptz not null default now()
@@ -406,12 +423,40 @@ de administración siempre abre también el panel de staff.
 
 **Qué queda protegido:** ver la lista de reservaciones
 (`GET /api/reservations`), cambiar su estado o borrarlas
-(`PATCH`/`DELETE /api/reservations/<id>`), y ver o marcar mesas
-(`/api/tables`). **Qué sigue público, a propósito:** reservar
+(`PATCH`/`DELETE /api/reservations/<id>`), ver o marcar mesas
+(`/api/tables`), y encender o apagar las reservaciones
+(`GET`/`PATCH /api/settings`). **Qué sigue público, a propósito:** reservar
 (`POST /api/reservations`), la página de confirmación de asistencia a la
 que llega el cliente desde su SMS/correo (`/api/reservations/<id>` y
 `.../confirm-attendance`, que solo funcionan con el código de esa
 reservación), el menú, las fotos y las reseñas.
+
+### Apagar las reservaciones (interruptor del panel)
+
+En la barra del panel, junto a "Nueva reservación", hay un botón con un
+punto de color que dice **Reservaciones activas** / **Reservaciones
+apagadas**. Sirve para cerrar la agenda al público cuando no se quieren
+más reservaciones: noche de evento privado, cocina saturada, obra en el
+salón. Pide confirmación antes de cambiar, porque en una tablet de salón
+un roce basta para tocarlo.
+
+Con el interruptor apagado:
+
+- El formulario del sitio de clientes se deshabilita y muestra un aviso con
+  el teléfono del restaurante, en vez de dejar que el cliente lo llene para
+  recibir un error al enviarlo.
+- `POST /api/reservations` responde `403` con el código `BOOKING_CLOSED`
+  para cualquiera que no mande la contraseña de staff.
+- **El alta rápida del panel sigue funcionando**: apagar el interruptor es
+  cerrar la agenda al público, no impedir que el encargado apunte la mesa
+  que acaba de entrar por teléfono.
+- Las reservaciones ya tomadas no se tocan: siguen en la lista del turno.
+
+El estado se guarda en el servidor (tabla `settings` de Supabase, o
+`data/settings.json` en local), así que sobrevive a un reinicio y lo ven
+todas las tablets: el panel lo relee cada 5 segundos, de modo que si
+alguien lo apaga desde otro dispositivo, los demás se enteran solos. Por
+omisión está encendido.
 
 ## Galería de fotos y pantalla de bienvenida
 

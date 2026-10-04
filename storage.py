@@ -423,3 +423,73 @@ def upload_review_photo(filename, content_bytes, content_type):
     with open(os.path.join(LOCAL_REVIEW_PHOTOS_DIR, filename), "wb") as f:
         f.write(content_bytes)
     return f"/uploads/reviews/{filename}"
+
+
+# ---------------------------------------------------------------------------
+# Ajustes globales del restaurante que el staff puede cambiar desde el panel
+# (hoy: si se aceptan reservaciones nuevas del público o no). Van en su
+# propia tabla, con el mismo patrón JSONB que table_status: una fila por
+# ajuste, y si la fila no existe se usa el valor por omisión del llamador
+# -- así una base recién creada se comporta como siempre (reservaciones
+# abiertas) sin necesidad de insertar nada a mano.
+#
+# Tabla esperada en Supabase (crear una sola vez, ver README):
+#
+#     create table settings (
+#         id text primary key,
+#         data jsonb not null,
+#         created_at timestamptz not null default now()
+#     );
+# ---------------------------------------------------------------------------
+
+LOCAL_SETTINGS_FILE = os.path.join(BASE_DIR, "data", "settings.json")
+
+
+def _read_local_settings():
+    os.makedirs(os.path.dirname(LOCAL_SETTINGS_FILE), exist_ok=True)
+    if not os.path.exists(LOCAL_SETTINGS_FILE):
+        with open(LOCAL_SETTINGS_FILE, "w", encoding="utf-8") as f:
+            json.dump({}, f)
+    with open(LOCAL_SETTINGS_FILE, "r", encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+        except json.JSONDecodeError:
+            return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write_local_settings(settings):
+    with open(LOCAL_SETTINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
+
+
+def get_setting(key, default=None):
+    """Devuelve el valor guardado para ese ajuste, o `default` si no hay fila."""
+    if enabled():
+        try:
+            rows = _request("GET", f"settings?select=data&id=eq.{key}") or []
+        except (urllib.error.URLError, OSError):
+            # Tabla aún sin crear en Supabase (404) o Supabase caído: se usa
+            # el valor por omisión en vez de tumbar las reservaciones. Con el
+            # interruptor, el valor por omisión es "abierto".
+            return default
+        if not rows:
+            return default
+        data = rows[0].get("data") or {}
+        return data.get("value", default)
+    return _read_local_settings().get(key, default)
+
+
+def set_setting(key, value):
+    """Guarda el valor de un ajuste (upsert por id)."""
+    if enabled():
+        _request(
+            "POST",
+            "settings",
+            body={"id": key, "data": {"value": value}},
+            extra_headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+        )
+        return
+    settings = _read_local_settings()
+    settings[key] = value
+    _write_local_settings(settings)

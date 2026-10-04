@@ -12,6 +12,9 @@
   const tablesView = document.getElementById("tables-view");
   const tablesSummary = document.getElementById("tables-summary");
   const floorPlan = document.getElementById("floor-plan");
+  const bookingToggle = document.getElementById("booking-toggle");
+  const bookingToggleLabel = document.getElementById("booking-toggle-label");
+  const bookingBanner = document.getElementById("booking-banner");
 
   const dateTabs = document.querySelectorAll(".tab[data-filter]");
   const statusTabs = document.querySelectorAll(".tab[data-status]");
@@ -44,6 +47,7 @@
   let rooms = [];
   let totalSeats = 0;
   let availableSeats = 0;
+  let bookingEnabled = true;
 
   tabletI18n.applyStaticTranslations();
 
@@ -55,6 +59,7 @@
 
   document.addEventListener("tablet-languagechange", () => {
     updateClock();
+    renderBookingToggle();
     render();
     if (currentView === "tables" && tables.length) renderTables(totalSeats, availableSeats);
   });
@@ -285,6 +290,61 @@
     }
   }
 
+  /* ---------- interruptor de reservaciones ----------
+     Apaga las reservaciones del sitio de clientes. Se relee en cada ciclo
+     de polling, no solo al cargar: si alguien lo apaga desde otra tablet o
+     desde su teléfono, este panel tiene que enterarse igual. */
+  function renderBookingToggle() {
+    const label = tabletI18n.t(bookingEnabled ? "booking.on" : "booking.off");
+    bookingToggleLabel.textContent = label;
+    // El rótulo se esconde en pantallas estrechas, así que el nombre
+    // accesible del botón va también en aria-label.
+    bookingToggle.setAttribute("aria-label", label);
+    bookingToggle.setAttribute("aria-pressed", String(!bookingEnabled));
+    bookingToggle.classList.toggle("is-off", !bookingEnabled);
+    bookingBanner.hidden = bookingEnabled;
+  }
+
+  async function fetchBookingState() {
+    try {
+      const res = await fetch("/api/settings", { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      const data = await res.json();
+      bookingEnabled = data.bookingEnabled !== false;
+      renderBookingToggle();
+    } catch (err) {
+      // Falla silenciosa: se reintenta en el próximo ciclo de polling.
+    }
+  }
+
+  async function toggleBooking() {
+    const next = !bookingEnabled;
+    // Se pregunta porque es un botón que cambia lo que ve el público, y en
+    // una tablet de salón un roce basta para tocarlo.
+    const pregunta = tabletI18n.t(next ? "booking.confirmOn" : "booking.confirmOff");
+    if (!window.confirm(pregunta)) return;
+
+    bookingToggle.disabled = true;
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingEnabled: next }),
+      });
+      if (!res.ok) throw new Error("update failed");
+      const data = await res.json();
+      bookingEnabled = data.bookingEnabled !== false;
+      renderBookingToggle();
+      showToast(tabletI18n.t(bookingEnabled ? "booking.turnedOn" : "booking.turnedOff"));
+    } catch (err) {
+      showToast(tabletI18n.t("booking.failed"));
+    } finally {
+      bookingToggle.disabled = false;
+    }
+  }
+
+  bookingToggle.addEventListener("click", toggleBooking);
+
   viewTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       viewTabs.forEach((t) => t.classList.remove("active"));
@@ -454,6 +514,7 @@
 
   refreshBtn.addEventListener("click", () => {
     fetchReservations();
+    fetchBookingState();
     if (currentView === "tables") fetchTables();
   });
 
@@ -476,35 +537,6 @@
     if (devolverFoco) newResBtn.focus();
   }
 
-  // Horario real del local, para no proponer horas a las que está cerrado.
-  const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-  let horario = null;
-  fetch("/api/restaurant", { cache: "no-store" })
-    .then((r) => r.json())
-    .then((d) => {
-      horario = d.hours || null;
-    })
-    .catch(() => {});
-
-  function horasDelDia(iso) {
-    if (!horario) return null;
-    const [y, m, d] = iso.split("-").map(Number);
-    return horario[DAY_KEYS[new Date(y, m - 1, d).getDay()]] || null;
-  }
-
-  function aplicarHorario(iso) {
-    const h = horasDelDia(iso);
-    const campo = newResForm.elements.time;
-    if (h) {
-      campo.min = h.open;
-      campo.max = h.close;
-    } else {
-      campo.removeAttribute("min");
-      campo.removeAttribute("max");
-    }
-    return h;
-  }
-
   function openNewRes() {
     newResForm.reset();
     newResAlert.hidden = true;
@@ -512,24 +544,19 @@
     newResForm.elements.date.value = hoy;
     newResForm.elements.date.min = hoy;
 
-    const h = aplicarHorario(hoy);
     // Se propone la próxima franja de cuarto de hora, porque la mayoría de
-    // las llamadas son para dentro de un rato. Pero solo si a esa hora el
-    // local está abierto: a las 23:47 proponía las 00:15, que nunca vale.
+    // las llamadas son para dentro de un rato. Ya no se compara contra el
+    // horario de apertura: se reserva a cualquier hora, así que la hora
+    // propuesta siempre vale y el encargado la cambia si hace falta.
     const ahora = new Date();
     ahora.setMinutes(Math.ceil((ahora.getMinutes() + 15) / 15) * 15, 0, 0);
-    const propuesta =
-      `${String(ahora.getHours()).padStart(2, "0")}:${String(ahora.getMinutes()).padStart(2, "0")}`;
     newResForm.elements.time.value =
-      !h || propuesta < h.open || propuesta > h.close ? "" : propuesta;
+      `${String(ahora.getHours()).padStart(2, "0")}:${String(ahora.getMinutes()).padStart(2, "0")}`;
 
     newResPopover.hidden = false;
     newResBtn.setAttribute("aria-expanded", "true");
     newResForm.elements.name.focus();
   }
-
-  // Si cambia la fecha, el rango horario que admite el campo cambia con ella.
-  newResForm.elements.date.addEventListener("change", (e) => aplicarHorario(e.target.value));
 
   newResBtn.addEventListener("click", () => {
     if (newResPopover.hidden) openNewRes();
@@ -604,12 +631,15 @@
     }
   });
 
+  renderBookingToggle();
   updateClock();
   setInterval(updateClock, 30000);
 
   fetchReservations();
+  fetchBookingState();
   pollTimer = setInterval(() => {
     fetchReservations();
+    fetchBookingState();
     if (currentView === "tables") fetchTables();
   }, 5000);
 })();

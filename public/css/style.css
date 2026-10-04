@@ -971,6 +971,21 @@ input:hover, select:hover, textarea:hover {
   border-color: var(--border-strong);
 }
 
+/* Campo bloqueado (hoy: el formulario de reserva cuando el staff apaga las
+   reservaciones desde su panel). Sin esto se veía igual que uno normal,
+   porque el fondo propio tapa el gris con el que el navegador marca un
+   campo deshabilitado -- y un campo que parece activo pero no deja
+   escribir se lee como una página rota, no como una decisión del local. */
+input:disabled, select:disabled, textarea:disabled {
+  background: color-mix(in srgb, var(--text-muted) 9%, var(--surface-solid));
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+input:disabled:hover, select:disabled:hover, textarea:disabled:hover {
+  border-color: var(--border);
+}
+
 input:focus, select:focus, textarea:focus {
   outline: 2px solid var(--forest);
   outline-offset: 1px;
