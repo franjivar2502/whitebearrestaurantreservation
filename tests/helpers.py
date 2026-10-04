@@ -80,6 +80,7 @@ class ServerTestCase(unittest.TestCase):
         shutil.rmtree(cls.data_dir, ignore_errors=True)
 
     def setUp(self):
+        server._site_settings_cache.update(value=None, at=0.0)
         for name in os.listdir(self.data_dir):
             path = os.path.join(self.data_dir, name)
             if os.path.isdir(path):

@@ -399,6 +399,39 @@ def set_table_unavailable(table_id, unavailable):
     _write_local_table_status(rows)
 
 
+# Ajustes del sitio que el staff cambia desde el panel (sitio público cerrado,
+# reservas a cualquier hora). Se guardan como una fila más de table_status,
+# con un id que no es de ninguna mesa: así no hace falta crear otra tabla en
+# Supabase. list_unavailable_table_ids la ignora porque no lleva "unavailable".
+SITE_SETTINGS_ID = "site-settings"
+
+
+def get_site_settings():
+    """Devuelve el dict de ajustes guardado ({} si nunca se guardó)."""
+    if enabled():
+        rows = _request("GET", f"table_status?select=data&id=eq.{SITE_SETTINGS_ID}") or []
+        return dict(rows[0]["data"].get("settings") or {}) if rows else {}
+    for row in _read_local_table_status():
+        if row.get("id") == SITE_SETTINGS_ID:
+            return dict(row.get("settings") or {})
+    return {}
+
+
+def save_site_settings(settings):
+    row = {"id": SITE_SETTINGS_ID, "settings": settings}
+    if enabled():
+        _request(
+            "POST",
+            "table_status",
+            body={"id": SITE_SETTINGS_ID, "data": row},
+            extra_headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+        )
+        return
+    rows = [r for r in _read_local_table_status() if r.get("id") != SITE_SETTINGS_ID]
+    rows.append(row)
+    _write_local_table_status(rows)
+
+
 # ---------------------------------------------------------------------------
 # Reseñas de clientes (texto + foto opcional), con moderación por palabras
 # clave (ver server.py). Mismo patrón JSONB que reservations/table_status.

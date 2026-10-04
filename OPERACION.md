@@ -31,6 +31,25 @@ el *cómo*.
 
 ---
 
+## 1b. Ajustes desde el panel del staff (pestaña "Sitio web")
+
+- **Cerrar el sitio web público.** La portada pasa a mostrar "Volvemos
+  enseguida" con el teléfono, y se dejan de aceptar reservas y reseñas por
+  internet. Siguen funcionando el panel (el personal puede seguir apuntando
+  reservas telefónicas), la confirmación de reservas ya hechas y `/healthz`.
+  Mientras está cerrado, el panel muestra una franja roja arriba para que
+  nadie lo olvide.
+- **Reservas 24/7.** Activado (es lo predeterminado), se aceptan reservas
+  para cualquier hora de cualquier día. Desactivado, solo dentro del horario
+  del restaurante.
+
+Cambiar cualquiera de los dos pide la contraseña de administración
+(`ADMIN_PASSWORD`) o la del staff (`STAFF_PASSWORD`). Los ajustes se guardan
+en Supabase (como una fila `site-settings` de la tabla `table_status`), así
+que sobreviven a reinicios y valen para todas las tablets.
+
+---
+
 ## 2. Variables de entorno (Render → el servicio → Environment)
 
 | Variable | Obligatoria | Para qué |
@@ -191,6 +210,7 @@ Las reseñas y las fotos de la galería no se borran nunca solas.
 | Los clientes no reciben SMS ni correos | Credenciales sin configurar, caducadas o sin saldo | Render → Logs, buscar `ERROR SMS` o `ERROR EMAIL`. Revisar saldo de Twilio y la contraseña de aplicación del correo. |
 | Los recordatorios salen a la hora equivocada | Zona horaria | `/healthz` muestra la hora que cree el servidor. Si no es la de Lake Placid, revisar `RESTAURANT_TIMEZONE`. |
 | "Error interno" al reservar | Un fallo de código o de Supabase | Render → Logs, buscar `[ERROR] POST /api/reservations`. Con ese texto cualquier programador sabe por dónde empezar. |
+| La portada dice "Volvemos enseguida" | Alguien cerró el sitio desde el panel | Panel → Sitio web → *Reabrir sitio web público*. |
 | Se borraron datos por error | — | Restaurar el respaldo más reciente (sección 5). |
 | Una actualización de Python en Render rompió algo | Render cambió la versión por defecto | Fijar la versión que funcionaba con la variable `PYTHON_VERSION` en Render (por ejemplo `3.13.5`). |
 

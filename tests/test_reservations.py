@@ -46,12 +46,31 @@ class CreateReservationTests(ServerTestCase):
             date=(server._today() + timedelta(days=server.MAX_BOOKING_DAYS_AHEAD + 1)).isoformat(),
         )
         self.assertRejected("TIME_INVALID", time="7pm")
-        self.assertRejected("TIME_OUT_OF_HOURS", time="08:00")
-        self.assertRejected("TIME_OUT_OF_HOURS", time="21:00")  # pasada la última hora
         self.assertRejected("PARTY_SIZE_OUT_OF_RANGE", partySize=0)
         self.assertRejected("PARTY_SIZE_OUT_OF_RANGE", partySize=server.RESTAURANT["maxPartySize"] + 1)
         self.assertRejected("PARTY_SIZE_INVALID", partySize="muchos")
         self.assertRejected("NOTES_TOO_LONG", notes="x" * (server.MAX_NOTES_LENGTH + 1))
+
+    def test_opening_hours_apply_when_24_7_is_off(self):
+        server._save_site_settings({"bookingAlwaysOpen": False})
+        self.assertRejected("TIME_OUT_OF_HOURS", time="08:00")
+        self.assertRejected("TIME_OUT_OF_HOURS", time="21:00")  # pasada la última hora
+        self.assertEqual(self.book(time="18:00")[0], 201)
+
+    def test_any_time_is_accepted_24_7(self):
+        for t in ("00:00", "03:30", "08:00", "23:45"):
+            self.assertEqual(self.book(time=t)[0], 201, t)
+
+    def test_time_already_passed_today_is_rejected(self):
+        now = server._now()
+        if now.hour < 1:
+            self.skipTest("Cerca de medianoche no hay una hora de hoy una hora atrás.")
+        past = (now - server.timedelta(minutes=60)).strftime("%H:%M")
+        self.assertRejected("TIME_PAST", date=now.date().isoformat(), time=past)
+        # Unos minutos atrás sí se admite: alguien que acaba de sentarse.
+        recent = (now - server.timedelta(minutes=5)).strftime("%H:%M")
+        if recent < now.strftime("%H:%M"):
+            self.assertEqual(self.book(date=now.date().isoformat(), time=recent)[0], 201)
 
     def test_invalid_json_is_rejected(self):
         status, _ = self.request(

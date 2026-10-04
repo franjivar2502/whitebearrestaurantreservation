@@ -253,7 +253,7 @@
     alertBox.innerHTML = "";
     const messages = (errors || [{ code: "GENERIC" }]).map((err) => {
       if (typeof err === "string") return err; // por si el servidor devuelve texto plano
-      return i18n.t(`errors.${err.code}`, err.params);
+      return i18n.t(`errors.${err.code}`, { phone: restaurantInfo.phone, ...err.params });
     });
     const div = document.createElement("div");
     div.className = "alert alert-error";
@@ -365,6 +365,13 @@
 
   function updateTimeConstraints() {
     const dayKey = i18n.dayKeyForDate(dateInput.value);
+    // Reservas 24/7 (se activa desde el panel del staff): cualquier hora vale.
+    if (restaurantInfo.bookingAlwaysOpen) {
+      timeInput.removeAttribute("min");
+      timeInput.removeAttribute("max");
+      timeHint.textContent = i18n.t("form.timeHintAnyTime");
+      return;
+    }
     const dayHours = restaurantInfo.hours[dayKey];
     const lastSeating = subtractMinutes(dayHours.close, restaurantInfo.lastSeatingBufferMinutes);
     timeInput.min = dayHours.open;

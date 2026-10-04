@@ -13,6 +13,7 @@ para que cualquier reservación hecha desde una computadora, celular o
 la propia tablet se refleje al instante en la tablet del restaurante.
 """
 
+import hmac
 import json
 import os
 import re
@@ -113,6 +114,7 @@ MAX_NAME_LENGTH = 120
 MAX_NOTES_LENGTH = 1000
 MAX_REVIEW_LENGTH = 2000
 MAX_BOOKING_DAYS_AHEAD = 180
+PAST_TIME_GRACE_MINUTES = 30
 
 NEGATIVE_REVIEW_KEYWORDS = {
     "terrible", "horrible", "pesimo", "pésimo", "asqueroso", "asquerosa",
@@ -315,6 +317,68 @@ def _today():
     return _now().date()
 
 
+# ---------------------------------------------------------------------------
+# Ajustes del sitio que el staff cambia desde el panel (pestaña "Sitio web"):
+#
+#   publicSiteOffline  -- cierra el sitio de clientes: la portada muestra un
+#                         aviso de "cerrado temporalmente" y no se aceptan
+#                         reservas ni reseñas nuevas por internet. El panel,
+#                         la confirmación de asistencia de reservas ya hechas
+#                         y /healthz siguen funcionando.
+#   bookingAlwaysOpen  -- acepta reservas para cualquier hora, cualquier día
+#                         (24/7), sin limitarlas al horario del restaurante.
+# ---------------------------------------------------------------------------
+SITE_SETTINGS_DEFAULTS = {"publicSiteOffline": False, "bookingAlwaysOpen": True}
+_SITE_SETTINGS_TTL_SECONDS = 10
+_site_settings_cache = {"value": None, "at": 0.0}
+
+
+def _site_settings():
+    """Ajustes vigentes. Se guardan unos segundos en memoria para no
+    consultar Supabase en cada visita a la portada."""
+    cached = _site_settings_cache["value"]
+    if cached is not None and time.time() - _site_settings_cache["at"] < _SITE_SETTINGS_TTL_SECONDS:
+        return dict(cached)
+    try:
+        stored = storage.get_site_settings()
+    except Exception as exc:  # noqa: BLE001
+        # Si no se pueden leer, mejor seguir con lo último conocido que dejar
+        # el sitio caído o abrirlo por error.
+        print(f"[ERROR] No se pudieron leer los ajustes del sitio: {exc!r}")
+        return dict(cached if cached is not None else SITE_SETTINGS_DEFAULTS)
+    value = {**SITE_SETTINGS_DEFAULTS, **{k: v for k, v in stored.items() if k in SITE_SETTINGS_DEFAULTS}}
+    _site_settings_cache.update(value=value, at=time.time())
+    return dict(value)
+
+
+def _save_site_settings(changes):
+    with _lock:
+        value = {**_site_settings(), **changes}
+        storage.save_site_settings(value)
+        _site_settings_cache.update(value=value, at=time.time())
+    return dict(value)
+
+
+# Quién puede cambiar esos ajustes: la contraseña de administración o la del
+# staff (STAFF_PASSWORD), la que esté configurada. Sin ninguna, nadie.
+_STAFF_PASSWORD_FOR_SETTINGS = os.environ.get("STAFF_PASSWORD", "")
+
+
+def _matches(given, expected):
+    if not expected or not given:
+        return False
+    return hmac.compare_digest(given.encode("utf-8"), expected.encode("utf-8"))
+
+
+def _is_panel_user(headers):
+    staff = headers.get("X-Staff-Password")
+    return (
+        _matches(headers.get("X-Admin-Password"), ADMIN_PASSWORD)
+        or _matches(staff, _STAFF_PASSWORD_FOR_SETTINGS)
+        or _matches(staff, ADMIN_PASSWORD)
+    )
+
+
 def _hours_for_date(d):
     """Devuelve (hora_apertura, hora_cierre, última_hora_para_reservar) para la fecha dada."""
     day_hours = RESTAURANT["hours"][DAY_KEYS[d.weekday()]]
@@ -448,7 +512,17 @@ def _validate_reservation(payload):
         parsed_time = None
         errors.append({"code": "TIME_INVALID"})
 
-    if parsed_date and parsed_time:
+    # Una hora de hoy que ya pasó. Con las reservas 24/7 es fácil pedirla sin
+    # querer (a las 23:50, "las 00:15" de hoy). Se deja un margen para que el
+    # personal pueda apuntar a quien acaba de sentarse.
+    if (
+        parsed_date
+        and parsed_time
+        and datetime.combine(parsed_date, parsed_time) < _now() - timedelta(minutes=PAST_TIME_GRACE_MINUTES)
+    ):
+        errors.append({"code": "TIME_PAST"})
+
+    if parsed_date and parsed_time and not _site_settings()["bookingAlwaysOpen"]:
         open_t, _close_t, last_t = _hours_for_date(parsed_date)
         if not (open_t <= parsed_time <= last_t):
             errors.append(
@@ -561,6 +635,9 @@ class Handler(BaseHTTPRequestHandler):
     def _serve_static(self, path):
         if path == "/":
             path = "/index.html"
+        if path == "/index.html" and _site_settings()["publicSiteOffline"]:
+            self._serve_maintenance()
+            return
         safe_path = os.path.normpath(path).lstrip("/")
         full_path = os.path.join(PUBLIC_DIR, safe_path)
         if not full_path.startswith(PUBLIC_DIR) or not os.path.isfile(full_path):
@@ -580,6 +657,28 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _serve_maintenance(self, head_only=False):
+        with open(os.path.join(PUBLIC_DIR, "maintenance.html"), "rb") as f:
+            body = f.read()
+        # 503 + Retry-After: así Google entiende que es temporal y no saca
+        # el sitio de los resultados.
+        self.send_response(503)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Retry-After", "3600")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(body)
+
+    def _reject_if_site_offline(self):
+        """Con el sitio público cerrado, rechaza altas desde internet. El
+        personal (con su contraseña) sí puede seguir creando reservas."""
+        if _site_settings()["publicSiteOffline"] and not _is_panel_user(self.headers):
+            self._send_json({"errors": [{"code": "SITE_OFFLINE"}]}, status=503)
+            return True
+        return False
+
     # ---------- routing ----------
     def do_GET(self):
         try:
@@ -595,7 +694,10 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(health, status=status)
             return
         if parsed.path == "/api/restaurant":
-            self._send_json(RESTAURANT)
+            self._send_json({**RESTAURANT, "bookingAlwaysOpen": _site_settings()["bookingAlwaysOpen"]})
+            return
+        if parsed.path == "/api/site-settings":
+            self._send_json(_site_settings())
             return
         if parsed.path == "/api/photos":
             with _lock:
@@ -657,6 +759,8 @@ class Handler(BaseHTTPRequestHandler):
     def _do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/reviews":
+            if self._reject_if_site_offline():
+                return
             content_type_header = self.headers.get("Content-Type", "")
             boundary_match = re.search(r'boundary="?([^";]+)"?', content_type_header)
             if "multipart/form-data" not in content_type_header or not boundary_match:
@@ -723,6 +827,8 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/api/reservations":
+            if self._reject_if_site_offline():
+                return
             payload = self._read_json_body()
             if payload is None:
                 self._send_json({"errors": ["JSON inválido."]}, status=400)
@@ -842,6 +948,22 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_PATCH(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/site-settings":
+            if not _is_panel_user(self.headers):
+                self._send_json({"errors": ["No autorizado."]}, status=401)
+                return
+            payload = self._read_json_body()
+            if not isinstance(payload, dict):
+                self._send_json({"errors": ["JSON inválido."]}, status=400)
+                return
+            changes = {k: v for k, v in payload.items() if k in SITE_SETTINGS_DEFAULTS}
+            if not changes or not all(isinstance(v, bool) for v in changes.values()):
+                self._send_json({"errors": ["Ajuste inválido."]}, status=400)
+                return
+            settings = _save_site_settings(changes)
+            print(f"[INFO] Ajustes del sitio cambiados desde el panel: {changes}")
+            self._send_json(settings)
+            return
         m = re.match(r"^/api/admin/photos/([a-f0-9]+)$", parsed.path)
         if m:
             if not self._require_admin():
@@ -952,6 +1074,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/":
                 path = "/index.html"
+            if path == "/index.html" and _site_settings()["publicSiteOffline"]:
+                self._serve_maintenance(head_only=True)
+                return
             safe_path = os.path.normpath(path).lstrip("/")
             full_path = os.path.join(PUBLIC_DIR, safe_path)
             if full_path.startswith(PUBLIC_DIR) and os.path.isfile(full_path):
