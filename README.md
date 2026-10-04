@@ -53,6 +53,8 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
    archivo del repositorio. Si hace falta consultarla: Render → el servicio →
    Environment → el icono del ojo. **Nunca la pegues aquí**: este repositorio
    es público.
+   **Falta `STAFF_PASSWORD`** (contraseña del panel de tablet, ver "Acceso del
+   staff" más abajo): definirla en Render igual que la de administración.
 4. **Cuadrar los dos asientos que bailan.** El plano se revisó con el cliente
    el 2026-10-02 (se quitó la mesa 18, las 23/24/25 pasaron a 6 asientos y las
    9/10 a 4) y queda en **128**. El cliente dice 130 de palabra, así que falta
@@ -383,8 +385,33 @@ dónde está parada, no leyendo una lista. Tocar una mesa la marca
 disponible/no disponible (por ejemplo, para un evento privado o una
 silla rota) y eso baja la capacidad que ve el sitio de clientes al
 instante; las fuera de servicio van en rojo y tachadas, para que no
-dependa solo del color. No pide contraseña, igual que el resto del panel
-de tablet.
+dependa solo del color. Como todo el panel de tablet, pide la contraseña
+de staff (ver "Acceso del staff").
+
+## Acceso del staff (panel de tablet)
+
+Las reservaciones guardan nombre y teléfono de cada cliente, así que el
+panel de tablet (`/tablet.html`) y la API privada piden una contraseña.
+Al abrir el panel aparece una pantalla de acceso; una vez dentro, la
+tablet la recuerda (en el navegador de ese dispositivo) y no la vuelve a
+pedir hasta que la contraseña cambie en el servidor.
+
+Para activarlo, define esta variable de entorno (en Render: **Environment**):
+```
+STAFF_PASSWORD=una-contraseña-para-el-personal
+```
+Si no se define, el panel acepta la de `ADMIN_PASSWORD`; si no hay
+ninguna de las dos, el panel queda bloqueado por completo. La contraseña
+de administración siempre abre también el panel de staff.
+
+**Qué queda protegido:** ver la lista de reservaciones
+(`GET /api/reservations`), cambiar su estado o borrarlas
+(`PATCH`/`DELETE /api/reservations/<id>`), y ver o marcar mesas
+(`/api/tables`). **Qué sigue público, a propósito:** reservar
+(`POST /api/reservations`), la página de confirmación de asistencia a la
+que llega el cliente desde su SMS/correo (`/api/reservations/<id>` y
+`.../confirm-attendance`, que solo funcionan con el código de esa
+reservación), el menú, las fotos y las reseñas.
 
 ## Galería de fotos y pantalla de bienvenida
 
@@ -467,6 +494,5 @@ Render).
 
 - Añadir notificación por correo/SMS al restaurante cuando llega una
   reservación nueva.
-- Agregar login para el panel de tablet si se va a exponer públicamente.
 - Resolver el almacenamiento persistente (ver arriba) antes de usarlo en
   producción.

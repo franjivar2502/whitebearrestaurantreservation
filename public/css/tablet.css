@@ -1113,3 +1113,64 @@ body.tablet-body :focus-visible {
     height: 17px;
   }
 }
+
+/* ---------- Acceso del staff ----------
+   Tapa el panel entero hasta que se entra con la contraseña. */
+.staff-login {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--bg);
+}
+
+.staff-login[hidden] {
+  display: none;
+}
+
+body.staff-locked {
+  overflow: hidden;
+}
+
+.staff-login-card {
+  width: 360px;
+  max-width: 100%;
+  padding: 28px 24px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.staff-login-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+
+.staff-login-title {
+  margin: 12px 0 4px;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.staff-login-hint {
+  margin: 0 0 18px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.staff-login-card .new-res-field {
+  text-align: left;
+}
+
+.staff-login-submit {
+  width: 100%;
+  margin-top: 16px;
+}
