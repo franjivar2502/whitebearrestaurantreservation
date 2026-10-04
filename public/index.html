@@ -122,6 +122,11 @@
 
     <div id="form-alert"></div>
 
+    <!-- Aviso de agenda cerrada: el staff apaga las reservaciones desde su
+         panel y el formulario queda deshabilitado con este mensaje, en vez
+         de dejar que el cliente lo llene para recibir un error al final. -->
+    <div id="booking-closed-notice" class="alert alert-error booking-closed" hidden></div>
+
     <div class="form-grid">
       <div class="field">
         <label for="name" data-i18n="form.name">Full name *</label>
@@ -143,8 +148,8 @@
       </div>
       <div class="field">
         <label for="time" data-i18n="form.time">Time *</label>
-        <input type="time" id="time" name="time" required min="11:00" max="21:00" step="900" />
-        <span class="hint" id="time-hint">Reservations from 11:00 AM to 9:00 PM.</span>
+        <input type="time" id="time" name="time" required step="900" />
+        <span class="hint" id="time-hint">Pick any time — we take reservations around the clock.</span>
       </div>
       <div class="field">
         <label for="partySize" data-i18n="form.partySize">Party size *</label>

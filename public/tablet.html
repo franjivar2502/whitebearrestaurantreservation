@@ -52,6 +52,14 @@
   <button type="button" class="view-tab active" data-view="reservations" data-i18n="views.reservations">Reservations</button>
   <button type="button" class="view-tab" data-view="tables" data-i18n="views.tables">Tables</button>
 
+  <!-- Interruptor de reservaciones. Apagado, el sitio de clientes deja de
+       aceptar reservaciones nuevas (noche de evento privado, cocina
+       saturada); el alta por teléfono de aquí al lado sigue funcionando. -->
+  <button type="button" class="btn-booking" id="booking-toggle" aria-pressed="false">
+    <span class="booking-dot" aria-hidden="true"></span>
+    <span class="booking-label" id="booking-toggle-label" data-i18n="booking.on">Reservations on</span>
+  </button>
+
   <!-- Alta rápida de reserva, para cuando entra una llamada. Abre un
        recuadro anclado a este botón, no una pantalla completa: el personal
        sigue viendo la lista del turno detrás mientras apunta. -->
@@ -108,6 +116,11 @@
     </div>
   </div>
 </nav>
+
+<!-- Aviso de agenda cerrada, visible en todo el panel mientras lo esté. -->
+<p class="booking-banner" id="booking-banner" data-i18n="booking.banner" hidden>
+  Online reservations are off. The customer site isn't taking new bookings.
+</p>
 
 <section id="reservations-view">
   <nav class="tabs">
