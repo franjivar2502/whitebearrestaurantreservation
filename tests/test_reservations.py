@@ -142,6 +142,16 @@ class CreateReservationTests(ServerTestCase):
             self.assertGreater(table["w"], 0)
             self.assertGreater(table["h"], 0)
 
+    def test_message_language_is_saved_and_defaults_to_english(self):
+        for sent, saved in (("es", "es"), ("FR", "fr"), ("en", "en"), ("de", "en"), (5, "en"), (None, "en")):
+            status, created = self.book(lang=sent)
+            self.assertEqual(status, 201, sent)
+            self.assertEqual(created["lang"], saved, sent)
+        # Sin el campo (panel viejo en caché, reservas antiguas): inglés.
+        payload = self.reservation()
+        status, created = self.request("POST", "/api/reservations", body=payload)
+        self.assertEqual((status, created["lang"]), (201, "en"))
+
     def test_invalid_json_is_rejected(self):
         status, _ = self.request(
             "POST", "/api/reservations", raw=b"{no es json", headers={"Content-Type": "application/json"}

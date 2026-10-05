@@ -469,6 +469,8 @@
         .filter(Boolean)
         .join(" "),
       seatingPreference: form.seatingPreference.value,
+      // Los SMS y correos de esta reservación se escriben en este idioma.
+      lang: i18n.currentLang,
       website: form.website.value,
       termsConsent: form.termsConsent.checked,
     };

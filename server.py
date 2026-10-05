@@ -488,6 +488,11 @@ def _validate_reservation(payload):
     seating_preference = text("seatingPreference").lower()
     if seating_preference not in VALID_SEATING_PREFERENCES:
         seating_preference = ""
+    # Idioma en que se le escriben los mensajes (SMS y correo). Un valor
+    # desconocido o ausente no es un error: se usa el idioma por omisión.
+    lang = text("lang").lower()
+    if lang not in notifications.SUPPORTED_LANGS:
+        lang = notifications.DEFAULT_LANG
 
     # Los topes de longitud no son cosmética: sin ellos cabe un nombre de
     # 5000 caracteres que descuadra la ficha del panel y llena la base.
@@ -573,6 +578,7 @@ def _validate_reservation(payload):
         "partySize": party_size,
         "notes": notes,
         "seatingPreference": seating_preference,
+        "lang": lang,
     }, []
 
 

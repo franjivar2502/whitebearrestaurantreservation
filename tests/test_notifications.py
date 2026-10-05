@@ -53,5 +53,90 @@ class SendSmsTests(unittest.TestCase):
             self.assertEqual(notifications.send_sms("(518) 302-5235", "hola"), (False, "dry-run"))
 
 
+RESERVATION = {
+    "id": "a1b2c3d4e5f60718",
+    "name": "Ana",
+    "date": "2026-10-12",  # un lunes
+    "time": "19:00",
+    "partySize": 4,
+    "phone": "5183025235",
+    "email": "ana@example.com",
+}
+
+
+class MessageLanguageTests(unittest.TestCase):
+    def res(self, **kw):
+        return {**RESERVATION, **kw}
+
+    def test_each_language_writes_its_own_message(self):
+        expected = {"en": "we received your reservation", "es": "recibimos tu reserv", "fr": "nous avons bien re"}
+        for lang, phrase in expected.items():
+            self.assertIn(phrase, notifications.confirmation_message(self.res(lang=lang)), lang)
+
+    def test_missing_or_unknown_language_falls_back_to_english(self):
+        for lang in (None, "", "xx", "de", 5):
+            reservation = self.res(**({} if lang is None else {"lang": lang}))
+            self.assertEqual(notifications.message_language(reservation), "en", lang)
+            self.assertIn("we received your reservation", notifications.confirmation_message(reservation))
+
+    def test_sms_stays_in_the_basic_alphabet_but_email_keeps_accents(self):
+        for lang in ("en", "es", "fr"):
+            reservation = self.res(lang=lang)
+            for build in (
+                lambda r, sms: notifications.confirmation_message(r, sms=sms),
+                lambda r, sms: notifications.attendance_confirmation_message(r, "https://x.com", sms=sms),
+                lambda r, sms: notifications.reminder_message(r, sms=sms),
+            ):
+                self.assertTrue(build(reservation, True).isascii(), (lang, build(reservation, True)))
+            self.assertTrue(notifications.sms_opt_out_note(reservation).isascii(), lang)
+        self.assertIn("reservación", notifications.confirmation_message(self.res(lang="es")))
+        self.assertIn("réservation", notifications.confirmation_message(self.res(lang="fr")))
+
+    def test_guest_name_is_kept_as_written_even_in_sms(self):
+        message = notifications.confirmation_message(self.res(lang="es", name="José {x}"), sms=True)
+        self.assertIn("José {x}", message)
+
+    def test_dates_and_times_are_readable_in_each_language(self):
+        self.assertEqual(notifications.date_text("en", "2026-10-12"), "Monday, Oct 12")
+        self.assertEqual(notifications.date_text("es", "2026-10-12"), "lunes 12 de octubre")
+        self.assertEqual(notifications.date_text("fr", "2026-10-12"), "lundi 12 octobre")
+        self.assertEqual(notifications.date_text("en", "mañana"), "mañana")  # dato raro: no rompe
+        self.assertEqual(notifications.time_text("en", "19:00"), "7:00 PM")
+        self.assertEqual(notifications.time_text("en", "00:15"), "12:15 AM")
+        self.assertEqual(notifications.time_text("en", "12:00"), "12:00 PM")
+        self.assertEqual(notifications.time_text("es", "07:05"), "7:05 a.m.")
+        self.assertEqual(notifications.time_text("fr", "19:00"), "19:00")
+
+    def test_party_size_agrees_in_number(self):
+        self.assertEqual(notifications.party_text("es", 1), "1 persona")
+        self.assertEqual(notifications.party_text("es", 4), "4 personas")
+        self.assertEqual(notifications.party_text("fr", 1), "1 personne")
+        self.assertEqual(notifications.party_text("fr", 4), "4 personnes")
+        self.assertEqual(notifications.party_text("en", 4), "party of 4")
+
+    def test_attendance_link_carries_the_language(self):
+        url = "https://x.com/confirm.html?id=a1b2c3d4e5f60718&lang=fr"
+        self.assertIn(url, notifications.attendance_confirmation_message(self.res(lang="fr"), "https://x.com"))
+
+    def test_notify_sends_sms_and_email_in_the_guests_language(self):
+        sent = []
+        with unittest.mock.patch.object(notifications, "send_sms", lambda to, body: sent.append(("sms", to, body))), \
+                unittest.mock.patch.object(notifications, "send_email", lambda to, subject, body: sent.append(("email", subject, body))):
+            reservation = self.res(lang="fr")
+            notifications.notify_confirmation(reservation)
+            notifications.notify_reminder(reservation)
+            notifications.notify_attendance_confirmation(reservation, "https://x.com")
+        sms = [m for m in sent if m[0] == "sms"]
+        emails = [m for m in sent if m[0] == "email"]
+        self.assertEqual(len(sms), 3)
+        self.assertEqual([m[1] for m in emails], [
+            "Nous avons reçu votre réservation", "Votre table est presque prête", "Merci de confirmer votre venue",
+        ])
+        # La baja (STOP) va solo en el primer SMS, y en el idioma del cliente.
+        self.assertIn("Repondez STOP", sms[0][2])
+        self.assertNotIn("STOP", sms[1][2])
+        self.assertNotIn("STOP", sms[2][2])
+
+
 if __name__ == "__main__":
     unittest.main()
