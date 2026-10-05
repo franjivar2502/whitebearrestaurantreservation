@@ -16,13 +16,12 @@
 <body class="legal-page">
 
 <!--
-  BORRADOR / PLANTILLA. Estos textos los redactó una IA a partir de lo que el
-  sitio hace de verdad (qué datos pide, a quién se los pasa, qué mensajes
-  manda). No son asesoría legal. Antes de publicarlos:
+  Textos redactados por una IA a partir de lo que el sitio hace de verdad
+  (qué datos pide, a quién se los pasa, qué mensajes manda), completados con
+  los datos que dio el dueño el 2026-10-05. No son asesoría legal.
 
-    1. Completar cada <mark class="fill"> (razón social, email, plazos...).
-    2. Que un abogado de Nueva York los revise y apruebe.
-    3. Quitar el aviso "legal-draft" de cada idioma.
+  Si cambia algo de lo que dicen (plazos, proveedores), cambiar también
+  LEGAL_TERMS_VERSION en server.py.
 
   Las tres versiones (EN, ES, FR) dicen lo mismo. Si se cambia una, se
   cambian las tres. En caso de diferencia manda la inglesa (lo dice el
@@ -55,11 +54,10 @@
 <article class="legal-doc" lang="en" data-lang-doc="en">
   <a class="legal-back" href="/">← Back to reservations</a>
 
-  <p class="legal-draft"><strong>Draft.</strong> These policies are pending review by the restaurant's attorney and may change before they take effect.</p>
 
   <h1>Privacy, Terms &amp; Policies</h1>
-  <p class="updated">Effective date: <mark class="fill">[effective date]</mark></p>
-  <p>This website is operated by <mark class="fill">[legal business name, e.g. "White Bear Restaurant LLC"]</mark> ("White Bear Restaurant", "we", "us"), 2793 Wilmington Rd, Lake Placid, NY 12946, USA. Phone: (518) 302-5235. Email: <mark class="fill">[contact email]</mark>.</p>
+  <p class="updated">Effective date: January 1, 2023</p>
+  <p>This website is operated by White Bear Restaurant ("we", "us"), 2793 Wilmington Rd, Lake Placid, NY 12946, USA. Phone: (518) 302-5235.</p>
   <ol class="toc">
     <li><a href="#privacy">Privacy Policy</a></li>
     <li><a href="#terms">Reservation Terms &amp; Website Terms of Use</a></li>
@@ -97,7 +95,7 @@
       <li>Render (website hosting, United States)</li>
       <li>Supabase (database and photo storage)</li>
       <li>Twilio (text message delivery)</li>
-      <li><mark class="fill">[email provider, e.g. Google Workspace]</mark> (email delivery)</li>
+      <li>Our email provider (email delivery)</li>
       <li>Google Fonts (the site's typefaces are loaded from Google, which receives your IP address under its own privacy policy)</li>
     </ul>
     <p><strong>Mobile information:</strong> no mobile information will be shared with third parties or affiliates for marketing or promotional purposes. Text messaging opt-in data and consent are not shared with any third parties.</p>
@@ -108,15 +106,15 @@
 
     <h3 id="retention">How long we keep it</h3>
     <ul>
-      <li>Reservation details: up to <mark class="fill">[12]</mark> months after the reservation date, then deleted.</li>
-      <li>Message delivery records: up to <mark class="fill">[12]</mark> months.</li>
+      <li>Reservation details: up to 2 months after the reservation date, then deleted.</li>
+      <li>Message delivery records: up to 2 months.</li>
       <li>Reviews and photos: while they are published, or until you ask us to remove them.</li>
       <li>Longer only if needed to resolve a dispute or required by law.</li>
     </ul>
 
     <h3>Your choices and rights</h3>
     <ul>
-      <li>Ask us what information we hold about you, or ask us to correct or delete it, by emailing <mark class="fill">[contact email]</mark> or calling (518) 302-5235. We may need to verify your identity, and we will answer within 30 days.</li>
+      <li>Ask us what information we hold about you, or ask us to correct or delete it, by calling (518) 302-5235. We may need to verify your identity, and we will answer within 30 days.</li>
       <li>Cancel a reservation using the link in your messages or by calling us.</li>
       <li>Stop text messages at any time by replying <strong>STOP</strong>.</li>
       <li>Ask us to remove your review or photo.</li>
@@ -148,7 +146,7 @@
 
     <h3>Arrival, changes and cancellations</h3>
     <ul>
-      <li>We hold your table for <mark class="fill">[15]</mark> minutes after your reservation time. After that, we may give the table to other guests.</li>
+      <li>We hold your table for 15 minutes after your reservation time. After that, we may give the table to other guests.</li>
       <li>We will ask you to confirm your attendance before your visit. If you cannot answer the message, please call us to confirm.</li>
       <li>To change or cancel, use the link in your messages or call (518) 302-5235. There is no cancellation fee, but please let us know as early as possible so we can offer the table to others.</li>
     </ul>
@@ -229,7 +227,7 @@
     </ul>
 
     <h3>Removing your review</h3>
-    <p>To remove your own review or photo, or to report one that breaks these rules, email <mark class="fill">[contact email]</mark> or call (518) 302-5235.</p>
+    <p>To remove your own review or photo, or to report one that breaks these rules, call (518) 302-5235.</p>
   </section>
 
   <section class="card">
@@ -241,9 +239,9 @@
       <li>The moving photos next to the booking form can be paused.</li>
     </ul>
     <p><strong>Known limitations:</strong> photos uploaded by guests may not have text descriptions.</p>
-    <p><strong>Need help?</strong> If anything on this site is hard to use, call us at (518) 302-5235 during opening hours and we will take your reservation by phone, with the same availability and at no extra cost. You can also email <mark class="fill">[contact email]</mark>. We aim to reply within <mark class="fill">[2]</mark> business days.</p>
-    <p><strong>At the restaurant:</strong> <mark class="fill">[describe physical access: step-free entrance, accessible restroom, accessible parking]</mark>.</p>
-    <p class="updated">This statement was last reviewed on <mark class="fill">[date]</mark>.</p>
+    <p><strong>Need help?</strong> If anything on this site is hard to use, call us at (518) 302-5235 during opening hours and we will take your reservation by phone, with the same availability and at no extra cost.</p>
+    <p><strong>At the restaurant:</strong> The restaurant is wheelchair accessible.</p>
+    <p class="updated">This statement was last reviewed on October 5, 2026.</p>
   </section>
 </article>
 
@@ -253,11 +251,10 @@
 <article class="legal-doc" lang="es" data-lang-doc="es" hidden>
   <a class="legal-back" href="/">← Volver a reservas</a>
 
-  <p class="legal-draft"><strong>Borrador.</strong> Estas políticas están pendientes de revisión por el abogado del restaurante y pueden cambiar antes de entrar en vigor.</p>
 
   <h1>Privacidad, términos y políticas</h1>
-  <p class="updated">Fecha de entrada en vigor: <mark class="fill">[fecha de entrada en vigor]</mark></p>
-  <p>Este sitio web lo opera <mark class="fill">[razón social, p. ej. "White Bear Restaurant LLC"]</mark> ("White Bear Restaurant", "nosotros"), 2793 Wilmington Rd, Lake Placid, NY 12946, EE. UU. Teléfono: (518) 302-5235. Correo: <mark class="fill">[correo de contacto]</mark>.</p>
+  <p class="updated">Fecha de entrada en vigor: 1 de enero de 2023</p>
+  <p>Este sitio web lo opera White Bear Restaurant ("nosotros"), 2793 Wilmington Rd, Lake Placid, NY 12946, EE. UU. Teléfono: (518) 302-5235.</p>
   <p>Esta es una traducción. Si hay alguna diferencia con la versión en inglés, prevalece la versión en inglés.</p>
   <ol class="toc">
     <li><a href="#privacy-es">Política de privacidad</a></li>
@@ -296,7 +293,7 @@
       <li>Render (alojamiento del sitio, Estados Unidos)</li>
       <li>Supabase (base de datos y almacenamiento de fotos)</li>
       <li>Twilio (envío de mensajes de texto)</li>
-      <li><mark class="fill">[proveedor de correo, p. ej. Google Workspace]</mark> (envío de correos)</li>
+      <li>Nuestro proveedor de correo (envío de correos)</li>
       <li>Google Fonts (las tipografías del sitio se cargan desde Google, que recibe tu dirección IP según su propia política de privacidad)</li>
     </ul>
     <p><strong>Datos móviles:</strong> no compartimos información móvil con terceros ni empresas afiliadas con fines de marketing o promoción. Los datos y el consentimiento de suscripción a mensajes de texto no se comparten con ningún tercero.</p>
@@ -307,15 +304,15 @@
 
     <h3 id="retention-es">Cuánto tiempo los conservamos</h3>
     <ul>
-      <li>Datos de la reserva: hasta <mark class="fill">[12]</mark> meses después de la fecha de la reserva; luego se borran.</li>
-      <li>Registros de envío de mensajes: hasta <mark class="fill">[12]</mark> meses.</li>
+      <li>Datos de la reserva: hasta 2 meses después de la fecha de la reserva; luego se borran.</li>
+      <li>Registros de envío de mensajes: hasta 2 meses.</li>
       <li>Reseñas y fotos: mientras estén publicadas, o hasta que nos pidas retirarlas.</li>
       <li>Más tiempo solo si hace falta para resolver una disputa o lo exige la ley.</li>
     </ul>
 
     <h3>Tus opciones y derechos</h3>
     <ul>
-      <li>Puedes pedirnos qué datos tenemos sobre ti, o que los corrijamos o borremos, escribiendo a <mark class="fill">[correo de contacto]</mark> o llamando al (518) 302-5235. Puede que necesitemos verificar tu identidad; responderemos en un plazo de 30 días.</li>
+      <li>Puedes pedirnos qué datos tenemos sobre ti, o que los corrijamos o borremos, llamando al (518) 302-5235. Puede que necesitemos verificar tu identidad; responderemos en un plazo de 30 días.</li>
       <li>Cancelar una reserva con el enlace de tus mensajes o llamándonos.</li>
       <li>Dejar de recibir mensajes de texto en cualquier momento respondiendo <strong>STOP</strong>.</li>
       <li>Pedirnos que retiremos tu reseña o tu foto.</li>
@@ -347,7 +344,7 @@
 
     <h3>Llegada, cambios y cancelaciones</h3>
     <ul>
-      <li>Guardamos tu mesa <mark class="fill">[15]</mark> minutos después de la hora de la reserva. Pasado ese tiempo, podemos darla a otros clientes.</li>
+      <li>Guardamos tu mesa 15 minutos después de la hora de la reserva. Pasado ese tiempo, podemos darla a otros clientes.</li>
       <li>Antes de tu visita te pediremos que confirmes tu asistencia. Si no puedes responder al mensaje, llámanos para confirmar.</li>
       <li>Para cambiar o cancelar, usa el enlace de tus mensajes o llama al (518) 302-5235. No cobramos por cancelar, pero avísanos lo antes posible para poder ofrecer la mesa a otros.</li>
     </ul>
@@ -428,7 +425,7 @@
     </ul>
 
     <h3>Retirar tu reseña</h3>
-    <p>Para retirar tu reseña o foto, o para avisarnos de una que incumpla estas reglas, escribe a <mark class="fill">[correo de contacto]</mark> o llama al (518) 302-5235.</p>
+    <p>Para retirar tu reseña o foto, o para avisarnos de una que incumpla estas reglas, llama al (518) 302-5235.</p>
   </section>
 
   <section class="card">
@@ -440,9 +437,9 @@
       <li>Las fotos en movimiento junto al formulario de reserva se pueden pausar.</li>
     </ul>
     <p><strong>Limitaciones conocidas:</strong> las fotos que suben los clientes pueden no tener descripción de texto.</p>
-    <p><strong>¿Necesitas ayuda?</strong> Si algo de este sitio te resulta difícil de usar, llámanos al (518) 302-5235 en horario de apertura y te tomaremos la reserva por teléfono, con la misma disponibilidad y sin coste adicional. También puedes escribir a <mark class="fill">[correo de contacto]</mark>. Intentamos responder en <mark class="fill">[2]</mark> días hábiles.</p>
-    <p><strong>En el restaurante:</strong> <mark class="fill">[describir el acceso físico: entrada sin escalones, baño accesible, aparcamiento accesible]</mark>.</p>
-    <p class="updated">Última revisión de esta declaración: <mark class="fill">[fecha]</mark>.</p>
+    <p><strong>¿Necesitas ayuda?</strong> Si algo de este sitio te resulta difícil de usar, llámanos al (518) 302-5235 en horario de apertura y te tomaremos la reserva por teléfono, con la misma disponibilidad y sin coste adicional.</p>
+    <p><strong>En el restaurante:</strong> El restaurante tiene acceso para silla de ruedas.</p>
+    <p class="updated">Última revisión de esta declaración: 5 de octubre de 2026.</p>
   </section>
 </article>
 
@@ -452,11 +449,10 @@
 <article class="legal-doc" lang="fr" data-lang-doc="fr" hidden>
   <a class="legal-back" href="/">← Retour aux réservations</a>
 
-  <p class="legal-draft"><strong>Brouillon.</strong> Ces politiques sont en cours de révision par l'avocat du restaurant et peuvent changer avant leur entrée en vigueur.</p>
 
   <h1>Confidentialité, conditions et politiques</h1>
-  <p class="updated">Date d'entrée en vigueur : <mark class="fill">[date d'entrée en vigueur]</mark></p>
-  <p>Ce site est exploité par <mark class="fill">[raison sociale, p. ex. « White Bear Restaurant LLC »]</mark> (« White Bear Restaurant », « nous »), 2793 Wilmington Rd, Lake Placid, NY 12946, États-Unis. Téléphone : (518) 302-5235. Courriel : <mark class="fill">[courriel de contact]</mark>.</p>
+  <p class="updated">Date d'entrée en vigueur : 1er janvier 2023</p>
+  <p>Ce site est exploité par White Bear Restaurant (« nous »), 2793 Wilmington Rd, Lake Placid, NY 12946, États-Unis. Téléphone : (518) 302-5235.</p>
   <p>Ceci est une traduction. En cas de différence avec la version anglaise, la version anglaise prévaut.</p>
   <ol class="toc">
     <li><a href="#privacy-fr">Politique de confidentialité</a></li>
@@ -495,7 +491,7 @@
       <li>Render (hébergement du site, États-Unis)</li>
       <li>Supabase (base de données et stockage des photos)</li>
       <li>Twilio (envoi des textos)</li>
-      <li><mark class="fill">[fournisseur de courriel, p. ex. Google Workspace]</mark> (envoi des courriels)</li>
+      <li>Notre fournisseur de courriel (envoi des courriels)</li>
       <li>Google Fonts (les polices du site sont chargées depuis Google, qui reçoit votre adresse IP selon sa propre politique de confidentialité)</li>
     </ul>
     <p><strong>Renseignements mobiles :</strong> aucun renseignement mobile n'est partagé avec des tiers ou des sociétés affiliées à des fins de marketing ou de promotion. Les données d'inscription aux textos et le consentement ne sont partagés avec aucun tiers.</p>
@@ -506,15 +502,15 @@
 
     <h3 id="retention-fr">Durée de conservation</h3>
     <ul>
-      <li>Données de réservation : jusqu'à <mark class="fill">[12]</mark> mois après la date de la réservation, puis supprimées.</li>
-      <li>Historique d'envoi des messages : jusqu'à <mark class="fill">[12]</mark> mois.</li>
+      <li>Données de réservation : jusqu'à 2 mois après la date de la réservation, puis supprimées.</li>
+      <li>Historique d'envoi des messages : jusqu'à 2 mois.</li>
       <li>Avis et photos : tant qu'ils sont publiés, ou jusqu'à ce que vous nous demandiez de les retirer.</li>
       <li>Plus longtemps seulement si c'est nécessaire pour régler un litige ou si la loi l'exige.</li>
     </ul>
 
     <h3>Vos choix et vos droits</h3>
     <ul>
-      <li>Demandez-nous quels renseignements nous détenons à votre sujet, ou demandez leur correction ou leur suppression, en écrivant à <mark class="fill">[courriel de contact]</mark> ou en appelant le (518) 302-5235. Nous pourrions devoir vérifier votre identité; nous répondrons dans un délai de 30 jours.</li>
+      <li>Demandez-nous quels renseignements nous détenons à votre sujet, ou demandez leur correction ou leur suppression, en appelant le (518) 302-5235. Nous pourrions devoir vérifier votre identité; nous répondrons dans un délai de 30 jours.</li>
       <li>Annulez une réservation avec le lien de vos messages ou en nous appelant.</li>
       <li>Arrêtez les textos à tout moment en répondant <strong>STOP</strong>.</li>
       <li>Demandez-nous de retirer votre avis ou votre photo.</li>
@@ -546,7 +542,7 @@
 
     <h3>Arrivée, modifications et annulations</h3>
     <ul>
-      <li>Nous gardons votre table <mark class="fill">[15]</mark> minutes après l'heure de réservation. Ensuite, nous pouvons l'attribuer à d'autres clients.</li>
+      <li>Nous gardons votre table 15 minutes après l'heure de réservation. Ensuite, nous pouvons l'attribuer à d'autres clients.</li>
       <li>Avant votre visite, nous vous demanderons de confirmer votre présence. Si vous ne pouvez pas répondre au message, appelez-nous pour confirmer.</li>
       <li>Pour modifier ou annuler, utilisez le lien de vos messages ou appelez le (518) 302-5235. L'annulation est gratuite, mais prévenez-nous le plus tôt possible afin que nous puissions proposer la table à d'autres.</li>
     </ul>
@@ -627,7 +623,7 @@
     </ul>
 
     <h3>Retirer votre avis</h3>
-    <p>Pour retirer votre avis ou votre photo, ou pour signaler un avis qui enfreint ces règles, écrivez à <mark class="fill">[courriel de contact]</mark> ou appelez le (518) 302-5235.</p>
+    <p>Pour retirer votre avis ou votre photo, ou pour signaler un avis qui enfreint ces règles, appelez le (518) 302-5235.</p>
   </section>
 
   <section class="card">
@@ -639,9 +635,9 @@
       <li>Les photos en mouvement à côté du formulaire de réservation peuvent être mises en pause.</li>
     </ul>
     <p><strong>Limites connues :</strong> les photos ajoutées par les clients peuvent ne pas avoir de description textuelle.</p>
-    <p><strong>Besoin d'aide?</strong> Si quelque chose sur ce site est difficile à utiliser, appelez-nous au (518) 302-5235 pendant les heures d'ouverture et nous prendrons votre réservation par téléphone, avec les mêmes disponibilités et sans frais supplémentaires. Vous pouvez aussi écrire à <mark class="fill">[courriel de contact]</mark>. Nous visons à répondre dans un délai de <mark class="fill">[2]</mark> jours ouvrables.</p>
-    <p><strong>Au restaurant :</strong> <mark class="fill">[décrire l'accès physique : entrée sans marche, toilettes accessibles, stationnement accessible]</mark>.</p>
-    <p class="updated">Dernière révision de cette déclaration : <mark class="fill">[date]</mark>.</p>
+    <p><strong>Besoin d'aide?</strong> Si quelque chose sur ce site est difficile à utiliser, appelez-nous au (518) 302-5235 pendant les heures d'ouverture et nous prendrons votre réservation par téléphone, avec les mêmes disponibilités et sans frais supplémentaires.</p>
+    <p><strong>Au restaurant :</strong> Le restaurant est accessible en fauteuil roulant.</p>
+    <p class="updated">Dernière révision de cette déclaration : 5 octobre 2026.</p>
   </section>
 </article>
 

@@ -60,7 +60,7 @@ que sobreviven a reinicios y valen para todas las tablets.
 | `STAFF_PASSWORD` | Sí, cuando se active el acceso del personal | Contraseña de la tablet. |
 | `PUBLIC_BASE_URL` | Sí | La dirección pública del sitio, para los enlaces de los SMS y correos. Cámbiala al estrenar dominio propio. |
 | `RESTAURANT_TIMEZONE` | No | Zona horaria del restaurante. Por defecto `America/New_York`. |
-| `RESERVATION_RETENTION_DAYS` | No (recomendada) | Días que se guardan las reservaciones pasadas. Ver sección 6. |
+| `RESERVATION_RETENTION_DAYS` | No | Días que se guardan las reservaciones pasadas (60 si no se define). Ver sección 6. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Para correos reales | Ver `notifications.py`. Sin ellas los correos solo se simulan. |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | Para SMS reales | Sin ellas los SMS solo se simulan. |
 
@@ -172,9 +172,9 @@ se sabe si sirve.
 
 ## 6. Limpieza de datos viejos
 
-Con `RESERVATION_RETENTION_DAYS` definida (por ejemplo `365`), el servidor
-borra una vez al día las reservaciones con fecha anterior a ese número de días.
-Sin definir no se borra nada.
+El servidor borra una vez al día las reservaciones con fecha anterior a
+`RESERVATION_RETENTION_DAYS` días. Sin definirla son **60 días (2 meses)**, que
+es lo que promete la política de privacidad. Definida vacía, no se borra nada.
 
 Conviene activarlo por dos motivos: la base no crece sin fin (la tablet
 descarga la lista entera en cada actualización), y no guardar teléfonos y

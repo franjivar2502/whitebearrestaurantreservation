@@ -1520,10 +1520,11 @@ def _check_and_send_reminders():
         notifications.notify_reminder(r)
 
 
-# Cuántos días se guardan las reservaciones pasadas antes de borrarlas. Sin
-# configurar no se borra nada: es una decisión del dueño (y de la política de
-# privacidad), no algo que el código deba decidir solo. Ver OPERACION.md.
-RESERVATION_RETENTION_DAYS = os.environ.get("RESERVATION_RETENTION_DAYS", "").strip()
+# Cuántos días se guardan las reservaciones pasadas antes de borrarlas. Por
+# omisión 60 (2 meses), lo que promete la política de privacidad
+# (public/legal.html): si se cambia uno, cambiar el otro. Definirla vacía
+# apaga la limpieza. Ver OPERACION.md.
+RESERVATION_RETENTION_DAYS = os.environ.get("RESERVATION_RETENTION_DAYS", "60").strip()
 
 
 def _purge_old_reservations():
