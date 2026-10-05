@@ -150,56 +150,58 @@
   }
 
   /*
-   * Plano del salón. Las mesas llegan del servidor con su salón y su posición
-   * (x,y en % del salón, ver TABLE_LAYOUT en server.py); aquí solo se dibujan.
-   * El tamaño sale de la forma y los asientos, para que la de 12 se vea como
-   * una de 12 y el staff la reconozca sin leer el número.
+   * Plano del salón. Las mesas llegan del servidor ya con su salón, su posición
+   * y su tamaño (x, y, w, h en % del salón; ver TABLE_LAYOUT en server.py, que
+   * las coloca sobre una cuadrícula): aquí solo se dibujan. Cada salón se
+   * dibuja con la proporción de sus "unidades" (roomUnits), así que un cuadrado
+   * se ve cuadrado en cualquier pantalla.
    *
    * Lo que no es mesa -- barra, entrada, baño, ventanas -- es decorado para
    * orientarse y vive solo aquí: no tiene estado ni lo toca nadie por la API.
-   * Su x/y/w/h va en % desde la esquina superior izquierda del salón; los
-   * valores fuera de 0-100 son a propósito, para montarse sobre la pared.
+   * Su x/y/w/h va en las mismas UNIDADES que las mesas, desde la esquina
+   * superior izquierda del salón; los valores negativos o que pasan del borde
+   * son a propósito, para montarse sobre el muro. Se alinea con las mesas:
+   * la entrada y el baño caen en el pasillo, y las ventanas sobre sus filas.
    */
+  const DEFAULT_ROOM_UNITS = { left: { w: 125, h: 156 }, right: { w: 100, h: 156 } };
+  let roomUnits = DEFAULT_ROOM_UNITS;
+
   /* Banquetas de la barra. Se generan en vez de escribir once objetos casi
      iguales: así cambiar el número o el tramo que ocupan es tocar un dato.
-     El bar va pegado a la pared izquierda (x 3-19%), de modo que las sillas
-     solo caben por su lado abierto, el derecho.
+     La barra va pegada al muro izquierdo y las banquetas, a su lado abierto,
+     a la misma distancia una de otra (STOOL_PITCH).
 
      Son decorativas: ayudan al personal a reconocer el salón, pero NO suman
      asientos reservables. La barra se ocupa sin reserva. */
   const BAR_STOOLS = 11;
+  const STOOL_PITCH = 8;
   const barStools = Array.from({ length: BAR_STOOLS }, (_, i) => ({
     kind: "stool",
-    x: 20.5,
-    y: 29 + (i * 58) / (BAR_STOOLS - 1),
+    x: 25,
+    y: 58 + i * STOOL_PITCH,
   }));
 
   const ROOM_FIXTURES = {
     left: [
-      { kind: "bar", x: 3, y: 26, w: 16, h: 66, labelKey: "tables.bar" },
+      { kind: "bar", x: 3, y: 50, w: 18, h: 96, labelKey: "tables.bar" },
       ...barStools,
-      { kind: "door", x: 36, y: -3, w: 17, h: 6, labelKey: "tables.entrance" },
-      { kind: "door", x: 41, y: 97, w: 19, h: 6, labelKey: "tables.bathroom" },
-      { kind: "window", x: -1.5, y: 5, w: 3, h: 18 },
-      { kind: "window", x: 13, y: -1.5, w: 16, h: 3 },
-      { kind: "window", x: 60, y: -1.5, w: 22, h: 3 },
+      { kind: "door", x: 54.5, y: -3, w: 22, h: 6, labelKey: "tables.entrance" },
+      { kind: "door", x: 54.5, y: 153, w: 22, h: 6, labelKey: "tables.bathroom" },
+      { kind: "window", x: -1.5, y: 8, w: 3, h: 34 },
+      { kind: "window", x: 8, y: -1.5, w: 36, h: 3 },
+      { kind: "window", x: 99, y: -1.5, w: 18, h: 3 },
     ],
     right: [
-      { kind: "window", x: 8, y: -1.5, w: 26, h: 3 },
-      { kind: "window", x: 44, y: -1.5, w: 32, h: 3 },
-      { kind: "window", x: 98.5, y: 14, w: 3, h: 15 },
-      { kind: "window", x: 98.5, y: 41, w: 3, h: 15 },
-      { kind: "window", x: 98.5, y: 64, w: 3, h: 13 },
-      { kind: "window", x: 98.5, y: 85, w: 3, h: 11 },
+      { kind: "window", x: 8, y: -1.5, w: 36, h: 3 },
+      { kind: "window", x: 56, y: -1.5, w: 36, h: 3 },
+      { kind: "window", x: 98.5, y: 8, w: 3, h: 24 },
+      { kind: "window", x: 98.5, y: 44, w: 3, h: 24 },
+      { kind: "window", x: 98.5, y: 80, w: 3, h: 24 },
+      { kind: "window", x: 98.5, y: 116, w: 3, h: 24 },
     ],
   };
 
-  function tableSize(t) {
-    if (t.seats >= 12) return { w: 36, h: 9 };
-    if (t.seats >= 10) return { w: 30, h: 9 };
-    if (t.shape === "square") return { w: 12, h: 9 };
-    return t.seats >= 6 ? { w: 20, h: 8 } : { w: 16, h: 8 };
-  }
+  const pct = (value, total) => Math.round((value / total) * 10000) / 100;
 
   async function fetchTables() {
     try {
@@ -208,6 +210,7 @@
       const data = await res.json();
       tables = data.tables || [];
       rooms = data.rooms || [];
+      roomUnits = data.roomUnits || DEFAULT_ROOM_UNITS;
       totalSeats = data.totalSeats;
       availableSeats = data.availableSeats;
       renderTables(totalSeats, availableSeats);
@@ -224,6 +227,7 @@
 
     floorPlan.innerHTML = rooms
       .map((room) => {
+        const u = roomUnits[room] || DEFAULT_ROOM_UNITS[room];
         const fixtures = (ROOM_FIXTURES[room] || [])
           .map((f) => {
             const label = f.labelKey
@@ -236,21 +240,20 @@
             const box =
               f.kind === "stool"
                 ? ""
-                : `width:${f.w}%;height:${f.h}%;`;
-            return `<div class="floor-fixture floor-fixture--${f.kind}" style="left:${f.x}%;top:${f.y}%;${box}">${label}</div>`;
+                : `width:${pct(f.w, u.w)}%;height:${pct(f.h, u.h)}%;`;
+            return `<div class="floor-fixture floor-fixture--${f.kind}" style="left:${pct(f.x, u.w)}%;top:${pct(f.y, u.h)}%;${box}">${label}</div>`;
           })
           .join("");
 
         const tiles = tables
           .filter((t) => t.room === room)
           .map((t) => {
-            const size = tableSize(t);
             const label = tabletI18n.t("tables.table", { n: t.number });
             const state = tabletI18n.t(t.unavailable ? "tables.unavailable" : "tables.available");
             return `
               <button type="button"
                 class="floor-table ${t.unavailable ? "unavailable" : "available"} ${t.shape === "square" ? "is-square" : "is-rect"}"
-                style="left:${t.x}%;top:${t.y}%;width:${size.w}%;height:${size.h}%"
+                style="left:${t.x}%;top:${t.y}%;width:${t.w}%;height:${t.h}%"
                 data-id="${escapeAttr(t.id)}"
                 aria-label="${escapeAttr(`${label} — ${tabletI18n.t("tables.seats", { n: t.seats })} — ${state}`)}">
                 <span class="floor-table-num">${escapeHtml(String(t.number))}</span>
@@ -262,7 +265,7 @@
         return `
           <div class="floor-room floor-room--${room}">
             <p class="floor-room-title">${escapeHtml(tabletI18n.t(`tables.room_${room}`))}</p>
-            <div class="floor-room-box">${fixtures}${tiles}</div>
+            <div class="floor-room-box" style="aspect-ratio:${u.w} / ${u.h}">${fixtures}${tiles}</div>
           </div>`;
       })
       .join("");

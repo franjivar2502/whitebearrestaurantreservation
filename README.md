@@ -374,6 +374,20 @@ en el plano pero NO suman aforo: la barra se ocupa sin reserva. Cada mesa lleva 
 plano. Si cambia el número de mesas, las sillas, o dónde está una mesa,
 edita `TABLE_LAYOUT` -- es el único lugar.
 
+**El plano está sobre una cuadrícula** (2026-10-05). Cada salón tiene una
+proporción fija (`ROOM_UNITS`: el de la entrada 125x156 unidades, el del
+fondo 100x156) y el panel lo dibuja con esa proporción, así que un cuadrado
+se ve cuadrado en cualquier pantalla. Todas las mesas tienen el mismo fondo
+(`TABLE_DEPTH`); el largo crece con los asientos (cuadrada de 4 = 14,
+rectangular = 6 + 4 por asiento). Las filas están a la misma distancia
+(`ROW_PITCH`), y las columnas pegadas a los muros se alinean por el borde del
+muro (`WALL_MARGIN`). Para mover una mesa se cambia su fila/columna en
+`TABLE_LAYOUT` con los ayudantes `_left_x`, `_right_x`, `_center_x` y `_ROWS`.
+Al arrancar, el servidor **se niega a iniciar** si una mesa se sale del salón
+o se traslapa con otra, así que un plano desordenado no llega a producción.
+La barra, la entrada, el baño y las ventanas (decorado, en `tablet.js`) usan
+las mismas unidades.
+
 **Cómo se calcula la disponibilidad:** en vez de exigir una mesa exacta
 del tamaño del grupo, se suman los asientos libres -- así una reserva de
 8 personas puede usar dos mesas de 4 juntas, tal como el restaurante
