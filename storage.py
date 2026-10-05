@@ -63,21 +63,39 @@ def _headers(extra=None):
     return headers
 
 
+class ConfigError(ValueError):
+    """La configuración de Supabase (SUPABASE_URL / SUPABASE_KEY) es inválida.
+
+    Es subclase de ValueError para no romper a quien ya la capturaba. Los
+    mensajes se escriben a propósito SIN el valor de la variable, solo su
+    nombre y qué está mal: /healthz los publica para poder diagnosticar un
+    fallo sin entrar a los logs, y no deben filtrar ninguna clave."""
+
+
 def _check_header_safe(name, value):
-    # Los encabezados HTTP solo aceptan texto codificable en latin-1. Si al
-    # copiar/pegar SUPABASE_KEY (o SUPABASE_URL) en el panel de Render se
-    # coló un caracter "inteligente" (comilla curva, guion largo, espacio
-    # invisible), esto lo señala con precisión en vez de un error genérico.
+    # Los encabezados HTTP solo aceptan texto codificable en latin-1, sin
+    # espacios ni saltos de línea. Si al copiar/pegar SUPABASE_KEY (o
+    # SUPABASE_URL) en el panel de Render se coló un caracter "inteligente"
+    # (comilla curva, guion largo, espacio invisible) o un salto de línea,
+    # esto lo señala con precisión en vez de un error genérico.
     try:
         value.encode("latin-1")
     except UnicodeEncodeError as exc:
         bad_char = value[exc.start:exc.end]
-        raise ValueError(
+        raise ConfigError(
             f"La variable de entorno {name} tiene un caracter no válido "
             f"({bad_char!r} en la posición {exc.start}) -- probablemente se "
             f"coló al copiar/pegar el valor. Vuelve a copiarlo y pégalo de "
             f"nuevo en Render (Environment -> {name})."
         ) from exc
+    for position, char in enumerate(value):
+        if char.isspace() or ord(char) < 32:
+            raise ConfigError(
+                f"La variable de entorno {name} tiene un espacio o un salto de "
+                f"línea en la posición {position} -- probablemente se coló al "
+                f"copiar/pegar el valor. Vuelve a copiarlo y pégalo de nuevo en "
+                f"Render (Environment -> {name})."
+            )
 
 
 # Errores que vale la pena reintentar: la red falló, Supabase tardó de más o
@@ -96,6 +114,11 @@ def _request(method, path, body=None, extra_headers=None, retry=True):
     """
     _check_header_safe("SUPABASE_KEY", SUPABASE_KEY)
     _check_header_safe("SUPABASE_URL", SUPABASE_URL)
+    if not SUPABASE_URL.startswith(("https://", "http://")):
+        raise ConfigError(
+            "SUPABASE_URL debe empezar con https:// (por ejemplo "
+            "https://xxxx.supabase.co). Corrígela en Render (Environment -> SUPABASE_URL)."
+        )
     url = f"{SUPABASE_URL}/rest/v1/{path}"
     data = json.dumps(body).encode("utf-8") if body is not None else None
     delays = _RETRY_DELAYS if retry else ()

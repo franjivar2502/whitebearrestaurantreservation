@@ -269,7 +269,8 @@ puede fallar al renovarse: déjala gris.
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
 | UptimeRobot avisa "Down" y el sitio no carga | Render caído o el servicio no arranca | Render → Logs. Si el último despliegue lo rompió: Render → Events → *Rollback* al anterior. |
-| `/healthz` responde 503 con `"storage": "error"` | Supabase no responde | <https://status.supabase.com>. En el panel de Supabase, mirar si el proyecto está **pausado** (botón *Restore*). Revisar que `SUPABASE_KEY` no haya cambiado. |
+| `/healthz` responde 503 con `"storage": "error"` | El servidor no puede usar Supabase | **El campo `"problem"` de esa misma página dice el motivo** (sin mostrar ninguna clave). Casos típicos: *"tiene un espacio o un salto de línea"* o *"un caracter no válido"* (la variable se pegó mal: volver a copiarla en Render → Environment); *"debe empezar con https://"* (corregir `SUPABASE_URL`); *"rechazó la clave"* (`SUPABASE_KEY` debe ser la `service_role`); *"no se pudo conectar"* (mirar <https://status.supabase.com> y que el proyecto no esté **pausado**: botón *Restore*). |
+| `/healthz` responde 503 con `"storage": "local"` | En Render faltan `SUPABASE_URL` y/o `SUPABASE_KEY` | Las reservaciones se estarían guardando en un disco que se borra al reiniciar. Añadir las dos variables en Render → Environment cuanto antes. El arranque también lo escribe en Logs entre líneas de `!!`. |
 | La tablet no muestra reservaciones nuevas | La tablet perdió la conexión o el servicio se reinició | Recargar la página de la tablet. Si sigue igual, mirar `/healthz`. |
 | Los clientes no reciben SMS ni correos | Credenciales sin configurar, caducadas o sin saldo | Render → Logs, buscar `ERROR SMS` o `ERROR EMAIL`. Revisar saldo de Twilio y la contraseña de aplicación del correo. |
 | Los recordatorios salen a la hora equivocada | Zona horaria | `/healthz` muestra la hora que cree el servidor. Si no es la de Lake Placid, revisar `RESTAURANT_TIMEZONE`. |

@@ -21,6 +21,7 @@ import re
 import threading
 import time
 import unicodedata
+import urllib.error
 import uuid
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -1513,7 +1514,46 @@ def _health():
         print(f"[ERROR] healthz: almacenamiento no responde: {exc!r}")
         health["ok"] = False
         health["storage"] = "error"
+        health["problem"] = _describe_storage_error(exc)
+    else:
+        if health["storage"] == "local" and os.environ.get("RENDER"):
+            # En Render el disco se borra en cada reinicio: guardar en archivo
+            # local ahí es perder las reservaciones sin enterarse. Se marca
+            # como fallo (503) para que el monitor avise.
+            health["ok"] = False
+            health["problem"] = SUPABASE_MISSING_MESSAGE
     return health, 200 if health["ok"] else 503
+
+
+SUPABASE_MISSING_MESSAGE = (
+    "Faltan SUPABASE_URL y/o SUPABASE_KEY en Render (Environment): las "
+    "reservaciones se están guardando en un disco temporal y se perderán al "
+    "reiniciar."
+)
+
+
+def _describe_storage_error(exc):
+    """Motivo del fallo de almacenamiento, en una línea y SIN datos sensibles.
+
+    /healthz es público, así que aquí nunca va el texto de una excepción
+    cualquiera (podría incluir una URL con la clave pegada por error): solo
+    los mensajes de ConfigError, que no llevan el valor, o frases fijas."""
+    if isinstance(exc, storage.ConfigError):
+        return str(exc)
+    if isinstance(exc, urllib.error.HTTPError):
+        if exc.code in (401, 403):
+            return (
+                f"Supabase rechazó la clave (HTTP {exc.code}): revisa que SUPABASE_KEY "
+                f"sea la clave secreta service_role y que no haya cambiado."
+            )
+        if exc.code == 404:
+            return "Supabase respondió 404: revisa SUPABASE_URL o que exista la tabla reservations."
+        return f"Supabase respondió con un error (HTTP {exc.code})."
+    if isinstance(exc, urllib.error.URLError):
+        return "No se pudo conectar con Supabase: revisa SUPABASE_URL o el estado de Supabase."
+    if isinstance(exc, TimeoutError):
+        return "Supabase tardó demasiado en responder."
+    return f"Error inesperado del almacenamiento ({type(exc).__name__}); el detalle está en Render -> Logs."
 
 
 def _reminder_loop():
@@ -1566,6 +1606,10 @@ def main():
     print(
         f"  Almacenamiento: {'Supabase (persistente)' if storage.enabled() else 'archivo local data/reservations.json (NO persistente en hosting gratis)'}"
     )
+    if os.environ.get("RENDER") and not storage.enabled():
+        print("!" * 70)
+        print(f"!! {SUPABASE_MISSING_MESSAGE}")
+        print("!" * 70)
     print(
         f"  Notificaciones: correo {'ACTIVO' if notifications.email_enabled() else 'modo prueba (dry-run)'}, "
         f"SMS {'ACTIVO' if notifications.sms_enabled() else 'modo prueba (dry-run)'}"
