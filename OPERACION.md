@@ -140,7 +140,7 @@ con soporte.
 
 1. Crear cuenta en <https://uptimerobot.com> (plan gratuito).
 2. *New monitor* → tipo **HTTP(s)**.
-3. URL: `https://whitebearrestaurantreservation.onrender.com/healthz`
+3. URL: `https://www.whitebearrestaurant.com/healthz`
    (o el dominio propio cuando lo haya).
 4. Intervalo: **5 minutos**.
 5. Alertas: el correo y, si se quiere, el teléfono del dueño.
@@ -232,14 +232,34 @@ Las reseñas y las fotos de la galería no se borran nunca solas.
 
 ## 7. Dominio propio
 
+**Estado (2026-10-05):** el dominio es `whitebearrestaurant.com`, comprado en
+Cloudflare. La dirección principal es `https://www.whitebearrestaurant.com`;
+la versión sin `www` redirige a ella (lo hace Render). La dirección
+`whitebearrestaurantreservation.onrender.com` sigue funcionando.
+
+**DNS (en Cloudflare, con el proxy apagado: "DNS only", nube gris):**
+
+| Tipo | Nombre | Valor |
+|---|---|---|
+| A | `@` | `216.24.57.1` (la IP que indica Render) |
+| CNAME | `www` | `whitebearrestaurantreservation.onrender.com` |
+
+Con la nube naranja (proxy de Cloudflare) el certificado HTTPS de Render
+puede fallar al renovarse: déjala gris.
+
+**Si algún día hay que repetirlo o cambiar de dominio:**
 1. Comprar el dominio (unos 12 USD al año; Cloudflare Registrar o Namecheap).
    **Activar la renovación automática**: un dominio caducado lo puede comprar
    otro.
-2. Render → el servicio → Settings → Custom Domains → añadir el dominio y
-   seguir las instrucciones de DNS. Render pone el certificado HTTPS solo.
-3. Cambiar `PUBLIC_BASE_URL` en Render.
+2. Render → el servicio → Settings → Custom Domains → añadir el dominio (y su
+   versión con `www`), crear en el DNS los registros que indique y tocar las
+   flechas circulares hasta que ambos digan *Verified* y *Certificate Issued*.
+   Render pone el certificado HTTPS solo.
+3. Cambiar `PUBLIC_BASE_URL` en Render por la dirección principal (los enlaces
+   de los SMS y correos la usan).
 4. Actualizar el `canonical`, las etiquetas `og:` y el JSON-LD de
-   `public/index.html`, y `public/sitemap.xml`.
+   `public/index.html`, el de `public/legal.html`, `public/sitemap.xml` y
+   `public/robots.txt`.
 5. Cambiar la URL del monitor de UptimeRobot.
 
 ---

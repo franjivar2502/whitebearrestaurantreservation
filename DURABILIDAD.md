@@ -63,19 +63,20 @@ Googlebot también abandona, así que además frena la indexación.
 **Qué cuesta:** el plan de pago de Render ronda los 7 dólares al mes. Es la
 mejor relación coste/beneficio de toda esta lista.
 
-### 2. Dominio propio
+### 2. Dominio propio — hecho (2026-10-05)
 
-Hoy la dirección es `whitebearrestaurantreservation.onrender.com`. Dos
-problemas: depende del nombre de un proveedor concreto, y si algún día se
-migra a otro hosting, todos los enlaces compartidos mueren.
+El sitio ya vive en `www.whitebearrestaurant.com`, comprado en Cloudflare
+(unos 10-12 dólares al año) y apuntado a Render. La dirección vieja,
+`whitebearrestaurantreservation.onrender.com`, sigue funcionando.
 
-Con un dominio propio (`whitebearrestaurant.com`, unos 12 dólares al año), el
-hosting se puede cambiar cuantas veces haga falta sin que nadie se entere.
-**Esto es lo que hace que la década sea posible:** el dominio es el activo, el
-hosting es intercambiable.
+Un dominio propio es lo que hace que la década sea posible: **el dominio es el
+activo y el hosting es intercambiable.** Si algún día se migra a otro hosting,
+basta con cambiar los registros DNS y los enlaces compartidos siguen vivos.
 
-Hay que acordarse de actualizar entonces el `canonical`, el `sitemap.xml`, los
-`og:` y la URL dentro del JSON-LD.
+Lo que hay que cuidar: **mantener la renovación automática activa** (un
+dominio caducado lo puede comprar otro) y tener la cuenta de Cloudflare con
+verificación en dos pasos. Los pasos para repetir o cambiar el dominio están en
+`OPERACION.md`, sección 7.
 
 ### 3. Copias de seguridad automáticas
 

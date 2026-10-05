@@ -25,7 +25,7 @@ Luego abre `http://localhost:8123/` (clientes) o `http://localhost:8123/tablet.h
 (staff). Desde el celular en la misma red Wi-Fi, usa la IP de esta Mac en vez
 de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 
-**🌐 En vivo:** https://whitebearrestaurantreservation.onrender.com
+**🌐 En vivo:** https://www.whitebearrestaurant.com (dominio propio desde 2026-10-05; la dirección `whitebearrestaurantreservation.onrender.com` sigue funcionando)
 (repo: https://github.com/franjivar2502/whitebearrestaurantreservation)
 
 **✅ Ya construido y probado:**
@@ -42,7 +42,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - **Secciones "About us" y "Gallery" y preorden de grupos eliminados del sitio (2026-10-05)**, a pedido del cliente. El sitio público solo muestra la galería "Our Menu"; el panel de fotos (`/admin-photos.html`) ya solo agrega fotos del menú (sin selector de sección). Las fotos viejas de la sección "gallery" siguen en la base pero no se muestran; el panel las marca como "Sin mostrar en el sitio" y trae un botón "＋ Menú" para pasarlas al menú.
 - **Reseñas de clientes con fotos**, moderadas automáticamente (`public/js/app.js` + `server.py`) — cualquier visitante puede dejar una reseña con calificación de 1 a 5 estrellas y subir una foto directo desde su celular. Cualquier reseña que contenga una palabra clave negativa (lista en `NEGATIVE_REVIEW_KEYWORDS` en `server.py`) no se publica sola: se guarda como pendiente y aparece en la sección "Reseñas de clientes" de `/admin-photos.html`, donde el staff la publica o la oculta (ocultar no la borra). Al cliente se le avisa que el equipo la leerá y se le invita a llamar. El resto se publica al instante; la calificación en estrellas no influye. Las fotos se guardan en Supabase Storage (bucket `review-photos`, ya creado) o en `public/uploads/reviews/` en desarrollo local sin Supabase.
 - **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones, fotos, reseñas y estado de mesas ya no se pierden cuando Render reinicia el servicio.
-- Repositorio en GitHub, desplegado en Render y funcionando en vivo: https://whitebearrestaurantreservation.onrender.com
+- Repositorio en GitHub, desplegado en Render y funcionando en vivo: https://www.whitebearrestaurant.com
 
 **⏳ Pendiente para que el proyecto esté 100% terminado:**
 1. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.

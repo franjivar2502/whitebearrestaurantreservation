@@ -16,4 +16,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://whitebearrestaurantreservation.onrender.com/sitemap.xml
+Sitemap: https://www.whitebearrestaurant.com/sitemap.xml
