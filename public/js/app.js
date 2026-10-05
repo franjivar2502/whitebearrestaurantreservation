@@ -10,20 +10,10 @@
   const timeHint = document.getElementById("time-hint");
   const bookingClosedNotice = document.getElementById("booking-closed-notice");
   const heroHours = document.getElementById("hero-hours");
-  const partySizeInput = document.getElementById("partySize");
   const partySizeHint = document.getElementById("party-size-hint");
-  const groupMenuSection = document.getElementById("group-menu-section");
-  const groupMenuNote = document.getElementById("group-menu-note");
-  const groupMenuItemsEl = document.getElementById("group-menu-items");
-  const preOrderNotesInput = document.getElementById("preOrderNotes");
   const infoHeader = document.getElementById("info-header");
   const infoToggleBtn = document.getElementById("info-toggle-btn");
   const infoContent = document.getElementById("info-content");
-  const aboutHeader = document.getElementById("about-header");
-  const aboutToggleBtn = document.getElementById("about-toggle-btn");
-  const aboutContent = document.getElementById("about-content");
-  const galleryHeader = document.getElementById("gallery-header");
-  const galleryToggleBtn = document.getElementById("gallery-toggle-btn");
   const menuGalleryCard = document.getElementById("menu-card");
   const menuGalleryHeader = document.getElementById("menu-header");
   const menuGalleryToggleBtn = document.getElementById("menu-toggle-btn");
@@ -41,8 +31,8 @@
   const langSwitcher = document.getElementById("lang-switcher");
   const welcomeSplash = document.getElementById("welcome-splash");
 
-  // Barras desplegables (About us, Venue information, Gallery, Find us):
-  // un mismo patrón de clic-para-expandir/contraer para las cuatro.
+  // Barras desplegables (Venue information, Our Menu, Reviews, Find us):
+  // un mismo patrón de clic-para-expandir/contraer para todas.
   function makeCollapsible(header, toggleBtn, content, onToggle) {
     let expanded = false;
     function render() {
@@ -63,9 +53,7 @@
   i18n.applyStaticTranslations();
 
   // Pantalla de bienvenida (si hay fotos, muestra la primera como fondo
-  // durante 1 segundo) y galería visible en la página.
-  const galleryCard = document.getElementById("gallery-card");
-  const photoGallery = document.getElementById("photo-gallery");
+  // durante 1 segundo) y fotos del menú visibles en la página.
 
   const hideWelcomeSplash = () => {
     setTimeout(() => {
@@ -172,13 +160,8 @@
     .then((res) => res.json())
     .then((photos) => {
       if (photos && photos.length) {
-        const galleryPhotos = photos.filter((p) => (p.category || "gallery") === "gallery");
         const menuPhotos = photos.filter((p) => p.category === "menu");
 
-        if (galleryPhotos.length) {
-          galleryCard.hidden = false;
-          photoGallery.innerHTML = galleryPhotos.map(photoImgTag).join("");
-        }
         if (menuPhotos.length) {
           menuGalleryCard.hidden = false;
           menuGallery.innerHTML = menuPhotos.map(photoImgTag).join("");
@@ -198,8 +181,6 @@
   });
 
   const renderInfoToggleLabel = makeCollapsible(infoHeader, infoToggleBtn, infoContent);
-  const renderAboutToggleLabel = makeCollapsible(aboutHeader, aboutToggleBtn, aboutContent);
-  const renderGalleryToggleLabel = makeCollapsible(galleryHeader, galleryToggleBtn, photoGallery);
   const renderMenuGalleryToggleLabel = makeCollapsible(menuGalleryHeader, menuGalleryToggleBtn, menuGallery);
   const renderReviewsToggleLabel = makeCollapsible(reviewsHeader, reviewsToggleBtn, reviewsContent);
   const renderRestaurantInfoToggleLabel = makeCollapsible(
@@ -244,10 +225,7 @@
     },
     maxPartySize: 40,
     phone: "(518) 302-5235",
-    groupMenu: { threshold: 20, items: [] },
   };
-
-  const menuQuantities = {}; // itemId -> cantidad
 
   function showAlert(errors) {
     alertBox.innerHTML = "";
@@ -403,53 +381,6 @@
     });
   }
 
-  function renderGroupMenu() {
-    const menu = restaurantInfo.groupMenu;
-    groupMenuNote.textContent = i18n.t("groupMenu.note", { threshold: menu.threshold });
-
-    if (!menu.items.length) {
-      groupMenuItemsEl.innerHTML = `<p class="hint">${escapeHtml(i18n.t("groupMenu.emptyMenu"))}</p>`;
-      return;
-    }
-
-    groupMenuItemsEl.innerHTML = menu.items
-      .map(
-        (item) => `
-        <div class="menu-item-row" data-item-id="${escapeHtml(item.id)}">
-          <div class="menu-item-info">
-            <div class="menu-item-name">${escapeHtml(item.name)}</div>
-            ${item.description ? `<div class="menu-item-desc">${escapeHtml(item.description)}</div>` : ""}
-          </div>
-          <div class="qty-stepper">
-            <button type="button" class="qty-btn" data-action="dec">−</button>
-            <span class="qty-value" data-qty-value>${menuQuantities[item.id] || 0}</span>
-            <button type="button" class="qty-btn" data-action="inc">+</button>
-          </div>
-        </div>`
-      )
-      .join("");
-
-    groupMenuItemsEl.querySelectorAll(".menu-item-row").forEach((row) => {
-      const itemId = row.getAttribute("data-item-id");
-      const valueEl = row.querySelector("[data-qty-value]");
-      row.querySelectorAll(".qty-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const current = menuQuantities[itemId] || 0;
-          const next =
-            btn.getAttribute("data-action") === "inc" ? current + 1 : Math.max(0, current - 1);
-          menuQuantities[itemId] = next;
-          valueEl.textContent = next;
-        });
-      });
-    });
-  }
-
-  function updateGroupMenuVisibility() {
-    const size = parseInt(partySizeInput.value, 10) || 0;
-    const shouldShow = size >= restaurantInfo.groupMenu.threshold;
-    groupMenuSection.hidden = !shouldShow;
-  }
-
   function renderPartySizeHint() {
     partySizeHint.textContent = i18n.t("form.partySizeHint", {
       max: restaurantInfo.maxPartySize,
@@ -457,13 +388,9 @@
     });
   }
 
-  partySizeInput.addEventListener("input", updateGroupMenuVisibility);
-
   function renderAll() {
     renderInfoSection();
     renderInfoToggleLabel();
-    renderAboutToggleLabel();
-    renderGalleryToggleLabel();
     renderMenuGalleryToggleLabel();
     renderReviewsToggleLabel();
     renderRestaurantInfoToggleLabel();
@@ -472,8 +399,6 @@
     updateTimeConstraints();
     applyBookingState();
     renderPartySizeHint();
-    renderGroupMenu();
-    updateGroupMenuVisibility();
   }
 
   document.addEventListener("languagechange", renderAll);
@@ -498,12 +423,6 @@
     submitBtn.classList.add("btn-loading");
     submitBtn.textContent = i18n.t("form.submitting");
 
-    const preOrder = groupMenuSection.hidden
-      ? []
-      : Object.entries(menuQuantities)
-          .filter(([, qty]) => qty > 0)
-          .map(([itemId, qty]) => ({ itemId, quantity: qty }));
-
     const payload = {
       name: form.name.value,
       phone: form.phone.value,
@@ -515,8 +434,6 @@
         .filter(Boolean)
         .join(" "),
       seatingPreference: form.seatingPreference.value,
-      preOrder,
-      preOrderNotes: groupMenuSection.hidden ? "" : preOrderNotesInput.value.trim(),
       website: form.website.value,
       termsConsent: form.termsConsent.checked,
     };
@@ -559,13 +476,6 @@
             : ""
         }
         <dt>${i18n.t("confirmation.code")}</dt><dd>#${escapeHtml(String(data.id).slice(0, 8))}</dd>
-        ${
-          data.preOrder && data.preOrder.length
-            ? `<dt>${i18n.t("confirmation.preorder")}</dt><dd>${data.preOrder
-                .map((i) => `${i.quantity}× ${escapeHtml(i.name)}`)
-                .join(", ")}</dd>`
-            : ""
-        }
       `;
       form.style.display = "none";
       confirmation.style.display = "block";
@@ -675,9 +585,6 @@
   newReservationBtn.addEventListener("click", () => {
     form.reset();
     dateInput.value = `${yyyy}-${mm}-${dd}`;
-    Object.keys(menuQuantities).forEach((key) => delete menuQuantities[key]);
-    renderGroupMenu();
-    updateGroupMenuVisibility();
     form.style.display = "block";
     confirmation.style.display = "none";
     clearAlert();

@@ -78,18 +78,18 @@ class CreateReservationTests(ServerTestCase):
         )
         self.assertEqual(status, 400)
 
-    def test_preorder_keeps_only_menu_items(self):
-        item_id = server.RESTAURANT["groupMenu"]["items"][0]["id"]
+    def test_legacy_preorder_fields_are_ignored(self):
+        # El pre-pedido para grupos grandes ya no existe. Un navegador con la
+        # página vieja en caché puede seguir mandando esos campos: la reserva
+        # se acepta y simplemente no se guardan.
         status, created = self.book(
             partySize=20,
-            preOrder=[
-                {"itemId": item_id, "quantity": 5},
-                {"itemId": "inventado", "quantity": 3},
-                {"itemId": item_id, "quantity": -1},
-            ],
+            preOrder=[{"itemId": "item-1", "quantity": 5}],
+            preOrderNotes="sin gluten",
         )
         self.assertEqual(status, 201)
-        self.assertEqual([p["itemId"] for p in created["preOrder"]], [item_id])
+        self.assertNotIn("preOrder", created)
+        self.assertNotIn("preOrderNotes", created)
 
 
 class ConsentTests(ServerTestCase):
