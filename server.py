@@ -13,6 +13,7 @@ para que cualquier reservación hecha desde una computadora, celular o
 la propia tablet se refleje al instante en la tablet del restaurante.
 """
 
+import hashlib
 import hmac
 import json
 import os
@@ -623,6 +624,68 @@ def _static_file(path):
     return full_path if os.path.isfile(full_path) else None
 
 
+# ---------------------------------------------------------------------------
+# Caché de los archivos estáticos.
+#
+# Antes solo el HTML llevaba Cache-Control; los .js y .css no decían nada y un
+# navegador (sobre todo Safari en iPhone) podía seguir usando una copia vieja
+# con una página nueva. Tras quitar una sección del panel, un tablet.js viejo
+# buscaba elementos que ya no existían y se rompía al cargar: el panel quedaba
+# sin mesas ni reservaciones hasta que alguien borraba los datos del sitio.
+#
+# Dos defensas, que se complementan:
+#   1. En el HTML, cada js/xxx.js y css/xxx.css lleva ?v=<huella del contenido>.
+#      Como el HTML nunca se guarda en caché, un archivo cambiado trae una URL
+#      nueva y el navegador lo descarga sí o sí.
+#   2. Los .js y .css se sirven con ETag y "no-cache": el navegador pregunta si
+#      cambiaron y, si no, el servidor responde 304 sin reenviarlos.
+# ---------------------------------------------------------------------------
+_ASSET_REF = re.compile(r'((?:src|href)=")(/?(?:js|css)/[A-Za-z0-9_.\-]+\.(?:js|css))(")')
+_asset_versions = {}  # ruta -> (fecha de modificación, huella)
+
+
+def _asset_version(full_path):
+    mtime = os.path.getmtime(full_path)
+    cached = _asset_versions.get(full_path)
+    if cached and cached[0] == mtime:
+        return cached[1]
+    with open(full_path, "rb") as f:
+        digest = hashlib.sha1(f.read()).hexdigest()[:10]
+    _asset_versions[full_path] = (mtime, digest)
+    return digest
+
+
+def _version_asset_links(html):
+    def add_version(match):
+        asset = _static_file("/" + match.group(2).lstrip("/"))
+        if not asset:
+            return match.group(0)
+        return f"{match.group(1)}{match.group(2)}?v={_asset_version(asset)}{match.group(3)}"
+
+    return _ASSET_REF.sub(add_version, html)
+
+
+def _static_payload(full_path, if_none_match=""):
+    """(estado, encabezados, cuerpo) de un archivo de public/."""
+    ext = os.path.splitext(full_path)[1].lower()
+    headers = {"Content-Type": CONTENT_TYPES.get(ext, "application/octet-stream")}
+    with open(full_path, "rb") as f:
+        body = f.read()
+    if ext == ".html":
+        # Las páginas siempre frescas: tras un arreglo de seguridad nadie
+        # debe quedarse con la versión vieja en caché.
+        headers["Cache-Control"] = "no-cache"
+        body = _version_asset_links(body.decode("utf-8")).encode("utf-8")
+    elif ext in (".js", ".css"):
+        etag = '"' + hashlib.sha1(body).hexdigest()[:20] + '"'
+        headers["Cache-Control"] = "no-cache"
+        headers["ETag"] = etag
+        if etag in [tag.strip() for tag in if_none_match.split(",")]:
+            return 304, headers, b""
+    headers["Content-Length"] = str(len(body))
+    return 200, headers, body
+
+
 def _public_reservation(r):
     return {k: r.get(k) for k in PUBLIC_RESERVATION_FIELDS}
 
@@ -804,20 +867,13 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(b"404 Not Found")
             return
 
-        ext = os.path.splitext(full_path)[1].lower()
-        content_type = CONTENT_TYPES.get(ext, "application/octet-stream")
-
-        with open(full_path, "rb") as f:
-            body = f.read()
-        self.send_response(200)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
-        if ext == ".html":
-            # Las páginas siempre frescas: tras un arreglo de seguridad nadie
-            # debe quedarse con la versión vieja en caché.
-            self.send_header("Cache-Control", "no-cache")
+        status, headers, body = _static_payload(full_path, self.headers.get("If-None-Match", ""))
+        self.send_response(status)
+        for name, value in headers.items():
+            self.send_header(name, value)
         self.end_headers()
-        self.wfile.write(body)
+        if status == 200:
+            self.wfile.write(body)
 
     # ---------- routing ----------
     def do_GET(self):
@@ -1336,10 +1392,10 @@ class Handler(BaseHTTPRequestHandler):
                 path = "/index.html"
             full_path = _static_file(path)
             if full_path:
-                ext = os.path.splitext(full_path)[1].lower()
-                self.send_response(200)
-                self.send_header("Content-Type", CONTENT_TYPES.get(ext, "application/octet-stream"))
-                self.send_header("Content-Length", str(os.path.getsize(full_path)))
+                status, headers, _ = _static_payload(full_path, self.headers.get("If-None-Match", ""))
+                self.send_response(status)
+                for name, value in headers.items():
+                    self.send_header(name, value)
                 self.end_headers()
             else:
                 self.send_response(404)

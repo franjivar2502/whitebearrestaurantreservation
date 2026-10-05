@@ -275,6 +275,7 @@ puede fallar al renovarse: déjala gris.
 | Los recordatorios salen a la hora equivocada | Zona horaria | `/healthz` muestra la hora que cree el servidor. Si no es la de Lake Placid, revisar `RESTAURANT_TIMEZONE`. |
 | "Error interno" al reservar | Un fallo de código o de Supabase | Render → Logs, buscar `[ERROR] POST /api/reservations`. Con ese texto cualquier programador sabe por dónde empezar. |
 | El formulario de reservas sale gris con un aviso rojo | Alguien apagó las reservaciones desde el panel | Panel → botón *Reservaciones apagadas* (barra de arriba) → confirmar. |
+| El panel o el sitio se ven rotos justo después de actualizar (sin mesas, botones muertos) | El navegador usó un .js o .css viejo guardado en caché | Ya no debería pasar: el servidor versiona los archivos (`?v=`) y los revalida. Si ocurriera, abrir la página desde la dirección con `www` o borrar los datos del sitio en Safari (Ajustes → Safari → Avanzado → Datos de sitios web). |
 | Se borraron datos por error | — | Restaurar el respaldo más reciente (sección 5). |
 | Una actualización de Python en Render rompió algo | Render cambió la versión por defecto | Fijar la versión que funcionaba con la variable `PYTHON_VERSION` en Render (por ejemplo `3.13.5`). |
 

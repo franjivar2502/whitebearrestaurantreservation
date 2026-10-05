@@ -1,5 +1,10 @@
 """Reseñas, galería de fotos, páginas estáticas y salud del servicio."""
 
+import re
+import tempfile
+import time
+import urllib.request
+import urllib.error
 import os
 import unittest
 import uuid
@@ -210,6 +215,67 @@ class SiteTests(ServerTestCase):
             self.assertEqual(self.request("HEAD", "/healthz")[0], 503)
         finally:
             server.storage.ping = original
+
+
+class StaticCacheTests(ServerTestCase):
+    """Un navegador no debe poder mezclar una página nueva con un .js viejo."""
+
+    def fetch(self, method, path, headers=None):
+        req = urllib.request.Request(self.base + path, method=method, headers=headers or {})
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return resp.status, dict(resp.headers), resp.read()
+        except urllib.error.HTTPError as exc:
+            return exc.code, dict(exc.headers), exc.read()
+
+    def test_html_links_to_scripts_and_styles_carry_a_content_version(self):
+        for page in ("/", "/tablet.html", "/confirm.html", "/admin-photos.html"):
+            status, _, body = self.fetch("GET", page)
+            self.assertEqual(status, 200, page)
+            html = body.decode("utf-8")
+            links = re.findall(r'(?:src|href)="(/?(?:js|css)/[^"]+)"', html)
+            self.assertTrue(links, page)
+            for link in links:
+                self.assertRegex(link, r"^/?(?:js|css)/[\w.\-]+\.(?:js|css)\?v=[0-9a-f]{10}$", (page, link))
+
+    def test_versioned_url_still_serves_the_file(self):
+        _, _, html = self.fetch("GET", "/tablet.html")
+        link = re.search(r'src="(js/tablet\.js\?v=[0-9a-f]{10})"', html.decode("utf-8")).group(1)
+        status, headers, body = self.fetch("GET", "/" + link)
+        self.assertEqual(status, 200)
+        self.assertIn(b"fetchTables", body)
+
+    def test_version_changes_when_the_file_changes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "x.js")
+            with open(path, "w") as f:
+                f.write("a")
+            first = server._asset_version(path)
+            self.assertEqual(first, server._asset_version(path))
+            with open(path, "w") as f:
+                f.write("b")
+            os.utime(path, (time.time() + 5, time.time() + 5))  # aunque la fecha casi coincida
+            self.assertNotEqual(first, server._asset_version(path))
+
+    def test_scripts_and_styles_are_revalidated_with_etag(self):
+        for path in ("/js/tablet.js", "/css/style.css"):
+            status, headers, body = self.fetch("GET", path + "?v=viejo")
+            self.assertEqual(status, 200, path)
+            self.assertEqual(headers["Cache-Control"], "no-cache")
+            etag = headers["ETag"]
+            status, headers, body = self.fetch("GET", path, headers={"If-None-Match": etag})
+            self.assertEqual((status, body), (304, b""), path)
+            self.assertEqual(headers["ETag"], etag)
+            # Con otra huella (el archivo cambió) se vuelve a enviar completo.
+            status, _, body = self.fetch("GET", path, headers={"If-None-Match": '"otra"'})
+            self.assertEqual(status, 200)
+            self.assertTrue(body)
+
+    def test_html_is_never_cached_and_head_reports_the_real_length(self):
+        status, headers, body = self.fetch("GET", "/tablet.html")
+        self.assertEqual(headers["Cache-Control"], "no-cache")
+        status, headers, _ = self.fetch("HEAD", "/tablet.html")
+        self.assertEqual(int(headers["Content-Length"]), len(body))
 
 
 if __name__ == "__main__":
