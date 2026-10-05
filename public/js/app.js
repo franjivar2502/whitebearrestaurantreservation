@@ -572,9 +572,18 @@
       }
 
       reviewForm.reset();
-      reviewsCache = [data, ...reviewsCache];
-      renderReviewsList();
-      showFormAlert(reviewAlertBox, "success", escapeHtml(i18n.t("reviews.thanks")));
+      // Una reseña retenida para el staff no se muestra todavía en la lista.
+      if (data.status === "approved") {
+        reviewsCache = [data, ...reviewsCache];
+        renderReviewsList();
+        showFormAlert(reviewAlertBox, "success", escapeHtml(i18n.t("reviews.thanks")));
+      } else {
+        showFormAlert(
+          reviewAlertBox,
+          "success",
+          escapeHtml(i18n.t("reviews.pending", { phone: restaurantInfo.phone }))
+        );
+      }
     } catch (err) {
       showFormAlert(reviewAlertBox, "error", escapeHtml(i18n.t("errors.NETWORK")));
     } finally {
