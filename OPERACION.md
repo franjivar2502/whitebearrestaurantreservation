@@ -41,8 +41,9 @@ rápida del panel y las reservaciones ya tomadas no se tocan. Pide
 confirmación antes de cambiar, y el estado se guarda en la tabla `settings`
 de Supabase, así que sobrevive a reinicios y lo ven todas las tablets.
 
-El sitio siempre está en línea y se aceptan reservaciones a cualquier hora
-(24/7); ya no hay pestaña "Sitio web" ni modo "cerrado temporalmente".
+El sitio siempre está en línea; ya no hay pestaña "Sitio web" ni modo "cerrado
+temporalmente". Las reservaciones solo se aceptan dentro del horario de
+apertura, hasta 15 minutos antes del cierre (ver README, "Horario y reglas").
 
 ---
 

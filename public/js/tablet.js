@@ -528,29 +528,97 @@
     if (devolverFoco) newResBtn.focus();
   }
 
+  /* Horario del local y hora de pared del restaurante, según el servidor (el
+     dispositivo del panel podría tener otra zona horaria). La lista de horas
+     ofrece solo las reservables: desde la apertura hasta 15 minutos antes del
+     cierre, cada 15 minutos. Para hoy se admiten las de hasta 30 minutos
+     atrás (alguien que acaba de sentarse), igual que el servidor. */
+  const SLOT_MINUTES = 15;
+  const PAST_GRACE_MINUTES = 30;
+  let restaurantInfo = null;
+  let restaurantClock = null; // { iso: "AAAA-MM-DDTHH:MM", readAt: ms }
+  const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const toMinutes = (hhmm) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const fromMinutes = (total) => `${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`;
+
+  function loadRestaurantInfo() {
+    return fetch("/api/restaurant", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        restaurantInfo = d;
+        if (d.now) restaurantClock = { iso: d.now, readAt: Date.now() };
+      })
+      .catch(() => {});
+  }
+
+  function restaurantNow() {
+    if (!restaurantClock) return null;
+    const [datePart, timePart] = restaurantClock.iso.split("T");
+    const [y, mo, d] = datePart.split("-").map(Number);
+    const [h, mi] = timePart.split(":").map(Number);
+    const t = new Date(Date.UTC(y, mo - 1, d, h, mi) + (Date.now() - restaurantClock.readAt));
+    return {
+      date: `${t.getUTCFullYear()}-${pad2(t.getUTCMonth() + 1)}-${pad2(t.getUTCDate())}`,
+      minutes: t.getUTCHours() * 60 + t.getUTCMinutes(),
+    };
+  }
+
+  function fillTimeOptions() {
+    const select = newResForm.elements.time;
+    const previous = select.value;
+    const iso = newResForm.elements.date.value;
+    let options = [];
+    if (restaurantInfo && restaurantInfo.hours && iso) {
+      const [y, m, d] = iso.split("-").map(Number);
+      const dayHours = restaurantInfo.hours[DAY_KEYS[new Date(y, m - 1, d).getDay()]];
+      if (dayHours) {
+        const start = toMinutes(dayHours.open);
+        const end = toMinutes(dayHours.close) - restaurantInfo.lastSeatingBufferMinutes;
+        const now = restaurantNow();
+        for (let t = start; t <= end; t += SLOT_MINUTES) {
+          if (now && now.date === iso && t < now.minutes - PAST_GRACE_MINUTES) continue;
+          options.push(fromMinutes(t));
+        }
+      }
+    }
+    const placeholder = tabletI18n.t(options.length || !iso ? "newRes.timeSelect" : "newRes.noTimes");
+    select.innerHTML =
+      `<option value="">${escapeHtml(placeholder)}</option>` +
+      options.map((v) => `<option value="${v}">${escapeHtml(tabletI18n.formatTime(v))}</option>`).join("");
+    if (options.includes(previous)) select.value = previous;
+    return options;
+  }
+
   function openNewRes() {
     newResForm.reset();
     newResAlert.hidden = true;
-    const hoy = todayIso();
+    const now = restaurantNow();
+    const hoy = now ? now.date : todayIso();
     newResForm.elements.date.value = hoy;
     newResForm.elements.date.min = hoy;
 
     // Se propone la próxima franja de cuarto de hora, porque la mayoría de
-    // las llamadas son para dentro de un rato. Se reserva a cualquier hora,
-    // así que la propuesta siempre vale y el encargado la cambia si hace falta.
-    const ahora = new Date();
-    ahora.setMinutes(Math.ceil((ahora.getMinutes() + 15) / 15) * 15, 0, 0);
-    // Pasada la medianoche, la franja propuesta ya es de mañana.
-    if (ahora.getDate() !== new Date().getDate()) {
-      newResForm.elements.date.value = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(ahora.getDate()).padStart(2, "0")}`;
+    // las llamadas son para dentro de un rato. Si hoy ya no queda ninguna
+    // (pasada la última reserva), la lista lo avisa y el encargado elige otra fecha.
+    const options = fillTimeOptions();
+    if (now) {
+      const proposal = fromMinutes(Math.ceil((now.minutes + 1) / SLOT_MINUTES) * SLOT_MINUTES);
+      if (options.includes(proposal)) newResForm.elements.time.value = proposal;
     }
-    newResForm.elements.time.value =
-      `${String(ahora.getHours()).padStart(2, "0")}:${String(ahora.getMinutes()).padStart(2, "0")}`;
 
     newResPopover.hidden = false;
     newResBtn.setAttribute("aria-expanded", "true");
     newResForm.elements.name.focus();
   }
+
+  // Si cambia la fecha, cambian las horas que se pueden elegir (cada día tiene su horario).
+  newResForm.elements.date.addEventListener("change", fillTimeOptions);
+  document.addEventListener("tablet-languagechange", fillTimeOptions);
+  loadRestaurantInfo().then(fillTimeOptions);
 
   newResBtn.addEventListener("click", () => {
     if (newResPopover.hidden) openNewRes();
