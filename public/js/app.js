@@ -461,7 +461,6 @@
     const payload = {
       name: form.name.value,
       phone: form.phone.value,
-      email: form.email.value,
       date: form.date.value,
       time: form.time.value,
       partySize: form.partySize.value,
@@ -504,7 +503,6 @@
         <dt>${i18n.t("confirmation.time")}</dt><dd>${escapeHtml(i18n.formatTime(data.time))}</dd>
         <dt>${i18n.t("confirmation.partySize")}</dt><dd>${escapeHtml(String(data.partySize))}</dd>
         <dt>${i18n.t("confirmation.phone")}</dt><dd>${escapeHtml(data.phone)}</dd>
-        ${data.email ? `<dt>${i18n.t("confirmation.email")}</dt><dd>${escapeHtml(data.email)}</dd>` : ""}
         ${
           data.seatingPreference
             ? `<dt>${i18n.t("confirmation.seating")}</dt><dd>${escapeHtml(

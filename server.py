@@ -121,7 +121,7 @@ PAST_TIME_GRACE_MINUTES = 30
 # que acepta el cliente al marcar la casilla. Se guarda con cada reservación
 # y reseña como prueba de qué texto aceptó: al cambiar ese texto, cambiar
 # también esta fecha.
-LEGAL_TERMS_VERSION = "2026-10-05"
+LEGAL_TERMS_VERSION = "2026-10-05.2"
 
 NEGATIVE_REVIEW_KEYWORDS = {
     "terrible", "horrible", "pesimo", "pésimo", "asqueroso", "asquerosa",
@@ -1611,7 +1611,7 @@ def main():
         print(f"!! {SUPABASE_MISSING_MESSAGE}")
         print("!" * 70)
     print(
-        f"  Notificaciones: correo {'ACTIVO' if notifications.email_enabled() else 'modo prueba (dry-run)'}, "
+        f"  Notificaciones: "
         f"SMS {'ACTIVO' if notifications.sms_enabled() else 'modo prueba (dry-run)'}"
     )
     for var, value in (("STAFF_PASSWORD", STAFF_PASSWORD), ("ADMIN_PASSWORD", ADMIN_PASSWORD)):

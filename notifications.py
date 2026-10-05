@@ -1,44 +1,30 @@
 """
 Envío de mensajes de confirmación y recordatorio para White Bear Restaurant.
-Sin dependencias externas: usa smtplib (correo) y la API REST de Twilio
-por HTTP directo (SMS), ambas de la librería estándar de Python.
+Solo SMS. Sin dependencias externas: usa la API REST de Twilio por HTTP
+directo con la librería estándar de Python.
 
 Para activar el envío real, configura variables de entorno antes de correr
 server.py. Mientras no estén configuradas, los mensajes se guardan en modo
 "dry-run" (simulado) en data/notifications_log.txt y en la consola, así el
 sitio funciona igual para probar todo el flujo sin tener credenciales.
 
-Correo (SMTP) — ejemplo con Gmail (requiere una "contraseña de aplicación",
-no la contraseña normal de la cuenta):
-    SMTP_HOST=smtp.gmail.com
-    SMTP_PORT=587
-    SMTP_USER=turestaurante@gmail.com
-    SMTP_PASSWORD=xxxxxxxxxxxxxxxx
-    SMTP_FROM=turestaurante@gmail.com   (opcional, usa SMTP_USER si falta)
-
 SMS (Twilio) — requiere una cuenta en twilio.com:
     TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    TWILIO_FROM_NUMBER=+15005550006
+    TWILIO_FROM_NUMBER=+15183025235   (el número del restaurante, en formato +1...)
 """
 
 import base64
 import os
 import re
-import smtplib
 import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime
-from email.mime.text import MIMEText
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "data", "notifications_log.txt")
-
-
-def email_enabled():
-    return bool(os.environ.get("SMTP_HOST"))
 
 
 def sms_enabled():
@@ -65,38 +51,6 @@ def _log(channel, to, message, ok, detail):
             f.write(line)
     except OSError:
         pass
-
-
-def send_email(to_addr, subject, body):
-    if not to_addr:
-        return False, "sin destinatario"
-
-    if not email_enabled():
-        _log("EMAIL", to_addr, f"Asunto: {subject}\n{body}", False, "dry-run")
-        return False, "dry-run"
-
-    host = os.environ["SMTP_HOST"]
-    port = int(os.environ.get("SMTP_PORT", "587"))
-    user = os.environ.get("SMTP_USER")
-    password = os.environ.get("SMTP_PASSWORD")
-    from_addr = os.environ.get("SMTP_FROM") or user or "no-reply@whitebearrestaurant.com"
-
-    msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = subject
-    msg["From"] = from_addr
-    msg["To"] = to_addr
-
-    try:
-        with smtplib.SMTP(host, port, timeout=10) as smtp:
-            smtp.starttls()
-            if user and password:
-                smtp.login(user, password)
-            smtp.sendmail(from_addr, [to_addr], msg.as_string())
-        _log("EMAIL", to_addr, f"Asunto: {subject}\n{body}", True, "enviado")
-        return True, "enviado"
-    except Exception as exc:  # noqa: BLE001 - queremos capturar cualquier falla de red/SMTP
-        _log("EMAIL", to_addr, f"Asunto: {subject}\n{body}", False, str(exc))
-        return False, str(exc)
 
 
 def to_e164(raw):
@@ -164,7 +118,7 @@ def send_sms(to_number, body):
 # Los SMS se escriben sin acentos ni signos como ¡ ¿: un solo carácter fuera
 # del alfabeto básico de los SMS (GSM-7) obliga a mandarlo en otra codificación
 # que cabe en 70 caracteres por mensaje en vez de 160, y se cobra por partes.
-# Por eso cada texto está escrito con acentos (para el correo) y para el SMS se
+# Por eso cada texto está escrito con acentos y para el SMS se
 # convierte con _sms_safe() ANTES de insertar el nombre del cliente, que se
 # respeta tal como lo escribió.
 # ---------------------------------------------------------------------------
@@ -188,9 +142,6 @@ MESSAGES = {
             "in 15 minutes (at {time}). See you soon!"
         ),
         "optout": " Reply STOP to opt out of texts.",
-        "subject_confirmation": "Your reservation was received",
-        "subject_attendance": "Please confirm your attendance",
-        "subject_reminder": "Your table is almost ready",
     },
     "es": {
         "confirmation": (
@@ -207,9 +158,6 @@ MESSAGES = {
             "en 15 minutos (a las {time}). ¡Te esperamos!"
         ),
         "optout": " Responde STOP para no recibir más SMS.",
-        "subject_confirmation": "Recibimos tu reservación",
-        "subject_attendance": "Confirma tu asistencia",
-        "subject_reminder": "Tu mesa está casi lista",
     },
     "fr": {
         "confirmation": (
@@ -226,9 +174,6 @@ MESSAGES = {
             "prête dans 15 minutes (à {time}). À bientôt !"
         ),
         "optout": " Répondez STOP pour ne plus recevoir de SMS.",
-        "subject_confirmation": "Nous avons reçu votre réservation",
-        "subject_attendance": "Merci de confirmer votre venue",
-        "subject_reminder": "Votre table est presque prête",
     },
 }
 
@@ -329,36 +274,22 @@ def reminder_message(reservation, sms=False):
 
 
 def sms_opt_out_note(reservation):
-    """Va solo en el primer SMS de cada reserva (no en el correo): las normas de
+    """Va solo en el primer SMS de cada reserva: las normas de
     CTIA piden decir ahí cómo darse de baja. Twilio atiende STOP y HELP por su
     cuenta. Las condiciones completas están en public/legal.html#messages."""
     return _sms_safe(MESSAGES[message_language(reservation)]["optout"])
 
 
-def _subject(reservation, key):
-    return MESSAGES[message_language(reservation)][key]
-
-
 def notify_confirmation(reservation):
     if reservation.get("phone"):
         send_sms(reservation["phone"], confirmation_message(reservation, sms=True) + sms_opt_out_note(reservation))
-    if reservation.get("email"):
-        send_email(reservation["email"], _subject(reservation, "subject_confirmation"), confirmation_message(reservation))
 
 
 def notify_reminder(reservation):
     if reservation.get("phone"):
         send_sms(reservation["phone"], reminder_message(reservation, sms=True))
-    if reservation.get("email"):
-        send_email(reservation["email"], _subject(reservation, "subject_reminder"), reminder_message(reservation))
 
 
 def notify_attendance_confirmation(reservation, base_url):
     if reservation.get("phone"):
         send_sms(reservation["phone"], attendance_confirmation_message(reservation, base_url, sms=True))
-    if reservation.get("email"):
-        send_email(
-            reservation["email"],
-            _subject(reservation, "subject_attendance"),
-            attendance_confirmation_message(reservation, base_url),
-        )

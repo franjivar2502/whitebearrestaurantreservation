@@ -79,7 +79,7 @@ class MessageLanguageTests(unittest.TestCase):
             self.assertEqual(notifications.message_language(reservation), "en", lang)
             self.assertIn("we received your reservation", notifications.confirmation_message(reservation))
 
-    def test_sms_stays_in_the_basic_alphabet_but_email_keeps_accents(self):
+    def test_sms_stays_in_the_basic_alphabet(self):
         for lang in ("en", "es", "fr"):
             reservation = self.res(lang=lang)
             for build in (
@@ -118,20 +118,16 @@ class MessageLanguageTests(unittest.TestCase):
         url = "https://x.com/confirm.html?id=a1b2c3d4e5f60718&lang=fr"
         self.assertIn(url, notifications.attendance_confirmation_message(self.res(lang="fr"), "https://x.com"))
 
-    def test_notify_sends_sms_and_email_in_the_guests_language(self):
+    def test_notify_sends_only_sms_in_the_guests_language(self):
         sent = []
-        with unittest.mock.patch.object(notifications, "send_sms", lambda to, body: sent.append(("sms", to, body))), \
-                unittest.mock.patch.object(notifications, "send_email", lambda to, subject, body: sent.append(("email", subject, body))):
-            reservation = self.res(lang="fr")
+        with unittest.mock.patch.object(notifications, "send_sms", lambda to, body: sent.append(("sms", to, body))):
+            reservation = self.res(lang="fr", email="a@b.com")
             notifications.notify_confirmation(reservation)
             notifications.notify_reminder(reservation)
             notifications.notify_attendance_confirmation(reservation, "https://x.com")
-        sms = [m for m in sent if m[0] == "sms"]
-        emails = [m for m in sent if m[0] == "email"]
+        sms = sent
         self.assertEqual(len(sms), 3)
-        self.assertEqual([m[1] for m in emails], [
-            "Nous avons reçu votre réservation", "Votre table est presque prête", "Merci de confirmer votre venue",
-        ])
+        self.assertFalse(hasattr(notifications, "send_email"))
         # La baja (STOP) va solo en el primer SMS, y en el idioma del cliente.
         self.assertIn("Repondez STOP", sms[0][2])
         self.assertNotIn("STOP", sms[1][2])
