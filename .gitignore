@@ -8,3 +8,5 @@ data/reviews.json
 public/uploads/
 .env
 data/settings.json
+backups/
+data/*.corrupt-*

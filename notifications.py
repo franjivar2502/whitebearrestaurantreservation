@@ -134,7 +134,7 @@ def confirmation_message(reservation):
         f"White Bear Restaurant: hola {reservation['name']}, tu reservacion para "
         f"el {reservation['date']} a las {reservation['time']} "
         f"({reservation['partySize']} personas) fue recibida. "
-        f"Codigo #{reservation['id']}. Te esperamos!"
+        f"Codigo #{reservation['id'][:8]}. Te esperamos!"
     )
 
 
@@ -157,10 +157,16 @@ def reminder_message(reservation):
     )
 
 
+# Va solo en el primer SMS de cada reserva (no en el correo): las normas de
+# CTIA piden decir ahí cómo darse de baja. Twilio atiende STOP y HELP por su
+# cuenta. Las condiciones completas están en public/legal.html#messages.
+SMS_OPT_OUT_NOTE = " Responde STOP para no recibir mas SMS."
+
+
 def notify_confirmation(reservation):
     message = confirmation_message(reservation)
     if reservation.get("phone"):
-        send_sms(reservation["phone"], message)
+        send_sms(reservation["phone"], message + SMS_OPT_OUT_NOTE)
     if reservation.get("email"):
         send_email(reservation["email"], "Confirmación de tu reservación", message)
 

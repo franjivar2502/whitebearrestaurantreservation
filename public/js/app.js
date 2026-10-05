@@ -253,7 +253,7 @@
     alertBox.innerHTML = "";
     const messages = (errors || [{ code: "GENERIC" }]).map((err) => {
       if (typeof err === "string") return err; // por si el servidor devuelve texto plano
-      return i18n.t(`errors.${err.code}`, err.params);
+      return i18n.t(`errors.${err.code}`, { phone: restaurantInfo.phone, ...err.params });
     });
     const div = document.createElement("div");
     div.className = "alert alert-error";
@@ -354,15 +354,38 @@
       .join("");
   }
 
-  /* El campo de hora no lleva min/max: se reservan mesas a cualquier hora
-     de cualquier día (el servidor también las acepta así). El horario de
-     apertura se sigue mostrando arriba, como información, pero ya no
-     rechaza una reserva fuera de él. */
-  function updateTimeConstraints() {
-    timeInput.removeAttribute("min");
-    timeInput.removeAttribute("max");
-    timeHint.textContent = i18n.t("form.timeHintAnyHour");
+  function subtractMinutes(hhmm, minutes) {
+    const [h, m] = hhmm.split(":").map(Number);
+    let total = h * 60 + m - minutes;
+    total = Math.max(total, 0);
+    const hh = String(Math.floor(total / 60)).padStart(2, "0");
+    const mm2 = String(total % 60).padStart(2, "0");
+    return `${hh}:${mm2}`;
   }
+
+  /* Con "Reservas 24/7" encendido en el panel (lo normal) el campo de hora
+     no lleva min/max. Apagado, se limita al horario de ese día. */
+  function updateTimeConstraints() {
+    const dayKey = i18n.dayKeyForDate(dateInput.value);
+    // Reservas 24/7 (se activa desde el panel del staff): cualquier hora vale.
+    if (restaurantInfo.bookingAlwaysOpen) {
+      timeInput.removeAttribute("min");
+      timeInput.removeAttribute("max");
+      timeHint.textContent = i18n.t("form.timeHintAnyTime");
+      return;
+    }
+    const dayHours = restaurantInfo.hours[dayKey];
+    const lastSeating = subtractMinutes(dayHours.close, restaurantInfo.lastSeatingBufferMinutes);
+    timeInput.min = dayHours.open;
+    timeInput.max = lastSeating;
+    timeHint.textContent = i18n.t("form.timeHint", {
+      day: i18n.dayName(dayKey),
+      open: i18n.formatTime(dayHours.open),
+      close: i18n.formatTime(lastSeating),
+    });
+  }
+
+  dateInput.addEventListener("change", updateTimeConstraints);
 
   /* ---------- agenda abierta / cerrada ----------
      El staff apaga las reservaciones desde su panel. Cuando están apagadas,
@@ -466,6 +489,11 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearAlert();
+    // El formulario lleva novalidate, así que la casilla se comprueba aquí.
+    if (!form.termsConsent.checked) {
+      showAlert([{ code: "CONSENT_REQUIRED" }]);
+      return;
+    }
     submitBtn.disabled = true;
     submitBtn.classList.add("btn-loading");
     submitBtn.textContent = i18n.t("form.submitting");
@@ -489,6 +517,8 @@
       seatingPreference: form.seatingPreference.value,
       preOrder,
       preOrderNotes: groupMenuSection.hidden ? "" : preOrderNotesInput.value.trim(),
+      website: form.website.value,
+      termsConsent: form.termsConsent.checked,
     };
 
     try {
@@ -528,7 +558,7 @@
               )}</dd>`
             : ""
         }
-        <dt>${i18n.t("confirmation.code")}</dt><dd>#${escapeHtml(data.id)}</dd>
+        <dt>${i18n.t("confirmation.code")}</dt><dd>#${escapeHtml(String(data.id).slice(0, 8))}</dd>
         ${
           data.preOrder && data.preOrder.length
             ? `<dt>${i18n.t("confirmation.preorder")}</dt><dd>${data.preOrder
@@ -552,6 +582,10 @@
   reviewForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     reviewAlertBox.innerHTML = "";
+    if (!reviewForm.reviewConsent.checked) {
+      showFormAlert(reviewAlertBox, "error", escapeHtml(i18n.t("errors.REVIEW_CONSENT_REQUIRED")));
+      return;
+    }
     reviewSubmitBtn.disabled = true;
     reviewSubmitBtn.classList.add("btn-loading");
     reviewSubmitBtn.textContent = i18n.t("reviews.submitting");
@@ -571,9 +605,18 @@
       }
 
       reviewForm.reset();
-      reviewsCache = [data, ...reviewsCache];
-      renderReviewsList();
-      showFormAlert(reviewAlertBox, "success", escapeHtml(i18n.t("reviews.thanks")));
+      // Una reseña retenida para el staff no se muestra todavía en la lista.
+      if (data.status === "approved") {
+        reviewsCache = [data, ...reviewsCache];
+        renderReviewsList();
+        showFormAlert(reviewAlertBox, "success", escapeHtml(i18n.t("reviews.thanks")));
+      } else {
+        showFormAlert(
+          reviewAlertBox,
+          "success",
+          escapeHtml(i18n.t("reviews.pending", { phone: restaurantInfo.phone }))
+        );
+      }
     } catch (err) {
       showFormAlert(reviewAlertBox, "error", escapeHtml(i18n.t("errors.NETWORK")));
     } finally {

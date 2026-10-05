@@ -24,7 +24,10 @@ Tabla esperada en Supabase (crear una sola vez, ver README):
 
 import json
 import os
+import tempfile
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -77,44 +80,132 @@ def _check_header_safe(name, value):
         ) from exc
 
 
-def _request(method, path, body=None, extra_headers=None):
+# Errores que vale la pena reintentar: la red falló, Supabase tardó de más o
+# respondió 5xx/429 (sobrecarga momentánea). Un 4xx es un error nuestro y
+# reintentarlo solo repite el error.
+_RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+_RETRY_DELAYS = (0.5, 1.5)
+
+
+def _request(method, path, body=None, extra_headers=None, retry=True):
+    """Llama a la API REST de Supabase.
+
+    Con retry=True reintenta dos veces los fallos pasajeros. Solo es seguro en
+    operaciones idempotentes (leer, upsert por id, PATCH, DELETE): repetir un
+    INSERT simple podría duplicar la fila si el primero sí llegó.
+    """
     _check_header_safe("SUPABASE_KEY", SUPABASE_KEY)
     _check_header_safe("SUPABASE_URL", SUPABASE_URL)
     url = f"{SUPABASE_URL}/rest/v1/{path}"
     data = json.dumps(body).encode("utf-8") if body is not None else None
-    req = urllib.request.Request(url, data=data, method=method, headers=_headers(extra_headers))
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        raw = resp.read()
-        return json.loads(raw) if raw else None
+    delays = _RETRY_DELAYS if retry else ()
+    attempt = 0
+    while True:
+        req = urllib.request.Request(url, data=data, method=method, headers=_headers(extra_headers))
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                raw = resp.read()
+                return json.loads(raw) if raw else None
+        except urllib.error.HTTPError as exc:
+            if exc.code not in _RETRYABLE_STATUS or attempt >= len(delays):
+                raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt >= len(delays):
+                raise
+        time.sleep(delays[attempt])
+        attempt += 1
 
 
-def _ensure_local_file():
-    os.makedirs(os.path.dirname(LOCAL_DATA_FILE), exist_ok=True)
-    if not os.path.exists(LOCAL_DATA_FILE):
-        with open(LOCAL_DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f)
+# PostgREST (la API de Supabase) devuelve como máximo 1000 filas por consulta
+# salvo que se pida otra página. Sin paginar, a partir de la reservación 1001
+# las nuevas dejaban de aparecer en el panel y la disponibilidad dejaba de
+# contarlas: sobrecupo silencioso al cabo de unos meses de uso.
+PAGE_SIZE = 1000
+
+
+def _get_all(path):
+    rows = []
+    sep = "&" if "?" in path else "?"
+    while True:
+        page = _request("GET", f"{path}{sep}limit={PAGE_SIZE}&offset={len(rows)}") or []
+        rows.extend(page)
+        if len(page) < PAGE_SIZE:
+            return rows
+
+
+def _json_field_filter(field, op, value):
+    """Filtro de PostgREST sobre un campo dentro de la columna jsonb `data`."""
+    key = urllib.parse.quote(f"data->>{field}", safe="")
+    return f"{key}={op}.{urllib.parse.quote(str(value), safe='')}"
+
+
+# ---------------------------------------------------------------------------
+# Archivos JSON locales (cuando no hay Supabase)
+#
+# Se escriben a un archivo temporal y luego se renombra encima del bueno. El
+# renombrado es atómico: si el proceso muere a la mitad (reinicio, disco
+# lleno, corte de luz), el archivo queda con la versión anterior entera en
+# vez de medio escrito -- y un JSON medio escrito se leía como lista vacía,
+# es decir, se perdían todas las reservaciones.
+# ---------------------------------------------------------------------------
+
+
+def _read_json_file(path):
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        raw = f.read()
+    try:
+        return json.loads(raw) if raw.strip() else []
+    except json.JSONDecodeError:
+        # No devolver [] en silencio y seguir: la siguiente escritura pisaría
+        # el archivo dañado y lo poco recuperable se perdería. Se aparta una
+        # copia para poder rescatarla a mano.
+        backup = f"{path}.corrupt-{int(time.time())}"
+        os.replace(path, backup)
+        print(f"[ERROR] {path} no era JSON válido; se apartó en {backup}")
+        return []
+
+
+def _write_json_file(path, rows):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".tmp-", suffix=".json")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(rows, f, indent=2, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, path)
+    except BaseException:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
 
 
 def _read_local():
-    _ensure_local_file()
-    with open(LOCAL_DATA_FILE, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
+    return _read_json_file(LOCAL_DATA_FILE)
 
 
 def _write_local(reservations):
-    with open(LOCAL_DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(reservations, f, indent=2, ensure_ascii=False)
+    _write_json_file(LOCAL_DATA_FILE, reservations)
 
 
-def list_reservations():
-    """Devuelve todas las reservaciones (sin ordenar; el llamador ordena)."""
+def list_reservations(on_date=None):
+    """Devuelve las reservaciones (sin ordenar; el llamador ordena).
+
+    Con on_date ("YYYY-MM-DD") solo las de ese día: es lo que necesita el
+    cálculo de disponibilidad, y así no baja el historial completo en cada
+    reservación nueva.
+    """
     if enabled():
-        rows = _request("GET", "reservations?select=data&order=created_at.asc") or []
-        return [row["data"] for row in rows]
-    return _read_local()
+        path = "reservations?select=data&order=created_at.asc"
+        if on_date:
+            path += "&" + _json_field_filter("date", "eq", on_date)
+        return [row["data"] for row in _get_all(path)]
+    reservations = _read_local()
+    if on_date:
+        reservations = [r for r in reservations if r.get("date") == on_date]
+    return reservations
 
 
 def save_reservation(reservation):
@@ -171,26 +262,17 @@ LOCAL_PHOTOS_FILE = os.path.join(BASE_DIR, "data", "photos.json")
 
 
 def _read_local_photos():
-    os.makedirs(os.path.dirname(LOCAL_PHOTOS_FILE), exist_ok=True)
-    if not os.path.exists(LOCAL_PHOTOS_FILE):
-        with open(LOCAL_PHOTOS_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f)
-    with open(LOCAL_PHOTOS_FILE, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
+    return _read_json_file(LOCAL_PHOTOS_FILE)
 
 
 def _write_local_photos(photos):
-    with open(LOCAL_PHOTOS_FILE, "w", encoding="utf-8") as f:
-        json.dump(photos, f, indent=2, ensure_ascii=False)
+    _write_json_file(LOCAL_PHOTOS_FILE, photos)
 
 
 def list_photos():
     """Devuelve todas las fotos ordenadas por sort_order."""
     if enabled():
-        return _request("GET", "photos?select=*&order=sort_order.asc") or []
+        return _get_all("photos?select=*&order=sort_order.asc")
     photos = _read_local_photos()
     return sorted(photos, key=lambda p: p.get("sort_order", 0))
 
@@ -203,6 +285,7 @@ def add_photo(photo):
             "photos",
             body=photo,
             extra_headers={"Prefer": "return=minimal"},
+            retry=False,  # INSERT sin id fijo en conflicto: reintentar duplicaría
         )
         return
     photos = _read_local_photos()
@@ -280,26 +363,17 @@ LOCAL_TABLE_STATUS_FILE = os.path.join(BASE_DIR, "data", "table_status.json")
 
 
 def _read_local_table_status():
-    os.makedirs(os.path.dirname(LOCAL_TABLE_STATUS_FILE), exist_ok=True)
-    if not os.path.exists(LOCAL_TABLE_STATUS_FILE):
-        with open(LOCAL_TABLE_STATUS_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f)
-    with open(LOCAL_TABLE_STATUS_FILE, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
+    return _read_json_file(LOCAL_TABLE_STATUS_FILE)
 
 
 def _write_local_table_status(rows):
-    with open(LOCAL_TABLE_STATUS_FILE, "w", encoding="utf-8") as f:
-        json.dump(rows, f, indent=2, ensure_ascii=False)
+    _write_json_file(LOCAL_TABLE_STATUS_FILE, rows)
 
 
 def list_unavailable_table_ids():
     """Devuelve el conjunto de ids de mesa marcadas como no disponibles."""
     if enabled():
-        rows = _request("GET", "table_status?select=data") or []
+        rows = _get_all("table_status?select=data")
         return {row["data"]["id"] for row in rows if row.get("data", {}).get("unavailable")}
     rows = _read_local_table_status()
     return {row["id"] for row in rows if row.get("unavailable")}
@@ -325,6 +399,39 @@ def set_table_unavailable(table_id, unavailable):
     _write_local_table_status(rows)
 
 
+# Ajustes del sitio que el staff cambia desde el panel (sitio público cerrado,
+# reservas a cualquier hora). Se guardan como una fila más de table_status,
+# con un id que no es de ninguna mesa: así no hace falta crear otra tabla en
+# Supabase. list_unavailable_table_ids la ignora porque no lleva "unavailable".
+SITE_SETTINGS_ID = "site-settings"
+
+
+def get_site_settings():
+    """Devuelve el dict de ajustes guardado ({} si nunca se guardó)."""
+    if enabled():
+        rows = _request("GET", f"table_status?select=data&id=eq.{SITE_SETTINGS_ID}") or []
+        return dict(rows[0]["data"].get("settings") or {}) if rows else {}
+    for row in _read_local_table_status():
+        if row.get("id") == SITE_SETTINGS_ID:
+            return dict(row.get("settings") or {})
+    return {}
+
+
+def save_site_settings(settings):
+    row = {"id": SITE_SETTINGS_ID, "settings": settings}
+    if enabled():
+        _request(
+            "POST",
+            "table_status",
+            body={"id": SITE_SETTINGS_ID, "data": row},
+            extra_headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+        )
+        return
+    rows = [r for r in _read_local_table_status() if r.get("id") != SITE_SETTINGS_ID]
+    rows.append(row)
+    _write_local_table_status(rows)
+
+
 # ---------------------------------------------------------------------------
 # Reseñas de clientes (texto + foto opcional), con moderación por palabras
 # clave (ver server.py). Mismo patrón JSONB que reservations/table_status.
@@ -342,26 +449,17 @@ LOCAL_REVIEWS_FILE = os.path.join(BASE_DIR, "data", "reviews.json")
 
 
 def _read_local_reviews():
-    os.makedirs(os.path.dirname(LOCAL_REVIEWS_FILE), exist_ok=True)
-    if not os.path.exists(LOCAL_REVIEWS_FILE):
-        with open(LOCAL_REVIEWS_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f)
-    with open(LOCAL_REVIEWS_FILE, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
+    return _read_json_file(LOCAL_REVIEWS_FILE)
 
 
 def _write_local_reviews(reviews):
-    with open(LOCAL_REVIEWS_FILE, "w", encoding="utf-8") as f:
-        json.dump(reviews, f, indent=2, ensure_ascii=False)
+    _write_json_file(LOCAL_REVIEWS_FILE, reviews)
 
 
 def list_reviews():
     """Devuelve todas las reseñas (el llamador filtra por status si hace falta)."""
     if enabled():
-        rows = _request("GET", "reviews?select=data&order=created_at.desc") or []
+        rows = _get_all("reviews?select=data&order=created_at.desc")
         return [row["data"] for row in rows]
     reviews = _read_local_reviews()
     return sorted(reviews, key=lambda r: r.get("createdAt", ""), reverse=True)
@@ -493,3 +591,107 @@ def set_setting(key, value):
     settings = _read_local_settings()
     settings[key] = value
     _write_local_settings(settings)
+
+
+# ---------------------------------------------------------------------------
+# Mantenimiento: salud, limpieza y respaldo
+# ---------------------------------------------------------------------------
+
+
+def ping():
+    """Comprueba que el almacenamiento responde. Lanza una excepción si no."""
+    if enabled():
+        _request("GET", "reservations?select=id&limit=1")
+        return "supabase"
+    os.makedirs(os.path.dirname(LOCAL_DATA_FILE), exist_ok=True)
+    if not os.access(os.path.dirname(LOCAL_DATA_FILE), os.W_OK):
+        raise OSError("data/ no tiene permiso de escritura")
+    return "local"
+
+
+def purge_reservations_before(cutoff_date):
+    """Borra las reservaciones con fecha anterior a cutoff_date ("YYYY-MM-DD").
+
+    Devuelve cuántas se borraron. Solo toca reservaciones: las reseñas y las
+    fotos son contenido del sitio, no datos personales que caduquen.
+    """
+    if enabled():
+        rows = _request(
+            "DELETE",
+            "reservations?" + _json_field_filter("date", "lt", cutoff_date),
+            extra_headers={"Prefer": "return=representation"},
+        ) or []
+        return len(rows)
+    reservations = _read_local()
+    keep = [r for r in reservations if (r.get("date") or "") >= cutoff_date]
+    if len(keep) != len(reservations):
+        _write_local(keep)
+    return len(reservations) - len(keep)
+
+
+# Formato del respaldo: las tablas con columna jsonb van como
+# {"id", "data", "created_at"}; photos va con sus columnas tal cual. Es el
+# mismo formato venga de Supabase o de los archivos locales, así que un
+# respaldo de uno se puede restaurar en el otro.
+BACKUP_TABLES = ("reservations", "table_status", "reviews", "photos")
+_LOCAL_FILES = {
+    "reservations": LOCAL_DATA_FILE,
+    "table_status": LOCAL_TABLE_STATUS_FILE,
+    "reviews": LOCAL_REVIEWS_FILE,
+    "photos": LOCAL_PHOTOS_FILE,
+}
+
+
+def export_all():
+    """Devuelve un dict con todas las tablas, listo para json.dump."""
+    tables = {}
+    for name in BACKUP_TABLES:
+        if enabled():
+            tables[name] = _get_all(f"{name}?select=*&order=created_at.asc")
+        elif name == "photos":
+            tables[name] = _read_json_file(_LOCAL_FILES[name])
+        else:
+            tables[name] = [{"id": row["id"], "data": row} for row in _read_json_file(_LOCAL_FILES[name])]
+    return {
+        "format": "whitebear-backup",
+        "version": 1,
+        "source": "supabase" if enabled() else "local",
+        "exportedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "tables": tables,
+    }
+
+
+def import_all(backup):
+    """Restaura un respaldo de export_all(). Hace upsert por id: lo que ya
+    existe se sobrescribe con la versión del respaldo y lo que no está en el
+    respaldo se deja como está (no borra nada). Devuelve filas por tabla."""
+    if backup.get("format") != "whitebear-backup":
+        raise ValueError("El archivo no parece un respaldo de White Bear.")
+    counts = {}
+    for name in BACKUP_TABLES:
+        rows = backup.get("tables", {}).get(name, [])
+        counts[name] = len(rows)
+        if not rows:
+            continue
+        if enabled():
+            # PostgREST exige que todas las filas de un envío tengan las mismas
+            # columnas; con ?columns= y missing=default, a la que le falte una
+            # (p. ej. fotos antiguas sin "category") se le pone su valor por
+            # defecto en vez de rechazar el lote entero.
+            columns = sorted({key for row in rows for key in row})
+            for i in range(0, len(rows), 500):
+                _request(
+                    "POST",
+                    f"{name}?columns={','.join(columns)}",
+                    body=rows[i : i + 500],
+                    extra_headers={
+                        "Prefer": "resolution=merge-duplicates,missing=default,return=minimal"
+                    },
+                )
+            continue
+        path = _LOCAL_FILES[name]
+        incoming = rows if name == "photos" else [row["data"] for row in rows]
+        by_id = {row["id"]: row for row in _read_json_file(path)}
+        by_id.update({row["id"]: row for row in incoming})
+        _write_json_file(path, list(by_id.values()))
+    return counts

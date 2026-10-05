@@ -41,7 +41,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - Idiomas: sitio de clientes en EN/ES/FR (inglés por defecto); panel de tablet en EN/ES/SR (inglés por defecto).
 - Galería de fotos con pantalla de bienvenida (fondo de 1 segundo al entrar) y panel de administración para agregar/reordenar/eliminar fotos (`/admin-photos.html`, ver sección más abajo).
 - **Galería separada en dos secciones**: "Gallery" (fotos generales) y "Our Menu"/"Nuestro Menú" (fotos del menú) — el panel de admin ahora tiene un campo "Sección" al agregar una foto, y un botón ⇄ para cambiar la sección de una foto ya existente.
-- **Reseñas de clientes con fotos**, moderadas automáticamente (`public/js/app.js` + `server.py`) — cualquier visitante puede dejar una reseña con calificación de 1 a 5 estrellas y subir una foto directo desde su celular. Cualquier reseña que contenga una palabra clave negativa (lista en `NEGATIVE_REVIEW_KEYWORDS` en `server.py`) se rechaza automáticamente con un mensaje que invita a llamar al restaurante en vez de publicarse; el resto se publica al instante. Las fotos se guardan en Supabase Storage (bucket `review-photos`, ya creado) o en `public/uploads/reviews/` en desarrollo local sin Supabase.
+- **Reseñas de clientes con fotos**, moderadas automáticamente (`public/js/app.js` + `server.py`) — cualquier visitante puede dejar una reseña con calificación de 1 a 5 estrellas y subir una foto directo desde su celular. Cualquier reseña que contenga una palabra clave negativa (lista en `NEGATIVE_REVIEW_KEYWORDS` en `server.py`) no se publica sola: se guarda como pendiente y aparece en la sección "Reseñas de clientes" de `/admin-photos.html`, donde el staff la publica o la oculta (ocultar no la borra). Al cliente se le avisa que el equipo la leerá y se le invita a llamar. El resto se publica al instante; la calificación en estrellas no influye. Las fotos se guardan en Supabase Storage (bucket `review-photos`, ya creado) o en `public/uploads/reviews/` en desarrollo local sin Supabase.
 - **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones, fotos, reseñas y estado de mesas ya no se pierden cuando Render reinicia el servicio.
 - Repositorio en GitHub, desplegado en Render y funcionando en vivo: https://whitebearrestaurantreservation.onrender.com
 
@@ -73,11 +73,19 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
    llegar reseñas reales -- la lista actual es un punto de partida, no es
    exhaustiva. **Importante:** las palabras se buscan por palabra completa, no
    por subcadena. Si se vuelve a buscar por subcadena, "rat" bloquea "trato" y
-   se rechazan reseñas buenas (pasó, ver DURABILIDAD.md).
+   se retienen reseñas buenas (pasó, ver DURABILIDAD.md).
 7. Decidir si el panel de tablet necesita más idiomas o queda así.
 8. **Leer `DURABILIDAD.md`** antes de hablar de mantenimiento con el cliente:
    ahí está qué hace falta para que esto siga en pie dentro de diez años, y el
    aviso sobre la norma de la FTC en materia de reseñas.
+
+9. **Políticas legales (`public/legal.html`) — borrador.** Privacidad,
+   condiciones de reserva, condiciones de SMS/correo, política de reseñas y
+   fotos, y accesibilidad, en EN/ES/FR. Antes de publicarlas: completar cada
+   `<mark class="fill">` (razón social, correo de contacto, fecha, plazos),
+   que las revise un abogado de Nueva York y quitar el aviso de borrador.
+   Ojo: la política de reseñas dice que no se ocultan las negativas, así que
+   no puede salir antes que el cambio de moderación de reseñas (PR #2).
 
 Dime en qué de esto quieres que sigamos y retomamos justo ahí.
 
@@ -458,6 +466,40 @@ todas las tablets: el panel lo relee cada 5 segundos, de modo que si
 alguien lo apaga desde otro dispositivo, los demás se enteran solos. Por
 omisión está encendido.
 
+## Seguridad del sitio
+
+Lo que el servidor hace solo, sin configurar nada (`security.py` y `server.py`):
+
+- **Fuerza bruta:** 10 contraseñas de staff/admin equivocadas desde la
+  misma conexión bloquean esa conexión 15 minutos (responde 429, también si
+  después acierta). El resto de conexiones sigue entrando normal.
+- **Spam:** como mucho 10 reservaciones por hora y 5 reseñas por hora desde
+  la misma conexión (la tablet del staff no tiene tope). Ambos formularios
+  llevan un campo trampa invisible que solo llenan los bots.
+- **Códigos de reservación:** los nuevos son de 32 caracteres (imposibles de
+  adivinar); al cliente se le muestra solo el inicio. Con el código solo se
+  ve nombre, fecha, hora y personas, nunca teléfono ni correo, y las
+  consultas por código tienen tope por conexión.
+- **Fotos de reseñas:** se acepta un archivo solo si su contenido es de
+  verdad JPG, PNG, GIF o WebP (no basta con la extensión).
+  Antes de publicarla se le quita la ubicación GPS que guardan los
+  celulares (se conserva la orientación, para que no salga de lado).
+- **Consentimiento:** cada reservación hecha desde el sitio guarda que el
+  cliente aceptó las condiciones y los SMS, con la versión del texto
+  (`LEGAL_TERMS_VERSION` en `server.py`, cambiarla cuando cambie
+  `legal.html`) y la hora. Las reseñas guardan lo mismo. Las reservas que
+  apunta el staff por teléfono quedan marcadas como `"source": "staff"`.
+- **Cabeceras:** política de contenido (solo se ejecutan scripts del propio
+  sitio), prohibido meter el sitio en un iframe, `nosniff`, HSTS en https.
+- **Peticiones:** tope de tamaño del cuerpo, conexiones mudas cortadas a los
+  30 s, y se rechazan las que modifican datos desde otro sitio web.
+- **Errores:** el navegador recibe un mensaje genérico; el detalle va solo
+  al log de Render.
+
+Lo que depende del dueño: contraseñas largas (12+ caracteres, el servidor
+avisa al arrancar si son cortas) y distintas para `STAFF_PASSWORD` y
+`ADMIN_PASSWORD`, y no compartir la de admin con el personal de sala.
+
 ## Galería de fotos y pantalla de bienvenida
 
 El sitio de clientes (`index.html`) puede mostrar fotos reales del
@@ -534,6 +576,18 @@ Render).
   reales conviene mover el almacenamiento a algo persistente** (un disco
   persistente de Render, ~$7/mes, o una base de datos). Avísame cuando
   llegue ese momento y lo dejamos resuelto.
+
+## Operación, respaldos y pruebas
+
+Todo lo necesario para mantener el sitio en pie (variables de entorno,
+monitoreo con `/healthz`, respaldos diarios cifrados, limpieza de datos,
+dominio propio y qué hacer si algo falla) está en **`OPERACION.md`**.
+
+Pruebas automáticas, sin instalar nada:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
 
 ## Otros siguientes pasos sugeridos
 

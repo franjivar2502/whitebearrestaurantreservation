@@ -1,0 +1,77 @@
+/*
+ * Página de políticas (legal.html). Hereda la paleta y la tipografía de
+ * style.css; aquí solo va lo propio de un texto largo para leer.
+ */
+/* Texto largo: la cabecera no se queda fija, para que no tape los títulos
+   al saltar a una sección (en el móvil ocupa casi un tercio de pantalla). */
+.legal-page header.hero {
+  position: relative;
+}
+
+.legal-back {
+  display: inline-block;
+  margin: 18px 0 4px;
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.legal-draft {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface-solid));
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.legal-doc h1 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 2rem;
+  margin: 18px 0 4px;
+}
+
+.legal-doc h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.5rem;
+  margin: 0 0 6px;
+  scroll-margin-top: 90px;
+}
+
+.legal-doc h3 {
+  font-size: 1rem;
+  margin: 22px 0 6px;
+  scroll-margin-top: 90px;
+}
+
+.legal-doc p,
+.legal-doc li {
+  line-height: 1.6;
+}
+
+.legal-doc .updated {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 6px;
+}
+
+.legal-doc .toc {
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+.legal-doc a {
+  color: var(--brand-dark);
+}
+
+/* Datos que el dueño debe completar. Resaltados para que nadie los pase por
+   alto: buscar class="fill" en este archivo da la lista completa. */
+.legal-doc mark.fill {
+  background: color-mix(in srgb, var(--warning) 22%, transparent);
+  color: inherit;
+  padding: 0 3px;
+  border-radius: 3px;
+}

@@ -42,7 +42,7 @@
   let pollTimer = null;
   let lastSeenIds = new Set();
   let firstLoad = true;
-  let currentView = "reservations"; // reservations | tables
+  let currentView = "reservations"; // reservations | tables | site
   let tables = [];
   let rooms = [];
   let totalSeats = 0;
@@ -62,6 +62,7 @@
     renderBookingToggle();
     render();
     if (currentView === "tables" && tables.length) renderTables(totalSeats, availableSeats);
+    renderSiteSettings();
   });
 
   function todayIso() {
@@ -352,8 +353,120 @@
       currentView = tab.getAttribute("data-view");
       reservationsView.hidden = currentView !== "reservations";
       tablesView.hidden = currentView !== "tables";
+      siteView.hidden = currentView !== "site";
       if (currentView === "tables") fetchTables();
+      if (currentView === "site") fetchSiteSettings();
     });
+  });
+
+  /*
+   * Pestaña "Sitio web": cerrar el sitio de clientes y reservas 24/7.
+   * Cambiar un ajuste pide la contraseña de administración una vez por
+   * sesión del navegador (si el panel ya entra con contraseña de staff, esa
+   * basta y no se pregunta nada).
+   */
+  const siteView = document.getElementById("site-view");
+  const siteBanner = document.getElementById("site-offline-banner");
+  const sitePublicState = document.getElementById("site-public-state");
+  const sitePublicToggle = document.getElementById("site-public-toggle");
+  const siteAnyTimeState = document.getElementById("site-anytime-state");
+  const siteAnyTimeToggle = document.getElementById("site-anytime-toggle");
+  const PANEL_PASSWORD_KEY = "wb-panel-password";
+  let siteSettings = null;
+
+  function panelPassword() {
+    try {
+      return sessionStorage.getItem(PANEL_PASSWORD_KEY) || "";
+    } catch (err) {
+      return "";
+    }
+  }
+
+  function panelHeaders() {
+    const pw = panelPassword();
+    return pw ? { "X-Admin-Password": pw } : {};
+  }
+
+  async function fetchSiteSettings() {
+    try {
+      const res = await fetch("/api/site-settings", { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      siteSettings = await res.json();
+      renderSiteSettings();
+    } catch (err) {
+      // Falla silenciosa: se reintenta en el próximo ciclo.
+    }
+  }
+
+  function renderSiteSettings() {
+    if (!siteSettings) return;
+    const offline = !!siteSettings.publicSiteOffline;
+    const anyTime = !!siteSettings.bookingAlwaysOpen;
+    siteBanner.hidden = !offline;
+
+    sitePublicState.textContent = tabletI18n.t(offline ? "site.offline" : "site.online");
+    sitePublicState.classList.toggle("is-off", offline);
+    sitePublicToggle.textContent = tabletI18n.t(offline ? "site.reopen" : "site.close");
+    sitePublicToggle.classList.toggle("is-danger", !offline);
+
+    siteAnyTimeState.textContent = tabletI18n.t(anyTime ? "site.anyTimeOn" : "site.anyTimeOff");
+    siteAnyTimeState.classList.toggle("is-off", !anyTime);
+    siteAnyTimeToggle.textContent = tabletI18n.t(anyTime ? "site.disableAnyTime" : "site.enableAnyTime");
+  }
+
+  async function saveSiteSetting(changes, button) {
+    button.disabled = true;
+    try {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const res = await fetch("/api/site-settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...panelHeaders() },
+          body: JSON.stringify(changes),
+        });
+        if (res.status === 401) {
+          if (attempt > 0) showToast(tabletI18n.t("site.wrongPassword"));
+          const pw = window.prompt(tabletI18n.t("site.passwordPrompt"));
+          if (!pw) return;
+          try {
+            sessionStorage.setItem(PANEL_PASSWORD_KEY, pw);
+          } catch (err) {
+            /* sin sessionStorage: se volverá a pedir */
+          }
+          continue;
+        }
+        if (!res.ok) throw new Error("bad status");
+        siteSettings = await res.json();
+        renderSiteSettings();
+        showToast(tabletI18n.t("site.saved"));
+        return;
+      }
+      showToast(tabletI18n.t("site.wrongPassword"));
+      try {
+        sessionStorage.removeItem(PANEL_PASSWORD_KEY);
+      } catch (err) {
+        /* ignorar */
+      }
+    } catch (err) {
+      showToast(tabletI18n.t("site.failed"));
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  sitePublicToggle.addEventListener("click", () => {
+    if (!siteSettings) return;
+    const closing = !siteSettings.publicSiteOffline;
+    if (closing && !window.confirm(tabletI18n.t("site.confirmClose"))) return;
+    saveSiteSetting({ publicSiteOffline: closing }, sitePublicToggle);
+  });
+
+  siteAnyTimeToggle.addEventListener("click", () => {
+    if (!siteSettings) return;
+    saveSiteSetting({ bookingAlwaysOpen: !siteSettings.bookingAlwaysOpen }, siteAnyTimeToggle);
+  });
+
+  document.getElementById("site-banner-manage").addEventListener("click", () => {
+    document.querySelector('.view-tab[data-view="site"]').click();
   });
 
   function applyFilters() {
@@ -449,7 +562,7 @@
           <div class="res-sub">
             <span>${icon("phone")}${escapeHtml(r.phone)}</span>
             ${r.email ? `<span>${icon("mail")}${escapeHtml(r.email)}</span>` : ""}
-            <span>${icon("hash")}${escapeHtml(r.id)}</span>
+            <span>${icon("hash")}${escapeHtml(String(r.id).slice(0, 8))}</span>
           </div>
           ${r.notes ? `<div class="res-notes">${icon("note")}<span>${escapeHtml(r.notes)}</span></div>` : ""}
           ${
@@ -537,6 +650,35 @@
     if (devolverFoco) newResBtn.focus();
   }
 
+  // Horario real del local, para no proponer horas a las que está cerrado.
+  const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  let horario = null;
+  fetch("/api/restaurant", { cache: "no-store" })
+    .then((r) => r.json())
+    .then((d) => {
+      horario = d.hours || null;
+    })
+    .catch(() => {});
+
+  function horasDelDia(iso) {
+    if (!horario || (siteSettings && siteSettings.bookingAlwaysOpen)) return null;
+    const [y, m, d] = iso.split("-").map(Number);
+    return horario[DAY_KEYS[new Date(y, m - 1, d).getDay()]] || null;
+  }
+
+  function aplicarHorario(iso) {
+    const h = horasDelDia(iso);
+    const campo = newResForm.elements.time;
+    if (h) {
+      campo.min = h.open;
+      campo.max = h.close;
+    } else {
+      campo.removeAttribute("min");
+      campo.removeAttribute("max");
+    }
+    return h;
+  }
+
   function openNewRes() {
     newResForm.reset();
     newResAlert.hidden = true;
@@ -550,8 +692,18 @@
     // propuesta siempre vale y el encargado la cambia si hace falta.
     const ahora = new Date();
     ahora.setMinutes(Math.ceil((ahora.getMinutes() + 15) / 15) * 15, 0, 0);
-    newResForm.elements.time.value =
+    const propuesta =
       `${String(ahora.getHours()).padStart(2, "0")}:${String(ahora.getMinutes()).padStart(2, "0")}`;
+    const abierto24h = !!(siteSettings && siteSettings.bookingAlwaysOpen);
+    // Pasada la medianoche, la franja propuesta ya es de mañana.
+    if (abierto24h && ahora.getDate() !== new Date().getDate()) {
+      newResForm.elements.date.value = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(ahora.getDate()).padStart(2, "0")}`;
+    }
+    newResForm.elements.time.value = abierto24h
+      ? propuesta
+      : !h || propuesta < h.open || propuesta > h.close
+        ? ""
+        : propuesta;
 
     newResPopover.hidden = false;
     newResBtn.setAttribute("aria-expanded", "true");
@@ -592,7 +744,9 @@
     try {
       const res = await fetch("/api/reservations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        // Con la contraseña, el personal puede seguir apuntando reservas
+        // telefónicas aunque el sitio público esté cerrado.
+        headers: { "Content-Type": "application/json", ...panelHeaders() },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -637,9 +791,12 @@
 
   fetchReservations();
   fetchBookingState();
+  fetchSiteSettings();
   pollTimer = setInterval(() => {
     fetchReservations();
     fetchBookingState();
     if (currentView === "tables") fetchTables();
   }, 5000);
+  // El aviso de "sitio cerrado" se mantiene al día aunque lo cambie otra tablet.
+  setInterval(fetchSiteSettings, 30000);
 })();
