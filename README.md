@@ -458,6 +458,33 @@ todas las tablets: el panel lo relee cada 5 segundos, de modo que si
 alguien lo apaga desde otro dispositivo, los demás se enteran solos. Por
 omisión está encendido.
 
+## Seguridad del sitio
+
+Lo que el servidor hace solo, sin configurar nada (`security.py` y `server.py`):
+
+- **Fuerza bruta:** 10 contraseñas de staff/admin equivocadas desde la
+  misma conexión bloquean esa conexión 15 minutos (responde 429, también si
+  después acierta). El resto de conexiones sigue entrando normal.
+- **Spam:** como mucho 10 reservaciones por hora y 5 reseñas por hora desde
+  la misma conexión (la tablet del staff no tiene tope). Ambos formularios
+  llevan un campo trampa invisible que solo llenan los bots.
+- **Códigos de reservación:** los nuevos son de 32 caracteres (imposibles de
+  adivinar); al cliente se le muestra solo el inicio. Con el código solo se
+  ve nombre, fecha, hora y personas, nunca teléfono ni correo, y las
+  consultas por código tienen tope por conexión.
+- **Fotos de reseñas:** se acepta un archivo solo si su contenido es de
+  verdad JPG, PNG, GIF o WebP (no basta con la extensión).
+- **Cabeceras:** política de contenido (solo se ejecutan scripts del propio
+  sitio), prohibido meter el sitio en un iframe, `nosniff`, HSTS en https.
+- **Peticiones:** tope de tamaño del cuerpo, conexiones mudas cortadas a los
+  30 s, y se rechazan las que modifican datos desde otro sitio web.
+- **Errores:** el navegador recibe un mensaje genérico; el detalle va solo
+  al log de Render.
+
+Lo que depende del dueño: contraseñas largas (12+ caracteres, el servidor
+avisa al arrancar si son cortas) y distintas para `STAFF_PASSWORD` y
+`ADMIN_PASSWORD`, y no compartir la de admin con el personal de sala.
+
 ## Galería de fotos y pantalla de bienvenida
 
 El sitio de clientes (`index.html`) puede mostrar fotos reales del

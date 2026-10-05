@@ -78,7 +78,7 @@
         body: JSON.stringify({ password }),
       });
       if (!res.ok) {
-        alertEl.textContent = tabletI18n.t("login.wrong");
+        alertEl.textContent = tabletI18n.t(res.status === 429 ? "login.tooMany" : "login.wrong");
         alertEl.hidden = false;
         input.select();
         return;

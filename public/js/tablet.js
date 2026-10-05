@@ -449,7 +449,7 @@
           <div class="res-sub">
             <span>${icon("phone")}${escapeHtml(r.phone)}</span>
             ${r.email ? `<span>${icon("mail")}${escapeHtml(r.email)}</span>` : ""}
-            <span>${icon("hash")}${escapeHtml(r.id)}</span>
+            <span>${icon("hash")}${escapeHtml(String(r.id).slice(0, 8))}</span>
           </div>
           ${r.notes ? `<div class="res-notes">${icon("note")}<span>${escapeHtml(r.notes)}</span></div>` : ""}
           ${

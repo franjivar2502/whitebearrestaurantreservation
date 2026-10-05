@@ -489,6 +489,7 @@
       seatingPreference: form.seatingPreference.value,
       preOrder,
       preOrderNotes: groupMenuSection.hidden ? "" : preOrderNotesInput.value.trim(),
+      website: form.website.value,
     };
 
     try {
@@ -528,7 +529,7 @@
               )}</dd>`
             : ""
         }
-        <dt>${i18n.t("confirmation.code")}</dt><dd>#${escapeHtml(data.id)}</dd>
+        <dt>${i18n.t("confirmation.code")}</dt><dd>#${escapeHtml(String(data.id).slice(0, 8))}</dd>
         ${
           data.preOrder && data.preOrder.length
             ? `<dt>${i18n.t("confirmation.preorder")}</dt><dd>${data.preOrder

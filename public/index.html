@@ -119,6 +119,11 @@
 
   <form id="reservation-form" novalidate>
     <p class="section-title" data-i18n="form.title">Reserve your table</p>
+    <!-- Trampa para bots: invisible para personas, los robots que llenan todo la completan. -->
+    <div class="hp-field" aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden">
+      <label for="res-website">Website</label>
+      <input type="text" id="res-website" name="website" tabindex="-1" autocomplete="off" />
+    </div>
 
     <div id="form-alert"></div>
 
@@ -263,6 +268,11 @@
 
       <form id="review-form" novalidate>
         <div id="review-alert"></div>
+        <!-- Trampa para bots: invisible para personas, los robots que llenan todo la completan. -->
+        <div class="hp-field" aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden">
+          <label for="review-website">Website</label>
+          <input type="text" id="review-website" name="website" tabindex="-1" autocomplete="off" />
+        </div>
         <div class="form-grid">
           <div class="field">
             <label for="review-name" data-i18n="reviews.formName">Your name *</label>
