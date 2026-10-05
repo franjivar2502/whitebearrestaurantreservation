@@ -223,9 +223,15 @@
       sat: { open: "11:00", close: "21:30" },
       sun: { open: "11:00", close: "21:00" },
     },
+    lastSeatingBufferMinutes: 15,
     maxPartySize: 40,
     phone: "(518) 302-5235",
   };
+
+  // Hora de pared del restaurante según el servidor (no la del dispositivo del
+  // cliente, que puede estar en otra zona horaria). Se guarda junto con el
+  // instante en que se leyó para avanzarla con el reloj del navegador.
+  let restaurantClock = null; // { iso: "AAAA-MM-DDTHH:MM", readAt: ms }
 
   function showAlert(errors) {
     alertBox.innerHTML = "";
@@ -332,13 +338,63 @@
       .join("");
   }
 
-  /* Se reservan mesas a cualquier hora de cualquier día (24/7): el campo de
-     hora no lleva min/max. El horario del restaurante se muestra arriba solo
-     como información. */
+  const SLOT_MINUTES = 15;
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const toMinutes = (hhmm) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const fromMinutes = (total) => `${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`;
+
+  // { date, minutes } del restaurante ahora mismo, o null si el servidor no respondió.
+  function restaurantNow() {
+    if (!restaurantClock) return null;
+    const [datePart, timePart] = restaurantClock.iso.split("T");
+    const [y, mo, d] = datePart.split("-").map(Number);
+    const [h, mi] = timePart.split(":").map(Number);
+    // UTC solo como calendario: evita saltos por cambio de horario del dispositivo.
+    const t = new Date(Date.UTC(y, mo - 1, d, h, mi) + (Date.now() - restaurantClock.readAt));
+    return {
+      date: `${t.getUTCFullYear()}-${pad2(t.getUTCMonth() + 1)}-${pad2(t.getUTCDate())}`,
+      minutes: t.getUTCHours() * 60 + t.getUTCMinutes(),
+    };
+  }
+
+  /* La lista de horas ofrece solo las válidas de la fecha elegida: desde la
+     apertura hasta 15 minutos antes del cierre, cada 15 minutos, y para hoy
+     solo las que aún no han pasado. El servidor vuelve a validarlo. */
   function updateTimeConstraints() {
-    timeInput.removeAttribute("min");
-    timeInput.removeAttribute("max");
-    timeHint.textContent = i18n.t("form.timeHintAnyTime");
+    const previous = timeInput.value;
+    const dateIso = dateInput.value;
+    const dayKey = dateIso ? i18n.dayKeyForDate(dateIso) : null;
+    const dayHours = dayKey && restaurantInfo.hours[dayKey];
+    const options = [];
+    let lastSeating = null;
+
+    if (dayHours) {
+      const start = toMinutes(dayHours.open);
+      const end = toMinutes(dayHours.close) - restaurantInfo.lastSeatingBufferMinutes;
+      lastSeating = fromMinutes(end);
+      const now = restaurantNow();
+      for (let m = start; m <= end; m += SLOT_MINUTES) {
+        if (now && now.date === dateIso && m <= now.minutes) continue;
+        options.push(fromMinutes(m));
+      }
+    }
+
+    const placeholder = dayHours && !options.length ? i18n.t("form.noTimesToday") : i18n.t("form.timeSelect");
+    timeInput.innerHTML =
+      `<option value="">${escapeHtml(placeholder)}</option>` +
+      options.map((v) => `<option value="${v}">${escapeHtml(i18n.formatTime(v))}</option>`).join("");
+    if (options.includes(previous)) timeInput.value = previous;
+
+    timeHint.textContent = dayHours
+      ? i18n.t("form.timeHint", {
+          day: i18n.dayName(dayKey),
+          open: i18n.formatTime(dayHours.open),
+          close: i18n.formatTime(lastSeating),
+        })
+      : "";
   }
 
   dateInput.addEventListener("change", updateTimeConstraints);
@@ -385,6 +441,7 @@
     .then((res) => res.json())
     .then((data) => {
       if (data && data.hours) restaurantInfo = data;
+      if (data && data.now) restaurantClock = { iso: data.now, readAt: Date.now() };
     })
     .catch(() => {})
     .finally(renderAll);
@@ -563,6 +620,7 @@
   newReservationBtn.addEventListener("click", () => {
     form.reset();
     dateInput.value = `${yyyy}-${mm}-${dd}`;
+    updateTimeConstraints();
     form.style.display = "block";
     confirmation.style.display = "none";
     clearAlert();

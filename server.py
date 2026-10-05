@@ -56,8 +56,14 @@ RESTAURANT = {
         "sat": {"open": "11:00", "close": "21:30"},
         "sun": {"open": "11:00", "close": "21:00"},
     },
+    # Última hora para reservar: 15 minutos antes del cierre. Se reserva desde
+    # la apertura hasta esa hora; fuera de ese rango el servidor rechaza la
+    # reserva (y los formularios ni siquiera ofrecen esas horas).
+    "lastSeatingBufferMinutes": 15,
     "maxPartySize": 40,
 }
+
+DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 VALID_STATUSES = {"pending", "confirmed", "seated", "completed", "cancelled"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -348,6 +354,17 @@ def _today():
     return _now().date()
 
 
+def _hours_for_date(d):
+    """Devuelve (hora_apertura, hora_cierre, última_hora_para_reservar) para la fecha dada."""
+    day_hours = RESTAURANT["hours"][DAY_KEYS[d.weekday()]]
+    open_t = datetime.strptime(day_hours["open"], "%H:%M").time()
+    close_t = datetime.strptime(day_hours["close"], "%H:%M").time()
+    last_seating_dt = datetime.combine(d, close_t) - timedelta(
+        minutes=RESTAURANT["lastSeatingBufferMinutes"]
+    )
+    return open_t, close_t, last_seating_dt.time()
+
+
 _lock = threading.Lock()
 
 
@@ -461,10 +478,20 @@ def _validate_reservation(payload):
     ):
         errors.append({"code": "TIME_PAST"})
 
-    # A propósito no se valida que la hora caiga dentro del horario de
-    # apertura: se aceptan reservaciones para cualquier hora de cualquier día
-    # (24/7). El horario de RESTAURANT["hours"] se publica como información
-    # para el cliente, no como una regla que rechace la reserva.
+    # Solo se reserva dentro del horario de apertura, hasta 15 minutos antes
+    # del cierre (RESTAURANT["lastSeatingBufferMinutes"]): ese día a esa hora.
+    if parsed_date and parsed_time:
+        open_t, _close_t, last_t = _hours_for_date(parsed_date)
+        if not (open_t <= parsed_time <= last_t):
+            errors.append(
+                {
+                    "code": "TIME_OUT_OF_HOURS",
+                    "params": {
+                        "open": open_t.strftime("%H:%M"),
+                        "close": last_t.strftime("%H:%M"),
+                    },
+                }
+            )
 
     try:
         if isinstance(party_size, bool):
@@ -749,7 +776,16 @@ class Handler(BaseHTTPRequestHandler):
             # agenda está cerrada antes de que el cliente llene todo.
             with _lock:
                 booking_enabled = _bookings_open()
-            self._send_json({**RESTAURANT, "bookingEnabled": booking_enabled})
+            # "now" es la hora de pared del restaurante (no la del cliente): el
+            # formulario la usa para no ofrecer las horas de hoy que ya pasaron,
+            # aunque quien reserva esté en otra zona horaria.
+            self._send_json(
+                {
+                    **RESTAURANT,
+                    "bookingEnabled": booking_enabled,
+                    "now": _now().isoformat(timespec="minutes"),
+                }
+            )
             return
         if parsed.path == "/api/photos":
             with _lock:

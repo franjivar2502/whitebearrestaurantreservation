@@ -2,6 +2,7 @@
 
 import threading
 import unittest
+import unittest.mock
 from datetime import timedelta
 
 from helpers import STAFF_HEADERS, ServerTestCase, next_open_day, server
@@ -51,20 +52,55 @@ class CreateReservationTests(ServerTestCase):
         self.assertRejected("PARTY_SIZE_INVALID", partySize="muchos")
         self.assertRejected("NOTES_TOO_LONG", notes="x" * (server.MAX_NOTES_LENGTH + 1))
 
-    def test_any_time_is_accepted_24_7(self):
-        for t in ("00:00", "03:30", "08:00", "23:45"):
-            self.assertEqual(self.book(time=t)[0], 201, t)
+    @staticmethod
+    def next_weekday(weekday, min_days=3):
+        """La próxima fecha futura que cae en ese día de la semana (0 = lunes)."""
+        d = server._today() + timedelta(days=min_days)
+        while d.weekday() != weekday:
+            d += timedelta(days=1)
+        return d.isoformat()
+
+    def test_only_opening_hours_are_accepted(self):
+        monday = self.next_weekday(0)
+        # Abre a las 11:00 y la última reserva es 15 minutos antes del cierre (21:00).
+        for t in ("00:00", "03:30", "10:45", "20:46", "21:00", "23:45"):
+            self.assertRejected("TIME_OUT_OF_HOURS", date=monday, time=t)
+        for t in ("11:00", "11:15", "15:00", "20:30", "20:45"):
+            self.assertEqual(self.book(date=monday, time=t)[0], 201, t)
+
+    def test_friday_and_saturday_close_half_an_hour_later(self):
+        for weekday in (4, 5):  # viernes y sábado: cierran 21:30, última reserva 21:15
+            day = self.next_weekday(weekday)
+            self.assertRejected("TIME_OUT_OF_HOURS", date=day, time="21:16")
+            self.assertRejected("TIME_OUT_OF_HOURS", date=day, time="21:30")
+            self.assertEqual(self.book(date=day, time="21:15")[0], 201, day)
+        # El domingo cierra a las 21:00, como entre semana.
+        sunday = self.next_weekday(6)
+        self.assertRejected("TIME_OUT_OF_HOURS", date=sunday, time="21:00")
+        self.assertEqual(self.book(date=sunday, time="20:45")[0], 201)
+
+    def test_out_of_hours_error_tells_the_range(self):
+        monday = self.next_weekday(0)
+        _, body = self.book(date=monday, time="03:00")
+        error = next(e for e in body["errors"] if e["code"] == "TIME_OUT_OF_HOURS")
+        self.assertEqual(error["params"], {"open": "11:00", "close": "20:45"})
+
+    def test_api_restaurant_publishes_hours_and_current_time(self):
+        _, info = self.request("GET", "/api/restaurant")
+        self.assertEqual(info["lastSeatingBufferMinutes"], 15)
+        self.assertEqual(info["hours"]["mon"], {"open": "11:00", "close": "21:00"})
+        # La hora de pared del restaurante, con formato AAAA-MM-DDTHH:MM.
+        self.assertRegex(info["now"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$")
 
     def test_time_already_passed_today_is_rejected(self):
-        now = server._now()
-        if now.hour < 1:
-            self.skipTest("Cerca de medianoche no hay una hora de hoy una hora atrás.")
-        past = (now - server.timedelta(minutes=60)).strftime("%H:%M")
-        self.assertRejected("TIME_PAST", date=now.date().isoformat(), time=past)
-        # Unos minutos atrás sí se admite: alguien que acaba de sentarse.
-        recent = (now - server.timedelta(minutes=5)).strftime("%H:%M")
-        if recent < now.strftime("%H:%M"):
-            self.assertEqual(self.book(date=now.date().isoformat(), time=recent)[0], 201)
+        # Reloj fijo a las 15:00 de hoy: así la prueba no depende de la hora a
+        # la que se corra (fuera del horario cualquier hora sería rechazada).
+        fixed = server.datetime.combine(server._today(), server.datetime.strptime("15:00", "%H:%M").time())
+        today = fixed.date().isoformat()
+        with unittest.mock.patch.object(server, "_now", lambda: fixed):
+            self.assertRejected("TIME_PAST", date=today, time="14:00")
+            # Unos minutos atrás sí se admite: alguien que acaba de sentarse.
+            self.assertEqual(self.book(date=today, time="14:45")[0], 201)
 
     def test_invalid_json_is_rejected(self):
         status, _ = self.request(

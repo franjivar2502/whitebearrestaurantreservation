@@ -163,8 +163,13 @@
       </div>
       <div class="field">
         <label for="time" data-i18n="form.time">Time *</label>
-        <input type="time" id="time" name="time" required step="900" />
-        <span class="hint" id="time-hint">Pick any time — we take reservations around the clock.</span>
+        <!-- Lista y no <input type="time">: en iPhone y Android el selector de
+             hora ignora min/max y deja elegir cualquier hora. Esta lista se
+             llena con las horas válidas de la fecha elegida (app.js). -->
+        <select id="time" name="time" required>
+          <option value="">—</option>
+        </select>
+        <span class="hint" id="time-hint"></span>
       </div>
       <div class="field">
         <label for="partySize" data-i18n="form.partySize">Party size *</label>

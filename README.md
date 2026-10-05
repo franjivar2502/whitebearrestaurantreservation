@@ -29,7 +29,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 (repo: https://github.com/franjivar2502/whitebearrestaurantreservation)
 
 **✅ Ya construido y probado:**
-- Formulario de reservaciones (a cualquier hora, 24/7) con validación de fecha y tamaño de grupo.
+- Formulario de reservaciones con validación de horario por día, fecha y tamaño de grupo.
 - **Disponibilidad real por asientos** (128 en 25 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
 - Preferencia de mesa adentro/afuera (opcional) en el formulario de reservación.
 - Panel de tablet en tiempo real (se actualiza solo, sin recargar), con una pestaña nueva "Tables"/"Mesas" para que el staff marque mesas fuera de servicio.
@@ -277,24 +277,27 @@ computadora que corre el servidor en tu red local (por ejemplo
 
 ## Horario y reglas configuradas
 
-- **Se reservan mesas a cualquier hora, cualquier día (24/7).** El servidor
-  no rechaza una reserva por caer fuera del horario de apertura, y el campo
-  de hora del formulario no tiene tope ni por arriba ni por abajo.
-- El horario publicado (lunes a jueves y domingo 11:00 a.m. – 9:00 p.m.;
-  viernes y sábado 11:00 a.m. – 9:30 p.m.) se sigue mostrando en el sitio,
-  pero como **información para el cliente**, no como una regla que rechace
-  la reserva.
+- **Solo se reserva dentro del horario de apertura, hasta 15 minutos antes
+  del cierre.** Lunes a jueves y domingo: de 11:00 a.m. a 8:45 p.m. (cierra a
+  las 9:00 p.m.). Viernes y sábado: de 11:00 a.m. a 9:15 p.m. (cierra a las
+  9:30 p.m.). El servidor rechaza cualquier otra hora (`TIME_OUT_OF_HOURS`).
+- **La barra de horas solo ofrece las horas válidas.** El campo de hora del
+  formulario del sitio y el del alta rápida del panel son listas (no el
+  selector nativo de hora, que en iPhone/Android ignora `min`/`max`): se
+  llenan con las horas de ese día cada 15 minutos y cambian al elegir otra
+  fecha. Para hoy, el sitio solo ofrece las que aún no han pasado (según la
+  hora del restaurante, no la del dispositivo del cliente) y el panel admite
+  hasta 30 minutos atrás, para quien acaba de sentarse.
 - Grupos de 1 a 40 personas (para grupos más grandes se sugiere llamar).
 - No se permiten fechas pasadas, ni más de 6 meses de anticipación.
-- Lo que sí limita una reserva: los asientos libres a esa hora (ver "Mesas
+- Además del horario, limita una reserva: los asientos libres a esa hora (ver "Mesas
   y disponibilidad real") y el interruptor de reservaciones del panel (ver
   "Acceso del staff").
 
-Estos valores están en el diccionario `RESTAURANT` al inicio de `server.py`.
-Si algún día se quiere volver a cerrar la reserva fuera de horario, hay que
-reponer la validación en `_validate_reservation` (hoy lleva un comentario
-en el sitio exacto donde iba) y devolver los `min`/`max` al campo de hora
-en `public/js/app.js` y `public/js/tablet.js`.
+Estos valores están en el diccionario `RESTAURANT` al inicio de `server.py`
+(`hours` por día y `lastSeatingBufferMinutes`, que hoy es 15). Cambiarlos ahí
+basta: el servidor, el formulario del sitio y el del panel leen el horario de
+`/api/restaurant`.
 
 ## Persistencia de datos (Supabase)
 
