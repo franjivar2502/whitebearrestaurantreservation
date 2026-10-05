@@ -109,7 +109,17 @@
 </header>
 
 <div class="hero-photo">
-  <img src="images/mountain-bg.jpg" alt="View from the Whiteface Mountain summit over the Adirondack High Peaks" width="1125" height="2000" />
+  <img class="hero-photo-img" src="images/mountain-bg.jpg" alt="View from the Whiteface Mountain summit over the Adirondack High Peaks" width="1125" height="2000" />
+  <!-- Logo del restaurante sobre la cumbre. Tres anchos en WebP (con PNG de
+       respaldo) para que cada pantalla baje solo lo que necesita: el óvalo
+       se dibuja a ~340 px como máximo, así que 960 cubre pantallas 2x y
+       1483 las 3x/4K. El tamaño se fija con width/height para no mover la página al cargar. -->
+  <picture class="hero-logo">
+    <source type="image/webp"
+            srcset="images/logo-oval-480.webp 480w, images/logo-oval-960.webp 960w, images/logo-oval-1483.webp 1483w"
+            sizes="(max-width: 520px) 70vw, 340px" />
+    <img src="images/logo-oval-960.png" alt="White Bear Restaurant — est. 2023" width="960" height="669" decoding="async" />
+  </picture>
 </div>
 <p class="establishment-line" data-i18n="establishment">White Bear Restaurant · Lake Placid, NY · Since 2023</p>
 
