@@ -206,61 +206,92 @@ def _parse_multipart(body, boundary):
 # dos salones separados por un pasillo. El izquierdo tiene la entrada, la
 # barra y el baño; el derecho es el comedor del fondo.
 #
-# Cada fila es (id, forma, asientos, número, salón, x, y). x e y son el centro
-# de la mesa en % del ancho y del alto del salón -- es un esquema para que el
-# staff ubique la mesa de un vistazo, no un plano a escala. El id no depende
-# de la posición ni del número, así que mover o renumerar una mesa aquí no
-# invalida las que el staff dejó marcadas como no disponibles.
+# El plano es un esquema ordenado sobre una CUADRÍCULA, no un plano a escala.
+# Cada salón mide ROOM_UNITS (en "unidades"; 1 unidad = 1% del ancho del
+# salón del fondo) y el panel lo dibuja con esa misma proporción, así que un
+# cuadrado se ve cuadrado en cualquier pantalla. Reglas que lo mantienen
+# armonioso, y que _build_tables comprueba al arrancar:
+#   - Todas las mesas tienen el mismo fondo (TABLE_DEPTH). El largo crece con
+#     los asientos: cuadrada de 4 = 14, rectangular = 6 + 4 por asiento
+#     (4 → 22, 6 → 30, 10 → 46, 12 → 54).
+#   - Las filas están a la misma distancia (ROW_PITCH) y las columnas pegadas
+#     a los muros comparten el mismo margen (WALL_MARGIN): a la izquierda las
+#     mesas se alinean por su borde izquierdo y a la derecha por el derecho.
+#   - Ninguna mesa se sale del salón ni se encima con otra.
 #
-# Inventario: 11 cuadradas de 4, 7 rectangulares de 4, 6 rectangulares de 6,
-# 1 de 12 y 1 de 10 = 26 mesas, 130 asientos. El desglose que dio el cliente
-# al principio sumaba 122 con 9 cuadradas, pero de palabra siempre dijo 130;
-# al revisar el mapa del salón aparecieron dos cuadradas más en el grupo de
-# la entrada (el 2x2 junto a la ventana), que son justo los 8 asientos que
-# faltaban. 130 es ahora el tope que el sitio de clientes puede vender.
+# Cada fila es (id, forma, asientos, número, salón, x, y). x e y son el CENTRO
+# de la mesa en unidades. El id no depende de la posición ni del número, así
+# que mover o renumerar una mesa aquí no invalida las que el staff dejó
+# marcadas como no disponibles.
+#
+# Inventario: 10 cuadradas de 4, 5 rectangulares de 4, 8 de 6, 1 de 10 y 1 de
+# 12 = 25 mesas, 130 asientos (el cliente siempre dijo 130 de palabra).
 #
 # 2026-10-05: el cliente aclaró que la mesa 21 es de 6 asientos (la 16 ya lo
-# era), no de 4: el plano pasa de 128 a 130 asientos, que es la cifra que el
-# cliente daba de palabra. Su id sigue siendo "rect4-4" a propósito: el estado
-# "no disponible" se guarda por id, y renombrarlo dejaría la mesa desmarcada.
+# era), no de 4. Su id sigue siendo "rect4-4" a propósito: el estado "no
+# disponible" se guarda por id, y renombrarlo dejaría la mesa desmarcada.
 #
 # PENDIENTE DE CONFIRMAR CON EL CLIENTE -- hasta entonces esto es una lectura
 # del mapa, no un dato verificado:
 #   1. El mapa no trae números. Los asigné en orden de lectura: primero el
 #      salón de la entrada, de arriba hacia abajo, y después el del fondo.
 #   2. El mapa marca las rectangulares con "R" sin decir cuáles son de 4 y
-#      cuáles de 6. Puse las 5 de la pared derecha del salón de la entrada
-#      como las de 6 (más una del fondo), y el resto de 4.
+#      cuáles de 6.
 #   3. Cuál de las dos grandes es la de 12 y cuál la de 10: puse la de 12 en
 #      la del fondo (la más larga) y la de 10 en la del centro.
+ROOM_UNITS = {"left": (125, 156), "right": (100, 156)}  # (ancho, alto)
+TABLE_DEPTH = 14
+WALL_MARGIN = 8
+ROW_PITCH = 21
+_ROWS = [15 + ROW_PITCH * i for i in range(7)]  # 15, 36, 57, 78, 99, 120, 141
+
+
+def _table_length(shape, seats):
+    return TABLE_DEPTH if shape == "square" else 6 + 4 * seats
+
+
+def _left_x(shape, seats):  # columna pegada al muro izquierdo (borde izquierdo alineado)
+    return WALL_MARGIN + _table_length(shape, seats) / 2
+
+
+def _right_x(room, shape, seats):  # columna pegada al muro derecho (borde derecho alineado)
+    return ROOM_UNITS[room][0] - WALL_MARGIN - _table_length(shape, seats) / 2
+
+
+def _center_x(room):
+    return ROOM_UNITS[room][0] / 2
+
+
 TABLE_LAYOUT = [
     # --- Salón de la entrada (barra, entrada, baño) ---
-    ("square4-1", "square", 4, 1, "left", 8, 7),
-    ("square4-2", "square", 4, 2, "left", 26, 9),
-    ("square4-3", "square", 4, 3, "left", 69, 7),
-    ("square4-10", "square", 4, 4, "left", 9, 18),
-    ("square4-11", "square", 4, 5, "left", 27, 20),
-    ("rect6-1", "rect", 6, 6, "left", 78, 24),
-    ("rect6-2", "rect", 6, 7, "left", 78, 35),
-    ("rect6-3", "rect", 6, 8, "left", 78, 46),
-    ("rect4-8", "rect", 4, 9, "left", 78, 68),
-    ("rect4-9", "rect", 4, 10, "left", 78, 83),
-    # --- Salón del fondo ---
-    ("square4-4", "square", 4, 11, "right", 14, 7),
-    ("square4-5", "square", 4, 12, "right", 49, 7),
-    ("square4-6", "square", 4, 13, "right", 79, 7),
-    ("rect4-1", "rect", 4, 14, "right", 14, 21),
-    ("square4-7", "square", 4, 15, "right", 50, 21),
-    ("rect6-6", "rect", 6, 16, "right", 84, 21),
-    ("rect4-2", "rect", 4, 17, "right", 14, 33),
-    ("rect4-3", "rect", 4, 19, "right", 84, 33),
-    ("rect10-1", "rect", 10, 20, "right", 48, 48),
-    ("rect4-4", "rect", 6, 21, "right", 16, 63),  # el id conserva "rect4": ver nota abajo
-    ("square4-9", "square", 4, 22, "right", 52, 69),
-    ("rect6-7", "rect", 6, 23, "right", 82, 68),
-    ("rect6-8", "rect", 6, 24, "right", 24, 78),
-    ("rect6-9", "rect", 6, 25, "right", 81, 81),
-    ("rect12-1", "rect", 12, 26, "right", 47, 91),
+    # Bloque de 4 cuadradas junto a la ventana (2x2) y una columna de mesas
+    # contra el muro derecho, con el pasillo de la entrada en medio.
+    ("square4-1", "square", 4, 1, "left", _left_x("square", 4), _ROWS[0]),
+    ("square4-2", "square", 4, 2, "left", _left_x("square", 4) + 22, _ROWS[0]),
+    ("square4-3", "square", 4, 3, "left", _right_x("left", "square", 4), _ROWS[0]),
+    ("square4-10", "square", 4, 4, "left", _left_x("square", 4), _ROWS[1]),
+    ("square4-11", "square", 4, 5, "left", _left_x("square", 4) + 22, _ROWS[1]),
+    ("rect6-1", "rect", 6, 6, "left", _right_x("left", "rect", 6), _ROWS[1]),
+    ("rect6-2", "rect", 6, 7, "left", _right_x("left", "rect", 6), _ROWS[2]),
+    ("rect6-3", "rect", 6, 8, "left", _right_x("left", "rect", 6), _ROWS[3]),
+    ("rect4-8", "rect", 4, 9, "left", _right_x("left", "rect", 4), _ROWS[4]),
+    ("rect4-9", "rect", 4, 10, "left", _right_x("left", "rect", 4), _ROWS[5]),
+    # --- Salón del fondo: 7 filas, tres columnas (izquierda, centro, derecha) ---
+    ("square4-4", "square", 4, 11, "right", _left_x("square", 4), _ROWS[0]),
+    ("square4-5", "square", 4, 12, "right", _center_x("right"), _ROWS[0]),
+    ("square4-6", "square", 4, 13, "right", _right_x("right", "square", 4), _ROWS[0]),
+    ("rect4-1", "rect", 4, 14, "right", _left_x("rect", 4), _ROWS[1]),
+    ("square4-7", "square", 4, 15, "right", _center_x("right"), _ROWS[1]),
+    ("rect6-6", "rect", 6, 16, "right", _right_x("right", "rect", 6), _ROWS[1]),
+    ("rect4-2", "rect", 4, 17, "right", _left_x("rect", 4), _ROWS[2]),
+    ("rect4-3", "rect", 4, 19, "right", _right_x("right", "rect", 4), _ROWS[2]),
+    ("rect10-1", "rect", 10, 20, "right", _center_x("right"), _ROWS[3]),
+    ("rect4-4", "rect", 6, 21, "right", _left_x("rect", 6), _ROWS[4]),  # el id conserva "rect4": ver nota arriba
+    ("square4-9", "square", 4, 22, "right", _center_x("right"), _ROWS[4]),
+    ("rect6-7", "rect", 6, 23, "right", _right_x("right", "rect", 6), _ROWS[4]),
+    ("rect6-8", "rect", 6, 24, "right", _left_x("rect", 6), _ROWS[5]),
+    ("rect6-9", "rect", 6, 25, "right", _right_x("right", "rect", 6), _ROWS[5]),
+    ("rect12-1", "rect", 12, 26, "right", _center_x("right"), _ROWS[6]),
 ]
 
 # Orden en que se dibujan los salones en el panel, de izquierda a derecha.
@@ -268,18 +299,35 @@ ROOM_ORDER = ["left", "right"]
 
 
 def _build_tables():
-    tables = [
-        {
-            "id": table_id,
-            "shape": shape,
-            "seats": seats,
-            "number": number,
-            "room": room,
-            "x": x,
-            "y": y,
-        }
-        for table_id, shape, seats, number, room, x, y in TABLE_LAYOUT
-    ]
+    """Convierte la cuadrícula a lo que dibuja el panel: x, y, w, h en % del
+    salón. Falla al arrancar si el plano deja de ser ordenado."""
+    tables = []
+    boxes = {}
+    for table_id, shape, seats, number, room, cx, cy in TABLE_LAYOUT:
+        room_w, room_h = ROOM_UNITS[room]
+        length = _table_length(shape, seats)
+        left, right = cx - length / 2, cx + length / 2
+        top, bottom = cy - TABLE_DEPTH / 2, cy + TABLE_DEPTH / 2
+        if left < WALL_MARGIN - 1e-6 or right > room_w - WALL_MARGIN + 1e-6 or top < 0 or bottom > room_h:
+            raise ValueError(f"La mesa {number} se sale del salón {room}.")
+        for other_number, (l2, r2, t2, b2) in boxes.get(room, {}).items():
+            if left < r2 and l2 < right and top < b2 and t2 < bottom:
+                raise ValueError(f"Las mesas {number} y {other_number} se traslapan en el salón {room}.")
+        boxes.setdefault(room, {})[number] = (left, right, top, bottom)
+        tables.append(
+            {
+                "id": table_id,
+                "shape": shape,
+                "seats": seats,
+                "number": number,
+                "room": room,
+                # Centro y tamaño en % del salón (el panel los usa tal cual).
+                "x": round(cx / room_w * 100, 2),
+                "y": round(cy / room_h * 100, 2),
+                "w": round(length / room_w * 100, 2),
+                "h": round(TABLE_DEPTH / room_h * 100, 2),
+            }
+        )
 
     # El rótulo que ve el staff es este número: si se repite, dos mesas
     # distintas se ven iguales y alguien saca de servicio la que no era.
@@ -829,6 +877,7 @@ class Handler(BaseHTTPRequestHandler):
                 {
                     "tables": tables,
                     "rooms": ROOM_ORDER,
+                    "roomUnits": {r: {"w": w, "h": h} for r, (w, h) in ROOM_UNITS.items()},
                     "totalSeats": TOTAL_SEATS,
                     "availableSeats": available_seats,
                 }

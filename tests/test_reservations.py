@@ -109,6 +109,39 @@ class CreateReservationTests(ServerTestCase):
         self.assertEqual(by_number[21]["seats"], 6)
         self.assertEqual(server.TOTAL_SEATS, 130)
 
+    def test_floor_plan_is_an_ordered_grid(self):
+        depth = server.TABLE_DEPTH
+        for table in server.TABLES:
+            room_w, room_h = server.ROOM_UNITS[table["room"]]
+            # El panel dibuja con estos %: todas las mesas tienen el mismo fondo
+            # en unidades y las cuadradas son realmente cuadradas.
+            self.assertAlmostEqual(table["h"] / 100 * room_h, depth, delta=0.1, msg=table["number"])
+            if table["shape"] == "square":
+                self.assertAlmostEqual(table["w"] / 100 * room_w, depth, delta=0.1, msg=table["number"])
+        # Las filas del salón del fondo caen en la misma cuadrícula.
+        rows = {round(t["y"] / 100 * server.ROOM_UNITS["right"][1]) for t in server.TABLES if t["room"] == "right"}
+        self.assertEqual(sorted(rows), [15, 36, 57, 78, 99, 120, 141])
+
+    def test_floor_plan_rejects_overlapping_or_outside_tables(self):
+        overlapping = [
+            ("a", "square", 4, 1, "right", 50, 15),
+            ("b", "square", 4, 2, "right", 55, 15),  # encima de la anterior
+        ]
+        outside = [("c", "rect", 12, 3, "right", 10, 15)]  # se sale por el muro izquierdo
+        for layout in (overlapping, outside):
+            with unittest.mock.patch.object(server, "TABLE_LAYOUT", layout):
+                with self.assertRaises(ValueError):
+                    server._build_tables()
+
+    def test_api_tables_publishes_size_and_room_proportions(self):
+        status, body = self.staff("GET", "/api/tables")
+        self.assertEqual(status, 200)
+        self.assertEqual(body["roomUnits"]["left"], {"w": 125, "h": 156})
+        self.assertEqual(body["roomUnits"]["right"], {"w": 100, "h": 156})
+        for table in body["tables"]:
+            self.assertGreater(table["w"], 0)
+            self.assertGreater(table["h"], 0)
+
     def test_invalid_json_is_rejected(self):
         status, _ = self.request(
             "POST", "/api/reservations", raw=b"{no es json", headers={"Content-Type": "application/json"}

@@ -889,8 +889,9 @@ body.tablet-body :focus-visible {
 
 .floor-room-box {
   position: relative;
-  height: min(66vh, 720px);
-  min-height: 420px;
+  /* El alto sale de la proporción del salón (aspect-ratio, puesto en línea
+     desde las unidades del servidor): así las mesas conservan su forma. */
+  width: 100%;
   border: 2px solid var(--border-strong);
   border-radius: 8px;
   background: var(--surface-solid);
@@ -1025,14 +1026,16 @@ body.tablet-body :focus-visible {
     flex-direction: column;
     gap: 30px;
   }
+  /* Las mesas cuadradas quedan de ~45 px: el rótulo de asientos no se parte. */
+  .floor-table-seats {
+    white-space: nowrap;
+    font-size: 0.5rem;
+    letter-spacing: 0;
+  }
   .floor-room--left,
   .floor-room--right {
     flex: none;
     width: 100%;
-  }
-  .floor-room-box {
-    height: 78vw;
-    min-height: 380px;
   }
 }
 
