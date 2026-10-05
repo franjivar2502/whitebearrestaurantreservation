@@ -121,7 +121,7 @@ PAST_TIME_GRACE_MINUTES = 30
 # que acepta el cliente al marcar la casilla. Se guarda con cada reservación
 # y reseña como prueba de qué texto aceptó: al cambiar ese texto, cambiar
 # también esta fecha.
-LEGAL_TERMS_VERSION = "2026-10-05.2"
+LEGAL_TERMS_VERSION = "2026-10-05.3"
 
 NEGATIVE_REVIEW_KEYWORDS = {
     "terrible", "horrible", "pesimo", "pésimo", "asqueroso", "asquerosa",
