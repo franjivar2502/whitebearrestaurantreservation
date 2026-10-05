@@ -122,7 +122,7 @@ body::before {
   background: var(--surface-alt);
 }
 
-.hero-photo img {
+.hero-photo > img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -130,6 +130,34 @@ body::before {
      línea del horizonte -- la cumbre y las Altas Cumbres al fondo -- y no en
      el cielo ni en la barandilla del mirador. */
   object-position: center 46%;
+  display: block;
+}
+
+/* Logo sobre la foto. Se dimensiona por la ALTURA de la banda (72%) y no por
+   el ancho de la ventana: la banda va de 240 a 420 px según la pantalla, y un
+   óvalo con ancho fijo se salía de ella en móviles apaisados. El aspect-ratio
+   es el del archivo (1483x1034); el tope de ancho cubre los móviles
+   estrechos, y object-fit: contain evita deformarlo si el tope se aplica.
+   Va por encima del degradado inferior (z-index) para no teñirse de marfil. */
+.hero-logo {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  z-index: 2;
+  height: 72%;
+  aspect-ratio: 1483 / 1034;
+  max-width: 80%;
+  transform: translate(-50%, -50%);
+  display: block;
+  /* Sombra para despegarlo de la foto; sigue el contorno del óvalo. */
+  filter: drop-shadow(0 10px 22px rgba(4, 14, 30, 0.5));
+  pointer-events: none;
+}
+
+.hero-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   display: block;
 }
 
