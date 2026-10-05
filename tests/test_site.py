@@ -1,5 +1,6 @@
 """Reseñas, galería de fotos, páginas estáticas y salud del servicio."""
 
+import json
 import re
 import tempfile
 import time
@@ -276,6 +277,89 @@ class StaticCacheTests(ServerTestCase):
         self.assertEqual(headers["Cache-Control"], "no-cache")
         status, headers, _ = self.fetch("HEAD", "/tablet.html")
         self.assertEqual(int(headers["Content-Length"]), len(body))
+
+
+class HealthDiagnosisTests(ServerTestCase):
+    """/healthz explica por qué falla el almacenamiento, sin revelar secretos."""
+
+    def health_with_ping_error(self, exc):
+        def broken():
+            raise exc
+
+        original = server.storage.ping
+        server.storage.ping = broken
+        try:
+            return self.request("GET", "/healthz")
+        finally:
+            server.storage.ping = original
+
+    def test_bad_configuration_is_explained_without_the_value(self):
+        secret = "eyJ-clave-secreta"
+        for message_part, exc in (
+            ("SUPABASE_KEY", server.storage.ConfigError("La variable de entorno SUPABASE_KEY tiene un espacio")),
+            ("https://", server.storage.ConfigError("SUPABASE_URL debe empezar con https://")),
+        ):
+            status, health = self.health_with_ping_error(exc)
+            self.assertEqual(status, 503)
+            self.assertEqual(health["storage"], "error")
+            self.assertIn(message_part, health["problem"])
+            self.assertNotIn(secret, json.dumps(health))
+
+    def test_http_and_network_errors_get_a_plain_reason(self):
+        def http_error(code):
+            return urllib.error.HTTPError("https://x.supabase.co/rest/v1/reservations", code, "x", {}, None)
+
+        _, rejected = self.health_with_ping_error(http_error(401))
+        self.assertIn("service_role", rejected["problem"])
+        _, missing = self.health_with_ping_error(http_error(404))
+        self.assertIn("404", missing["problem"])
+        _, offline = self.health_with_ping_error(urllib.error.URLError("[Errno -2] Name or service not known"))
+        self.assertIn("conectar", offline["problem"])
+
+    def test_unknown_error_text_is_never_published(self):
+        # Una excepción cualquiera puede llevar una URL con la clave pegada por error.
+        status, health = self.health_with_ping_error(RuntimeError("clave=eyJ-secreta https://x"))
+        self.assertEqual(status, 503)
+        self.assertNotIn("eyJ", json.dumps(health))
+        self.assertIn("RuntimeError", health["problem"])
+
+    def test_healthy_storage_has_no_problem_field(self):
+        status, health = self.request("GET", "/healthz")
+        self.assertEqual(status, 200)
+        self.assertNotIn("problem", health)
+
+    def test_local_storage_on_render_is_reported_as_a_failure(self):
+        with mock.patch.dict(os.environ, {"RENDER": "true"}):
+            status, health = self.request("GET", "/healthz")
+        self.assertEqual(status, 503)
+        self.assertFalse(health["ok"])
+        self.assertIn("SUPABASE_URL", health["problem"])
+        # Fuera de Render (desarrollo local) guardar en archivo es lo normal.
+        self.assertEqual(self.request("GET", "/healthz")[0], 200)
+
+
+class SupabaseConfigTests(unittest.TestCase):
+    def test_key_with_space_or_line_break_is_named(self):
+        for value in ("eyJabc def", "eyJabc\ndef", "eyJabc\tdef"):
+            with self.assertRaises(storage.ConfigError) as ctx:
+                storage._check_header_safe("SUPABASE_KEY", value)
+            self.assertIn("SUPABASE_KEY", str(ctx.exception))
+            self.assertNotIn("eyJabc", str(ctx.exception))  # nunca el valor
+
+    def test_smart_quote_is_still_reported(self):
+        with self.assertRaises(storage.ConfigError):
+            storage._check_header_safe("SUPABASE_URL", "https://x.supabase.co\u201d")
+
+    def test_url_without_scheme_is_rejected_with_a_clear_message(self):
+        with mock.patch.object(storage, "SUPABASE_URL", "znjwujk.supabase.co"), mock.patch.object(
+            storage, "SUPABASE_KEY", "eyJok"
+        ):
+            with self.assertRaises(storage.ConfigError) as ctx:
+                storage._request("GET", "reservations?select=id&limit=1")
+        self.assertIn("https://", str(ctx.exception))
+
+    def test_config_error_is_still_a_value_error(self):
+        self.assertTrue(issubclass(storage.ConfigError, ValueError))
 
 
 if __name__ == "__main__":
