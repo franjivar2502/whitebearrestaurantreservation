@@ -63,6 +63,44 @@ apertura, hasta 15 minutos antes del cierre (ver README, "Horario y reglas").
 
 Nunca escribas ninguno de estos valores en el repositorio: es público.
 
+### Activar los mensajes de confirmación (SMS y correo)
+
+El código ya está listo; solo faltan las credenciales, que se ponen como
+variables de entorno en Render (nunca en el repositorio). Mientras falten, los
+mensajes se "simulan": se escriben en los logs de Render (`DRY-RUN`) y no
+sale nada.
+
+**Qué se envía:** al reservar, un mensaje de confirmación; el día anterior (o
+30 minutos antes si la reserva es del mismo día), un enlace para confirmar
+asistencia; y 15 minutos antes, el aviso de mesa lista. Va por SMS si hay
+teléfono y por correo si el cliente dejó su email.
+
+**SMS (Twilio):**
+1. Crear la cuenta en twilio.com y comprar un número de EE. UU.
+2. **Registrar el envío para EE. UU. antes de enviar** (A2P 10DLC para un
+   número local, o la verificación *toll-free* para uno 800/888). Sin ese
+   registro las operadoras bloquean los mensajes. La aprobación tarda de
+   días a semanas, así que conviene empezarlo cuanto antes. El sitio ya trae
+   lo que suelen pedir: el aviso de SMS y el enlace a *Text Message Terms*
+   junto a la casilla de consentimiento (`public/legal.html#messages`).
+3. En Render, definir `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y
+   `TWILIO_FROM_NUMBER` (el número comprado, con `+1`).
+4. Los teléfonos que escriben los clientes (`(518) 302-5235`) se convierten
+   solos al formato internacional que exige Twilio (`+15183025235`).
+
+**Correo (SMTP):**
+- Para empezar, una cuenta de Gmail con *contraseña de aplicación*
+  (`SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASSWORD`).
+- Con dominio propio, lo ideal es un servicio de correo transaccional (que
+  da su servidor SMTP) y enviar desde, por ejemplo, `reservas@tudominio.com`.
+  Hay que añadir en el DNS los registros SPF/DKIM que indique el servicio;
+  sin ellos los correos caen en spam.
+
+**Probar:** con las variables ya puestas, hacer una reservación desde el sitio
+con un teléfono y un correo propios. Debe llegar el SMS y el correo en un
+minuto. Si no llega, Render → Logs: buscar `ENVIADO` (salió) o `ERROR SMS` /
+`ERROR EMAIL` (con el motivo).
+
 ---
 
 ## 3. Despliegue en Render
