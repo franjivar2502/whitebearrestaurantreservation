@@ -196,6 +196,17 @@
       <p class="hint" data-i18n="groupMenu.hint">You can leave this blank and order when you arrive; filling it in ahead just helps us have everything ready sooner.</p>
     </div>
 
+    <!-- Consentimiento: casilla para las condiciones y la privacidad, y aviso
+         de SMS (CTIA/TCPA: qué se envía, cuántos, STOP/HELP, tarifas). Los
+         enlaces abren en otra pestaña para no perder lo ya escrito. -->
+    <div class="consent">
+      <label class="consent-check">
+        <input type="checkbox" id="terms-consent" name="termsConsent" required />
+        <span data-i18n-html="form.consent">I agree to the <a href="legal.html#terms" target="_blank" rel="noopener">Reservation Terms</a> and the <a href="legal.html#privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+      </label>
+      <p class="hint" data-i18n-html="form.smsDisclosure">By booking, you agree to receive automated texts about this reservation at the number above (usually up to 3: confirmation, attendance check and table-ready alert). Not marketing. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help. <a href="legal.html#messages" target="_blank" rel="noopener">Text Message Terms</a>.</p>
+    </div>
+
     <button type="submit" class="btn btn-primary" id="submit-btn" data-i18n="form.submit">Book table</button>
   </form>
 
@@ -297,6 +308,12 @@
             <input type="file" id="review-photo" name="photo" accept="image/*" />
           </div>
         </div>
+        <div class="consent">
+          <label class="consent-check">
+            <input type="checkbox" id="review-consent" name="reviewConsent" required />
+            <span data-i18n-html="reviews.consent">This review is about my own visit, I have the right to share any photo I add, and I agree to the <a href="legal.html#reviews" target="_blank" rel="noopener">Review &amp; Photo Policy</a>.</span>
+          </label>
+        </div>
         <button type="submit" class="btn btn-primary" id="review-submit-btn" data-i18n="reviews.submit">Post review</button>
       </form>
 
@@ -346,6 +363,13 @@
 
 <footer class="site-footer">
   White Bear Restaurant · 2793 Wilmington Rd, Lake Placid, NY 12946 · (518) 302-5235
+  <nav class="footer-links" aria-label="Legal">
+    <a href="legal.html#privacy" data-i18n="footer.privacy">Privacy</a>
+    <a href="legal.html#terms" data-i18n="footer.terms">Terms</a>
+    <a href="legal.html#messages" data-i18n="footer.messages">Text messages</a>
+    <a href="legal.html#reviews" data-i18n="footer.reviews">Review policy</a>
+    <a href="legal.html#accessibility" data-i18n="footer.accessibility">Accessibility</a>
+  </nav>
   <div class="ai-badge"><span aria-hidden="true">✦</span> <span data-i18n="footer.aiBadge">Built with AI</span></div>
 </footer>
 

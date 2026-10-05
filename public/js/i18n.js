@@ -55,6 +55,7 @@
         thanks: "Thanks for sharing! Your review is now live.",
         pending: "Thanks for your review. Our team will read it before it's published. If something went wrong during your visit, you can also call us at {phone} so we can make it right.",
         by: "by {name}",
+        consent: "This review is about my own visit, I have the right to share any photo I add, and I agree to the <a href=\"legal.html#reviews\" target=\"_blank\" rel=\"noopener\">Review &amp; Photo Policy</a>.",
       },
       establishment: "White Bear Restaurant · Lake Placid, NY · Since 2023",
       dishRail: { label: "From our kitchen", pause: "Pause the photos", play: "Play the photos" },
@@ -114,6 +115,8 @@
         notesPlaceholder: "Allergies, high chair, outdoor table, etc.",
         submit: "Book table",
         submitting: "Sending...",
+        consent: "I agree to the <a href=\"legal.html#terms\" target=\"_blank\" rel=\"noopener\">Reservation Terms</a> and the <a href=\"legal.html#privacy\" target=\"_blank\" rel=\"noopener\">Privacy Policy</a>.",
+        smsDisclosure: "By booking, you agree to receive automated texts about this reservation at the number above (usually up to 3: confirmation, attendance check and table-ready alert). Not marketing. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help. <a href=\"legal.html#messages\" target=\"_blank\" rel=\"noopener\">Text Message Terms</a>.",
       },
       groupMenu: {
         title: "Large group pre-order",
@@ -141,6 +144,11 @@
       },
       footer: {
         aiBadge: "Built with AI",
+        privacy: "Privacy",
+        terms: "Terms",
+        messages: "Text messages",
+        reviews: "Review policy",
+        accessibility: "Accessibility",
       },
       errors: {
         NAME_REQUIRED: "Name is required.",
@@ -164,6 +172,8 @@
         REQUEST_BLOCKED: "We received too many requests from your connection. Please wait a few minutes or call us at {phone}.",
         GENERIC: "Something went wrong. Please try again.",
         NETWORK: "Couldn't reach the server. Please try again.",
+        CONSENT_REQUIRED: "Please accept the Reservation Terms and Privacy Policy to book.",
+        REVIEW_CONSENT_REQUIRED: "Please confirm the box above the button to post your review.",
       },
       confirmPage: {
         pageTitle: "Confirm your attendance — White Bear Restaurant",
@@ -223,6 +233,7 @@
         thanks: "¡Gracias por compartir! Tu reseña ya está publicada.",
         pending: "Gracias por tu reseña. Nuestro equipo la leerá antes de publicarla. Si algo salió mal en tu visita, también puedes llamarnos al {phone} para poder solucionarlo.",
         by: "por {name}",
+        consent: "Esta reseña es sobre mi propia visita, tengo derecho a compartir la foto que añada y acepto la <a href=\"legal.html#reviews\" target=\"_blank\" rel=\"noopener\">política de reseñas y fotos</a>.",
       },
       establishment: "White Bear Restaurant · Lake Placid, NY · Desde 2023",
       dishRail: { label: "De nuestra cocina", pause: "Pausar las fotos", play: "Reanudar las fotos" },
@@ -282,6 +293,8 @@
         notesPlaceholder: "Alergias, silla para bebé, mesa afuera, etc.",
         submit: "Reservar mesa",
         submitting: "Enviando...",
+        consent: "Acepto las <a href=\"legal.html#terms\" target=\"_blank\" rel=\"noopener\">condiciones de reserva</a> y la <a href=\"legal.html#privacy\" target=\"_blank\" rel=\"noopener\">política de privacidad</a>.",
+        smsDisclosure: "Al reservar, aceptas recibir mensajes de texto automáticos sobre esta reserva en el número indicado (normalmente hasta 3: confirmación, confirmación de asistencia y aviso de mesa lista). No son publicidad. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja o HELP para ayuda. <a href=\"legal.html#messages\" target=\"_blank\" rel=\"noopener\">Condiciones de mensajes</a>.",
       },
       groupMenu: {
         title: "Preorden para grupos grandes",
@@ -309,6 +322,11 @@
       },
       footer: {
         aiBadge: "Construido con IA",
+        privacy: "Privacidad",
+        terms: "Condiciones",
+        messages: "Mensajes de texto",
+        reviews: "Política de reseñas",
+        accessibility: "Accesibilidad",
       },
       errors: {
         NAME_REQUIRED: "El nombre es obligatorio.",
@@ -332,6 +350,8 @@
         REQUEST_BLOCKED: "Recibimos demasiadas solicitudes desde tu conexión. Espera unos minutos o llámanos al {phone}.",
         GENERIC: "Ocurrió un error. Intenta de nuevo.",
         NETWORK: "No se pudo conectar con el servidor. Intenta de nuevo.",
+        CONSENT_REQUIRED: "Para reservar, acepta las condiciones de reserva y la política de privacidad.",
+        REVIEW_CONSENT_REQUIRED: "Marca la casilla de encima del botón para publicar tu reseña.",
       },
       confirmPage: {
         pageTitle: "Confirma tu asistencia — White Bear Restaurant",
@@ -391,6 +411,7 @@
         thanks: "Merci d'avoir partagé ! Votre avis est maintenant publié.",
         pending: "Merci pour votre avis. Notre équipe le lira avant de le publier. Si quelque chose s'est mal passé pendant votre visite, vous pouvez aussi nous appeler au {phone} pour que nous puissions arranger ça.",
         by: "par {name}",
+        consent: "Cet avis porte sur ma propre visite, j'ai le droit de partager la photo ajoutée et j'accepte la <a href=\"legal.html#reviews\" target=\"_blank\" rel=\"noopener\">politique des avis et des photos</a>.",
       },
       establishment: "White Bear Restaurant · Lake Placid, NY · Depuis 2023",
       dishRail: { label: "De notre cuisine", pause: "Mettre les photos en pause", play: "Relancer les photos" },
@@ -450,6 +471,8 @@
         notesPlaceholder: "Allergies, chaise haute, table extérieure, etc.",
         submit: "Réserver une table",
         submitting: "Envoi en cours...",
+        consent: "J'accepte les <a href=\"legal.html#terms\" target=\"_blank\" rel=\"noopener\">conditions de réservation</a> et la <a href=\"legal.html#privacy\" target=\"_blank\" rel=\"noopener\">politique de confidentialité</a>.",
+        smsDisclosure: "En réservant, vous acceptez de recevoir des textos automatiques sur cette réservation au numéro indiqué (en général jusqu'à 3 : confirmation, confirmation de présence et avis de table prête). Pas de publicité. Des frais de messagerie et de données peuvent s'appliquer. Répondez STOP pour vous désinscrire, HELP pour de l'aide. <a href=\"legal.html#messages\" target=\"_blank\" rel=\"noopener\">Conditions des textos</a>.",
       },
       groupMenu: {
         title: "Précommande pour grands groupes",
@@ -477,6 +500,11 @@
       },
       footer: {
         aiBadge: "Conçu avec l'IA",
+        privacy: "Confidentialité",
+        terms: "Conditions",
+        messages: "Textos",
+        reviews: "Politique des avis",
+        accessibility: "Accessibilité",
       },
       errors: {
         NAME_REQUIRED: "Le nom est obligatoire.",
@@ -500,6 +528,8 @@
         REQUEST_BLOCKED: "Nous avons reçu trop de demandes depuis votre connexion. Patientez quelques minutes ou appelez-nous au {phone}.",
         GENERIC: "Une erreur s'est produite. Veuillez réessayer.",
         NETWORK: "Impossible de contacter le serveur. Veuillez réessayer.",
+        CONSENT_REQUIRED: "Pour réserver, acceptez les conditions de réservation et la politique de confidentialité.",
+        REVIEW_CONSENT_REQUIRED: "Cochez la case au-dessus du bouton pour publier votre avis.",
       },
       confirmPage: {
         pageTitle: "Confirmez votre présence — White Bear Restaurant",
