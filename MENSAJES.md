@@ -1,8 +1,9 @@
-# Activar los mensajes de confirmación (SMS y correo)
+# Activar los mensajes de confirmación (solo SMS)
 
 El sistema ya envía tres mensajes por reservación; solo faltan las
 credenciales. Mientras no estén puestas, los mensajes se **simulan** (se
-escriben en Render → Logs como `DRY-RUN`) y no sale nada.
+escriben en Render → Logs como `DRY-RUN`) y no sale nada. **No se envía correo:**
+todo va por SMS al teléfono que el cliente escribe en el formulario.
 
 | Cuándo | Mensaje |
 |---|---|
@@ -11,56 +12,41 @@ escriben en Render → Logs como `DRY-RUN`) y no sale nada.
 | 15 minutos antes | Aviso de mesa lista |
 
 Cada mensaje sale en el idioma con que el cliente llenó el formulario
-(inglés, español o francés). Va por **SMS** si hay teléfono y por **correo** si
-dejó su email.
+(inglés, español o francés).
 
-**Orden recomendado:** primero el correo (queda listo el mismo día), y en
-paralelo empezar el registro de SMS, que es lo que tarda.
+Nunca escribas las claves en el repositorio ni en el chat: solo en Render → el
+servicio → **Environment**.
 
 ---
 
-## 1. Correo (SMTP)
+## 1. Usar el número que ya tiene el restaurante: (518) 302-5235
 
-Nunca escribas estas claves en el repositorio ni en el chat: solo en Render →
-el servicio → **Environment**.
+Los SMS salen por Twilio y necesitan un número "de envío". Lo ideal es que sea
+el que los clientes ya conocen. Qué se puede hacer depende del **tipo de línea**
+(pregúntale a quien te da el servicio: ¿es fija, VoIP o celular?). Confirma las
+condiciones vigentes en la consola de Twilio antes de decidir:
 
-### Opción rápida: una cuenta de Gmail (10 minutos)
+1. **Línea fija o VoIP:** Twilio permite habilitar mensajes de texto en un
+   número que ya existe (*Hosted SMS*) sin quitarle las llamadas, o **portarlo**
+   a Twilio. Es la opción para que el cliente vea (518) 302-5235.
+2. **Celular:** normalmente no se puede usar tal cual para envío automático.
+3. **Mientras tanto / si no se puede:** compra un número nuevo en Twilio (el
+   toll-free suele registrarse más rápido). El mensaje ya incluye "llama al
+   (518) 302-5235", así que el cliente sigue viendo el número del restaurante.
 
-1. Usa una cuenta de Gmail del restaurante (mejor que una personal) y activa
-   la **verificación en dos pasos** en myaccount.google.com → Seguridad.
-2. En myaccount.google.com busca **Contraseñas de aplicación**, crea una
-   llamada "White Bear" y copia las 16 letras que te da.
-3. En Render añade estas variables:
-
-| Variable | Valor |
-|---|---|
-| `SMTP_HOST` | `smtp.gmail.com` |
-| `SMTP_PORT` | `587` |
-| `SMTP_USER` | la dirección de Gmail |
-| `SMTP_PASSWORD` | la contraseña de aplicación de 16 letras, **sin espacios** |
-| `SMTP_FROM` | (opcional) la dirección que verá el cliente; si falta usa `SMTP_USER` |
-
-Los correos saldrán desde esa dirección de Gmail. Gmail limita el envío diario,
-suficiente para un restaurante.
-
-### Opción profesional: enviar desde `reservas@whitebearrestaurant.com`
-
-Usa un servicio de correo transaccional (Resend, Postmark, SendGrid, Brevo...).
-Te da un servidor SMTP y te pide añadir en Cloudflare unos registros **SPF/DKIM**
-para tu dominio; sin ellos los correos caen en spam. Las mismas cinco variables
-de arriba, con los datos que te dé el servicio.
+Sea cual sea, el número final se pone en Render como `TWILIO_FROM_NUMBER`, con
+formato `+15183025235`.
 
 ---
 
 ## 2. SMS (Twilio)
 
 1. Crea la cuenta en twilio.com y completa la verificación de identidad.
-2. Compra un número de EE. UU. Dos caminos (revisa las condiciones y los
-   precios vigentes en Twilio antes de elegir):
-   - **Toll-free (800/833/844/855/866/877/888):** suele ser más sencillo para un
-     negocio pequeño; se pide una *verificación toll-free*.
-   - **Número local (518):** se ve más cercano, pero exige registrar la marca y
-     la campaña (**A2P 10DLC**).
+2. Habilita el número (sección 1). En EE. UU. hay dos tipos de registro (revisa
+   precios y condiciones vigentes en Twilio):
+   - **Número local (518) o Hosted SMS:** registrar la marca y la campaña
+     (**A2P 10DLC**).
+   - **Toll-free:** *verificación toll-free*, suele ser más sencilla.
 3. **Registra el envío antes de usarlo.** En EE. UU., las operadoras bloquean
    los SMS de números sin registrar. La aprobación tarda de **días a semanas**.
    Los textos para pegar están en la sección 3.
@@ -70,7 +56,7 @@ de arriba, con los datos que te dé el servicio.
 |---|---|
 | `TWILIO_ACCOUNT_SID` | empieza con `AC` (Twilio → Console) |
 | `TWILIO_AUTH_TOKEN` | el token secreto (Twilio → Console). **No lo compartas.** |
-| `TWILIO_FROM_NUMBER` | el número comprado, con `+1`, por ejemplo `+15185550123` |
+| `TWILIO_FROM_NUMBER` | el número de envío, con `+1`, por ejemplo `+15183025235` |
 
 Los teléfonos que escriben los clientes (`(518) 302-5235`) se convierten solos al
 formato internacional que exige Twilio.
@@ -142,16 +128,13 @@ asistencia la usan; sin ella apuntarían a una dirección de prueba.
 ## 5. Probar
 
 1. Con las variables ya puestas (Render se reinicia solo al guardar), haz una
-   reservación en https://www.whitebearrestaurant.com con tu propio teléfono y
-   correo.
-2. En un minuto deben llegar el SMS y el correo.
-3. Si no llega, Render → **Logs**: busca `ENVIADO` (salió) o `ERROR SMS` /
-   `ERROR EMAIL` (con el motivo exacto).
+   reservación en https://www.whitebearrestaurant.com con tu propio teléfono.
+2. En un minuto debe llegar el SMS.
+3. Si no llega, Render → **Logs**: busca `ENVIADO` (salió) o `ERROR SMS` (con el motivo exacto).
 4. Cancela o borra la reservación de prueba desde el panel del staff.
 
 | Síntoma en Logs | Causa probable |
 |---|---|
-| `DRY-RUN SMS` / `DRY-RUN EMAIL` | Faltan variables en Render (o el servicio no se reinició) |
+| `DRY-RUN SMS` | Faltan variables en Render (o el servicio no se reinició) |
 | `ERROR SMS ... 21211` / "invalid 'To'" | Número del cliente no válido |
 | `ERROR SMS ... 30034` / "unregistered" | El número aún no tiene el registro de EE. UU. aprobado |
-| `ERROR EMAIL ... 535` | Contraseña de aplicación incorrecta (copiarla de nuevo, sin espacios) |

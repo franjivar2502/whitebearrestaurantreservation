@@ -55,15 +55,14 @@ apertura, hasta 15 minutos antes del cierre (ver README, "Horario y reglas").
 | `SUPABASE_KEY` | Sí | Clave `service_role` de Supabase. **Secreta.** |
 | `ADMIN_PASSWORD` | Sí | Contraseña del panel de fotos (`/admin-photos.html`). |
 | `STAFF_PASSWORD` | Sí, cuando se active el acceso del personal | Contraseña de la tablet. |
-| `PUBLIC_BASE_URL` | Sí | La dirección pública del sitio, para los enlaces de los SMS y correos. Cámbiala al estrenar dominio propio. |
+| `PUBLIC_BASE_URL` | Sí | La dirección pública del sitio, para los enlaces de los SMS. Cámbiala al estrenar dominio propio. |
 | `RESTAURANT_TIMEZONE` | No | Zona horaria del restaurante. Por defecto `America/New_York`. |
 | `RESERVATION_RETENTION_DAYS` | No | Días que se guardan las reservaciones pasadas (60 si no se define). Ver sección 6. |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Para correos reales | Ver `notifications.py`. Sin ellas los correos solo se simulan. |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | Para SMS reales | Sin ellas los SMS solo se simulan. |
 
 Nunca escribas ninguno de estos valores en el repositorio: es público.
 
-### Activar los mensajes de confirmación (SMS y correo)
+### Activar los mensajes de confirmación (solo SMS)
 
 El código ya está listo; solo faltan las credenciales, que se ponen como
 variables de entorno en Render (nunca en el repositorio). Mientras falten, los
@@ -72,8 +71,8 @@ sale nada.
 
 **Qué se envía:** al reservar, un mensaje de confirmación; el día anterior (o
 30 minutos antes si la reserva es del mismo día), un enlace para confirmar
-asistencia; y 15 minutos antes, el aviso de mesa lista. Va por SMS si hay
-teléfono y por correo si el cliente dejó su email.
+asistencia; y 15 minutos antes, el aviso de mesa lista. Va solo por SMS, al
+teléfono del cliente (no se envía correo).
 
 **Idioma:** cada mensaje sale en el idioma con que el cliente llenó el formulario
 (inglés, español o francés), con la fecha y la hora escritas con claridad
@@ -81,7 +80,7 @@ teléfono y por correo si el cliente dejó su email.
 abre la página en ese mismo idioma. En el alta rápida del panel hay un selector
 **Idioma del mensaje** (inglés por omisión), para las reservas por teléfono. Lo
 que no traiga idioma (reservas anteriores) se envía en inglés. Los SMS van sin
-acentos para que quepan en un solo mensaje; el correo sí los lleva. Los textos
+acentos para que quepan en un solo mensaje. Los textos
 están en `MESSAGES`, en `notifications.py`.
 
 **SMS (Twilio):**
@@ -93,22 +92,13 @@ están en `MESSAGES`, en `notifications.py`.
    lo que suelen pedir: el aviso de SMS y el enlace a *Text Message Terms*
    junto a la casilla de consentimiento (`public/legal.html#messages`).
 3. En Render, definir `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y
-   `TWILIO_FROM_NUMBER` (el número comprado, con `+1`).
+   `TWILIO_FROM_NUMBER` (el número de envío, con `+1`; la idea es usar el del restaurante, ver `MENSAJES.md`).
 4. Los teléfonos que escriben los clientes (`(518) 302-5235`) se convierten
    solos al formato internacional que exige Twilio (`+15183025235`).
 
-**Correo (SMTP):**
-- Para empezar, una cuenta de Gmail con *contraseña de aplicación*
-  (`SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER`, `SMTP_PASSWORD`).
-- Con dominio propio, lo ideal es un servicio de correo transaccional (que
-  da su servidor SMTP) y enviar desde, por ejemplo, `reservas@tudominio.com`.
-  Hay que añadir en el DNS los registros SPF/DKIM que indique el servicio;
-  sin ellos los correos caen en spam.
-
 **Probar:** con las variables ya puestas, hacer una reservación desde el sitio
-con un teléfono y un correo propios. Debe llegar el SMS y el correo en un
-minuto. Si no llega, Render → Logs: buscar `ENVIADO` (salió) o `ERROR SMS` /
-`ERROR EMAIL` (con el motivo).
+con un teléfono propio. Debe llegar el SMS en un minuto. Si no llega,
+Render → Logs: buscar `ENVIADO` (salió) o `ERROR SMS` (con el motivo).
 
 ---
 
@@ -256,7 +246,7 @@ puede fallar al renovarse: déjala gris.
    flechas circulares hasta que ambos digan *Verified* y *Certificate Issued*.
    Render pone el certificado HTTPS solo.
 3. Cambiar `PUBLIC_BASE_URL` en Render por la dirección principal (los enlaces
-   de los SMS y correos la usan).
+   de los SMS la usan).
 4. Actualizar el `canonical`, las etiquetas `og:` y el JSON-LD de
    `public/index.html`, el de `public/legal.html`, `public/sitemap.xml` y
    `public/robots.txt`.
@@ -272,7 +262,7 @@ puede fallar al renovarse: déjala gris.
 | `/healthz` responde 503 con `"storage": "error"` | El servidor no puede usar Supabase | **El campo `"problem"` de esa misma página dice el motivo** (sin mostrar ninguna clave). Casos típicos: *"tiene un espacio o un salto de línea"* o *"un caracter no válido"* (la variable se pegó mal: volver a copiarla en Render → Environment); *"debe empezar con https://"* (corregir `SUPABASE_URL`); *"rechazó la clave"* (`SUPABASE_KEY` debe ser la `service_role`); *"no se pudo conectar"* (mirar <https://status.supabase.com> y que el proyecto no esté **pausado**: botón *Restore*). |
 | `/healthz` responde 503 con `"storage": "local"` | En Render faltan `SUPABASE_URL` y/o `SUPABASE_KEY` | Las reservaciones se estarían guardando en un disco que se borra al reiniciar. Añadir las dos variables en Render → Environment cuanto antes. El arranque también lo escribe en Logs entre líneas de `!!`. |
 | La tablet no muestra reservaciones nuevas | La tablet perdió la conexión o el servicio se reinició | Recargar la página de la tablet. Si sigue igual, mirar `/healthz`. |
-| Los clientes no reciben SMS ni correos | Credenciales sin configurar, caducadas o sin saldo | Render → Logs, buscar `ERROR SMS` o `ERROR EMAIL`. Revisar saldo de Twilio y la contraseña de aplicación del correo. |
+| Los clientes no reciben SMS | Credenciales sin configurar, caducadas o sin saldo | Render → Logs, buscar `ERROR SMS`. Revisar el saldo de Twilio y el registro del número. |
 | Los recordatorios salen a la hora equivocada | Zona horaria | `/healthz` muestra la hora que cree el servidor. Si no es la de Lake Placid, revisar `RESTAURANT_TIMEZONE`. |
 | "Error interno" al reservar | Un fallo de código o de Supabase | Render → Logs, buscar `[ERROR] POST /api/reservations`. Con ese texto cualquier programador sabe por dónde empezar. |
 | El formulario de reservas sale gris con un aviso rojo | Alguien apagó las reservaciones desde el panel | Panel → botón *Reservaciones apagadas* (barra de arriba) → confirmar. |

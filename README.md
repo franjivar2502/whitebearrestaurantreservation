@@ -33,7 +33,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - **Disponibilidad real por asientos** (130 en 25 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
 - Preferencia de mesa adentro/afuera (opcional) en el formulario de reservación.
 - Panel de tablet en tiempo real (se actualiza solo, sin recargar), con una pestaña nueva "Tables"/"Mesas" para que el staff marque mesas fuera de servicio.
-- Confirmación y recordatorio automático por SMS/correo (modo prueba, sin credenciales reales todavía).
+- Confirmación y recordatorio automático por SMS (modo prueba, sin credenciales reales todavía).
 - Ventana emergente de confirmación de asistencia (24h o 30 min antes).
 - Diseño visual pulido: tipografía real (Fraunces + Inter), favicon propio, meta tags para compartir en redes, mapa embebido, calificación con estrellas, fondo tipo "marca de agua" con foto real del comedor, secciones desplegables (Our Menu/Reviews/Find us/Venue information), micro-interacciones, y un pequeño distintivo "Built with AI" en el pie de página.
 - **Logo real del oso** (`public/images/bear-logo.jpg` + `public/favicon.png`) en vez del emoji 🐻‍❄️ — un sello circular con el nombre del restaurante, generado específicamente para el negocio (no es foto de stock). Se usa como ícono de marca en las 5 páginas del sitio y como favicon (recortado a la cara del oso para que se lea bien de pequeño). Si se quiere cambiar, basta con reemplazar `bear-logo.jpg` por otra imagen cuadrada.
@@ -45,7 +45,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - Repositorio en GitHub, desplegado en Render y funcionando en vivo: https://www.whitebearrestaurant.com
 
 **⏳ Pendiente para que el proyecto esté 100% terminado:**
-1. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
+1. **Credenciales reales de SMS** (Twilio) — hoy todo funciona en modo simulado.
 2. ~~Cambiar `ADMIN_PASSWORD`~~ — **hecho (2026-10-03).** La contraseña está
    solo en las variables de entorno de Render y no se escribe en ningún
    archivo del repositorio. Si hace falta consultarla: Render → el servicio →
@@ -77,7 +77,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
    aviso sobre la norma de la FTC en materia de reseñas.
 
 8. **Políticas legales (`public/legal.html`) — borrador.** Privacidad,
-   condiciones de reserva, condiciones de SMS/correo, política de reseñas y
+   condiciones de reserva, condiciones de SMS, política de reseñas y
    fotos, y accesibilidad, en EN/ES/FR. Antes de publicarlas: completar cada
    `<mark class="fill">` (razón social, correo de contacto, fecha, plazos),
    que las revise un abogado de Nueva York y quitar el aviso de borrador.
@@ -170,7 +170,7 @@ próxima sesión.
 ## Qué incluye
 
 - **`public/index.html`** — página para que los clientes reserven mesa (nombre,
-  teléfono, correo opcional, fecha, hora, número de personas, ocasión y notas).
+  teléfono, fecha, hora, número de personas, ocasión y notas).
 - **`public/tablet.html`** — panel para el staff, optimizado para tablet:
   se actualiza solo cada 5 segundos, agrupa por Hoy / Próximas / Todas,
   filtra por estado (pendiente, confirmada, etc.) y permite avanzar cada
@@ -182,15 +182,15 @@ próxima sesión.
   tablet automáticamente, sin recargar la página.
 - **`notifications.py`** — envía el mensaje de confirmación al crear la
   reservación y un recordatorio automático 15 minutos antes de la hora
-  reservada, por SMS y/o correo. Ver sección de abajo.
+  reservada, por SMS. Ver sección de abajo.
 
-## Confirmación y recordatorio automático (SMS / correo)
+## Confirmación y recordatorio automático (solo SMS)
 
-Al crear una reservación se envía un mensaje de confirmación por SMS (al
-teléfono, siempre) y por correo (si el cliente lo dejó). Un proceso en
+Al crear una reservación se envía un mensaje de confirmación por SMS al
+teléfono del cliente (no se envía correo). Un proceso en
 segundo plano revisa cada minuto las reservaciones próximas y, 15 minutos
 antes de la hora reservada, envía un aviso de "tu mesa está casi lista" por
-los mismos canales. Cada reservación se recuerda solo una vez
+el mismo canal. Cada reservación se recuerda solo una vez
 (`reminderSent` en el registro evita duplicados), y las reservaciones
 canceladas no reciben recordatorio.
 
@@ -205,26 +205,15 @@ Para activar el envío real, define estas variables de entorno antes de
 correr `server.py` (por ejemplo con `export VARIABLE=valor` en la terminal,
 o configurándolas en el panel de tu hosting cuando lo despliegues):
 
-**Correo (cualquier proveedor SMTP; ejemplo con Gmail y una "contraseña de
-aplicación", no la contraseña normal de la cuenta):**
-```
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=turestaurante@gmail.com
-SMTP_PASSWORD=xxxxxxxxxxxxxxxx
-SMTP_FROM=turestaurante@gmail.com
-```
-
 **SMS (requiere una cuenta gratuita/de prueba en [twilio.com](https://twilio.com)):**
 ```
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_FROM_NUMBER=+15005550006
+TWILIO_FROM_NUMBER=+15183025235   # número de envío (ideal: el del restaurante)
 ```
 
-No hace falta configurar los dos — puedes activar solo correo, solo SMS, o
-ambos. Al arrancar, el servidor imprime en consola si cada canal está
-ACTIVO o en modo prueba.
+Al arrancar, el servidor imprime en consola si el SMS está ACTIVO o en modo
+prueba. Guía completa: `MENSAJES.md`.
 
 ## Confirmación de asistencia ("ventana emergente")
 
@@ -236,7 +225,7 @@ Además de la confirmación de la reservación, el sitio pide que el cliente
 - **Reservaciones hechas el mismo día:** se les pide confirmar **30 minutos
   antes**.
 
-El aviso llega por SMS y/o correo (los mismos canales configurados arriba)
+El aviso llega por SMS
 con un link a `confirm.html?id=<código>` — una página que se ve y se
 comporta como una ventana emergente, con dos botones: **"Sí, confirmo mi
 asistencia"** o **"No podré asistir"**. Si confirma, queda marcado
@@ -255,7 +244,7 @@ Cada reservación solo recibe esta solicitud una vez
 `PUBLIC_BASE_URL` (o `http://localhost:PUERTO` si no la defines). Al
 desplegar el sitio en internet, define esta variable de entorno con tu URL
 real (por ejemplo `https://white-bear-reservations.onrender.com`) para que
-el link del SMS/correo funcione desde cualquier celular.
+el link del SMS funcione desde cualquier celular.
 
 ## Cómo ejecutarlo
 
@@ -430,7 +419,7 @@ de administración siempre abre también el panel de staff.
 (`/api/tables`), y encender o apagar las reservaciones
 (`GET`/`PATCH /api/settings`). **Qué sigue público, a propósito:** reservar
 (`POST /api/reservations`), la página de confirmación de asistencia a la
-que llega el cliente desde su SMS/correo (`/api/reservations/<id>` y
+que llega el cliente desde su SMS (`/api/reservations/<id>` y
 `.../confirm-attendance`, que solo funcionan con el código de esa
 reservación), el menú, las fotos y las reseñas.
 

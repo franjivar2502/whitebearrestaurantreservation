@@ -79,13 +79,10 @@
       },
       form: {
         title: "Reserve your table",
-        subtitle: "We confirm by phone or email, and let you know when your table is ready.",
+        subtitle: "We confirm by text message, and let you know when your table is ready.",
         name: "Full name *",
         phone: "Phone *",
         phoneHint: "We'll send your confirmation and a table-ready alert here.",
-        email: "Email (optional)",
-        emailHint:
-          "Leave your email to also get the confirmation and table-ready alert there. It also lets us ask for your feedback after your visit.",
         date: "Date *",
         time: "Time *",
         bookingClosed:
@@ -115,13 +112,12 @@
       confirmation: {
         title: "Reservation received!",
         subtitle:
-          "We look forward to seeing you at White Bear Restaurant. We've sent your confirmation by phone/email, and we'll let you know 15 minutes before your time when your table is ready.",
+          "We look forward to seeing you at White Bear Restaurant. We've sent your confirmation by text message, and we'll let you know 15 minutes before your time when your table is ready.",
         name: "Name",
         date: "Date",
         time: "Time",
         partySize: "Party size",
         phone: "Phone",
-        email: "Email",
         code: "Code",
         seating: "Seating",
         newReservation: "Make another reservation",
@@ -242,7 +238,7 @@
       },
       form: {
         title: "Reserva tu mesa",
-        subtitle: "Te confirmamos por teléfono o correo, y avisamos cuando tu mesa esté lista.",
+        subtitle: "Te confirmamos por mensaje de texto, y avisamos cuando tu mesa esté lista.",
         name: "Nombre completo *",
         phone: "Teléfono *",
         phoneHint: "Te enviaremos por aquí la confirmación y un aviso cuando tu mesa esté lista.",
@@ -278,13 +274,12 @@
       confirmation: {
         title: "¡Reservación recibida!",
         subtitle:
-          "Te esperamos en White Bear Restaurant. Te enviamos la confirmación por teléfono/correo, y te avisaremos 15 minutos antes de tu hora cuando la mesa esté lista.",
+          "Te esperamos en White Bear Restaurant. Te enviamos la confirmación por mensaje de texto, y te avisaremos 15 minutos antes de tu hora cuando la mesa esté lista.",
         name: "Nombre",
         date: "Fecha",
         time: "Hora",
         partySize: "Personas",
         phone: "Teléfono",
-        email: "Correo",
         code: "Código",
         seating: "Ubicación",
         newReservation: "Hacer otra reservación",
@@ -405,13 +400,10 @@
       },
       form: {
         title: "Réservez votre table",
-        subtitle: "Nous confirmons par téléphone ou e-mail, et vous prévenons quand votre table est prête.",
+        subtitle: "Nous confirmons par texto, et vous prévenons quand votre table est prête.",
         name: "Nom complet *",
         phone: "Téléphone *",
         phoneHint: "Nous vous enverrons ici la confirmation et une alerte quand votre table sera prête.",
-        email: "E-mail (facultatif)",
-        emailHint:
-          "Laissez-nous votre e-mail pour recevoir aussi la confirmation et l'alerte de table prête. Cela nous permet aussi de vous demander votre avis après votre visite.",
         date: "Date *",
         time: "Heure *",
         bookingClosed:
@@ -441,13 +433,12 @@
       confirmation: {
         title: "Réservation reçue !",
         subtitle:
-          "Nous avons hâte de vous accueillir au White Bear Restaurant. Nous vous avons envoyé la confirmation par téléphone/e-mail, et nous vous préviendrons 15 minutes avant l'heure quand votre table sera prête.",
+          "Nous avons hâte de vous accueillir au White Bear Restaurant. Nous vous avons envoyé la confirmation par texto, et nous vous préviendrons 15 minutes avant l'heure quand votre table sera prête.",
         name: "Nom",
         date: "Date",
         time: "Heure",
         partySize: "Personnes",
         phone: "Téléphone",
-        email: "E-mail",
         code: "Code",
         seating: "Emplacement",
         newReservation: "Faire une autre réservation",
