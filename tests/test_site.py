@@ -141,10 +141,15 @@ class PhotoAdminTests(ServerTestCase):
     def test_add_reorder_recategorize_delete(self):
         ids = []
         for n in range(3):
-            status, photo = self.request(
-                "POST", "/api/admin/photos", body={"url": f"https://example.com/{n}.jpg"}, headers=self.ADMIN
-            )
+            # La primera simula una foto vieja de la «Galería general», que ya
+            # no se muestra en el sitio; las demás van sin sección.
+            body = {"url": f"https://example.com/{n}.jpg"}
+            if n == 0:
+                body["category"] = "gallery"
+            status, photo = self.request("POST", "/api/admin/photos", body=body, headers=self.ADMIN)
             self.assertEqual(status, 201)
+            # Sin sección, una foto nueva es del menú (la única sección visible).
+            self.assertEqual(photo["category"], "gallery" if n == 0 else "menu")
             ids.append(photo["id"])
 
         new_order = list(reversed(ids))

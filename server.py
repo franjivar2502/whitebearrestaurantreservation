@@ -1161,9 +1161,10 @@ class Handler(BaseHTTPRequestHandler):
             payload = self._read_json_body() or {}
             url = str(payload.get("url") or "").strip()
             caption = str(payload.get("caption") or "").strip()[:300]
-            category = (payload.get("category") or "gallery").strip()
+            # La sección «gallery» se quitó del sitio: toda foto nueva es del menú.
+            category = (payload.get("category") or "menu").strip()
             if category not in ("gallery", "menu"):
-                category = "gallery"
+                category = "menu"
             if not url.startswith(("http://", "https://")) or len(url) > 2000 or re.search(r"\s", url):
                 self._send_json({"errors": ["La URL de la imagen no es válida."]}, status=400)
                 return

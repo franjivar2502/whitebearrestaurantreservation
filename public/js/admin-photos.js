@@ -12,7 +12,6 @@
   const addBtn = document.getElementById("add-btn");
   const urlInput = document.getElementById("photo-url");
   const captionInput = document.getElementById("photo-caption");
-  const categoryInput = document.getElementById("photo-category");
   const photoList = document.getElementById("photo-list");
   const emptyPhotos = document.getElementById("empty-photos");
 
@@ -126,8 +125,10 @@
     emptyPhotos.hidden = true;
     photoList.innerHTML = photos
       .map((p, i) => {
-        const category = p.category === "menu" ? "menu" : "gallery";
-        const categoryLabel = category === "menu" ? "Nuestro Menú" : "Galería general";
+        // Fotos viejas de la «Galería general»: esa sección se quitó del sitio,
+        // así que no se ven en ningún lado hasta que se pasen al menú.
+        const inMenu = p.category === "menu";
+        const categoryLabel = inMenu ? "En el menú" : "Sin mostrar en el sitio";
         return `
         <div class="photo-row" data-id="${escapeAttr(p.id)}">
           <img class="photo-thumb" src="${escapeAttr(p.url)}" alt="" />
@@ -137,7 +138,7 @@
             <span class="photo-category-badge">${escapeHtml(categoryLabel)}</span>
           </div>
           <div class="photo-actions">
-            <button type="button" class="icon-btn" data-action="category" title="Cambiar de sección">⇄</button>
+            ${inMenu ? "" : '<button type="button" class="icon-btn wide" data-action="category" title="Mostrar en el menú">＋ Menú</button>'}
             <button type="button" class="icon-btn" data-action="up" ${i === 0 ? "disabled" : ""} title="Subir">↑</button>
             <button type="button" class="icon-btn" data-action="down" ${i === photos.length - 1 ? "disabled" : ""} title="Bajar">↓</button>
             <button type="button" class="icon-btn danger" data-action="delete" title="Eliminar">✕</button>
@@ -190,12 +191,10 @@
       await loadPhotos();
     }
     if (action === "category") {
-      const current = photos[index].category === "menu" ? "menu" : "gallery";
-      const next = current === "menu" ? "gallery" : "menu";
       await adminFetch(`/api/admin/photos/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: next }),
+        body: JSON.stringify({ category: "menu" }),
       });
       await loadPhotos();
     }
@@ -212,7 +211,7 @@
         body: JSON.stringify({
           url: urlInput.value.trim(),
           caption: captionInput.value.trim(),
-          category: categoryInput.value,
+          category: "menu",
         }),
       });
       const data = await res.json();
