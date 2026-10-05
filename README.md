@@ -570,6 +570,18 @@ Render).
   persistente de Render, ~$7/mes, o una base de datos). Avísame cuando
   llegue ese momento y lo dejamos resuelto.
 
+## Operación, respaldos y pruebas
+
+Todo lo necesario para mantener el sitio en pie (variables de entorno,
+monitoreo con `/healthz`, respaldos diarios cifrados, limpieza de datos,
+dominio propio y qué hacer si algo falla) está en **`OPERACION.md`**.
+
+Pruebas automáticas, sin instalar nada:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
 ## Otros siguientes pasos sugeridos
 
 - Añadir notificación por correo/SMS al restaurante cuando llega una
