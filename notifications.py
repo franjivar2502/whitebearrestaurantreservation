@@ -24,6 +24,7 @@ SMS (Twilio) — requiere una cuenta en twilio.com:
 
 import base64
 import os
+import re
 import smtplib
 import urllib.error
 import urllib.parse
@@ -97,6 +98,25 @@ def send_email(to_addr, subject, body):
         return False, str(exc)
 
 
+def to_e164(raw):
+    """Convierte lo que escribe el cliente al formato internacional que exige
+    Twilio ("+15183025235"), o devuelve None si no se puede.
+
+    Los clientes escriben "(518) 302-5235", "518-302-5235" o "5183025235", y
+    Twilio rechaza cualquiera de esos: sin esta conversión ningún SMS saldría.
+    Sin prefijo se asume Estados Unidos / Canadá (+1), que es donde está el
+    restaurante; un número con "+" y otro país se respeta tal cual."""
+    text = (raw or "").strip()
+    digits = re.sub(r"\D", "", text)
+    if text.startswith("+"):
+        return "+" + digits if 8 <= len(digits) <= 15 else None
+    if len(digits) == 10:
+        return "+1" + digits
+    if len(digits) == 11 and digits.startswith("1"):
+        return "+" + digits
+    return None
+
+
 def send_sms(to_number, body):
     if not to_number:
         return False, "sin destinatario"
@@ -104,6 +124,12 @@ def send_sms(to_number, body):
     if not sms_enabled():
         _log("SMS", to_number, body, False, "dry-run")
         return False, "dry-run"
+
+    e164 = to_e164(to_number)
+    if not e164:
+        _log("SMS", to_number, body, False, "número de teléfono no válido para SMS")
+        return False, "número no válido"
+    to_number = e164
 
     sid = os.environ["TWILIO_ACCOUNT_SID"]
     token = os.environ["TWILIO_AUTH_TOKEN"]
