@@ -518,6 +518,7 @@
       preOrder,
       preOrderNotes: groupMenuSection.hidden ? "" : preOrderNotesInput.value.trim(),
       website: form.website.value,
+      termsConsent: form.termsConsent.checked,
     };
 
     try {

@@ -126,6 +126,7 @@ class ServerTestCase(unittest.TestCase):
             "date": next_open_day(),
             "time": "18:00",
             "partySize": 2,
+            "termsConsent": True,
         }
         payload.update(overrides)
         return payload

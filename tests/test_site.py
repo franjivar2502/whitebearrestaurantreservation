@@ -1,10 +1,11 @@
 """Reseñas, galería de fotos, páginas estáticas y salud del servicio."""
 
+import os
 import unittest
 import uuid
 from unittest import mock
 
-from helpers import ServerTestCase, server
+from helpers import ServerTestCase, server, storage
 
 
 def multipart(fields, photo=None):
@@ -30,7 +31,12 @@ def multipart(fields, photo=None):
 
 class ReviewTests(ServerTestCase):
     def post_review(self, photo=None, **fields):
-        data = {"name": "Luis", "text": "Excelente trato y la comida riquísima", "rating": "5"}
+        data = {
+            "name": "Luis",
+            "text": "Excelente trato y la comida riquísima",
+            "rating": "5",
+            "reviewConsent": "on",
+        }
         data.update(fields)
         body, headers = multipart(data, photo)
         return self.request("POST", "/api/reviews", raw=body, headers=headers)
@@ -71,9 +77,53 @@ class ReviewTests(ServerTestCase):
         status, _ = self.post_review(photo=("virus.exe", "application/octet-stream", b"MZ"))
         self.assertEqual(status, 400)
 
+    def test_review_requires_consent(self):
+        status, body = self.post_review(reviewConsent="")
+        self.assertEqual(status, 400)
+        self.assertIn({"code": "REVIEW_CONSENT_REQUIRED"}, body["errors"])
+
+    def test_review_photo_gps_is_removed(self):
+        jpeg = make_jpeg_with_gps()
+        self.assertIn(b"LATITUDE", jpeg)
+        status, review = self.post_review(photo=("plato.jpg", "image/jpeg", jpeg))
+        self.assertEqual(status, 201)
+        name = review["photoUrl"].rsplit("/", 1)[1]
+        with open(os.path.join(storage.LOCAL_REVIEW_PHOTOS_DIR, name), "rb") as f:
+            saved = f.read()
+        self.assertNotIn(b"LATITUDE", saved)
+        self.assertNotIn(b"<x:xmpmeta", saved)
+        self.assertIn(b"ORIENT", saved)  # la orientación se conserva
+        self.assertTrue(saved.endswith(b"\xff\xd9"))
+
     def test_review_requires_multipart(self):
         status, _ = self.request("POST", "/api/reviews", body={"name": "x"})
         self.assertEqual(status, 400)
+
+
+def make_jpeg_with_gps():
+    """JPEG mínimo con EXIF (orientación + GPS con datos fuera de línea) y XMP."""
+    import struct
+
+    e = "<"
+    # IFD0 en 8: 2 entradas (Orientation, puntero GPS) + siguiente IFD.
+    ifd0 = 8
+    gps = ifd0 + 2 + 2 * 12 + 4
+    gps_entries = 1
+    lat_data = gps + 2 + gps_entries * 12 + 4
+    tiff = bytearray(b"II*\x00" + struct.pack(e + "I", ifd0))
+    tiff += struct.pack(e + "H", 2)
+    tiff += struct.pack(e + "HHI", 0x0112, 3, 1) + struct.pack(e + "HH", 6, 0)
+    tiff += struct.pack(e + "HHII", 0x8825, 4, 1, gps)
+    tiff += struct.pack(e + "I", 0)
+    tiff += struct.pack(e + "H", gps_entries)
+    tiff += struct.pack(e + "HHII", 0x0002, 2, 8, lat_data)  # ASCII de 8 bytes
+    tiff += struct.pack(e + "I", 0)
+    tiff += b"LATITUDE"
+    tiff += b"ORIENT"  # marcador para comprobar que el resto sigue ahí
+    exif = b"Exif\x00\x00" + bytes(tiff)
+    xmp = b"http://ns.adobe.com/xap/1.0/\x00<x:xmpmeta>GPS</x:xmpmeta>"
+    seg = lambda m, p: b"\xff" + bytes([m]) + struct.pack(">H", len(p) + 2) + p  # noqa: E731
+    return b"\xff\xd8" + seg(0xE1, exif) + seg(0xE1, xmp) + b"\xff\xda\x00\x02imagen\xff\xd9"
 
 
 class PhotoAdminTests(ServerTestCase):

@@ -92,6 +92,26 @@ class CreateReservationTests(ServerTestCase):
         self.assertEqual([p["itemId"] for p in created["preOrder"]], [item_id])
 
 
+class ConsentTests(ServerTestCase):
+    def test_web_booking_requires_consent(self):
+        status, body = self.book(termsConsent=False)
+        self.assertEqual(status, 400)
+        self.assertIn({"code": "CONSENT_REQUIRED"}, body["errors"])
+
+    def test_consent_is_stored_with_the_reservation(self):
+        status, created = self.book()
+        self.assertEqual(status, 201)
+        self.assertEqual(created["consent"]["source"], "web")
+        self.assertEqual(created["consent"]["version"], server.LEGAL_TERMS_VERSION)
+        self.assertTrue(created["consent"]["sms"])
+
+    def test_staff_phone_booking_needs_no_checkbox(self):
+        body = self.reservation(termsConsent=False)
+        status, created = self.request("POST", "/api/reservations", body=body, headers=STAFF_HEADERS)
+        self.assertEqual(status, 201)
+        self.assertEqual(created["consent"], {"source": "staff"})
+
+
 class AvailabilityTests(ServerTestCase):
     def test_full_slot_is_rejected(self):
         status, _ = self.book(partySize=server.RESTAURANT["maxPartySize"])

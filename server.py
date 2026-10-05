@@ -151,6 +151,12 @@ PUBLIC_RESERVATION_FIELDS = (
 )
 PAST_TIME_GRACE_MINUTES = 30
 
+# Versión de las condiciones y la política de privacidad (public/legal.html)
+# que acepta el cliente al marcar la casilla. Se guarda con cada reservación
+# y reseña como prueba de qué texto aceptó: al cambiar ese texto, cambiar
+# también esta fecha.
+LEGAL_TERMS_VERSION = "2026-10-05"
+
 NEGATIVE_REVIEW_KEYWORDS = {
     "terrible", "horrible", "pesimo", "pésimo", "asqueroso", "asquerosa",
     "asco", "sucio", "sucia", "grosero", "grosera", "maleducado",
@@ -1022,6 +1028,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             errors = []
+            if (fields.get("reviewConsent", {}).get("data") or b"").strip() != b"on":
+                errors.append({"code": "REVIEW_CONSENT_REQUIRED"})
             if not name or len(name) < 2 or len(name) > MAX_NAME_LENGTH:
                 errors.append({"code": "NAME_REQUIRED"})
             if not text or len(text) < 5 or len(text) > MAX_REVIEW_LENGTH:
@@ -1061,6 +1069,14 @@ class Handler(BaseHTTPRequestHandler):
                     self._send_json({"errors": [{"code": "REVIEW_PHOTO_INVALID"}]}, status=400)
                     return
                 ext, photo_content_type = sniffed
+                # Las fotos del celular traen en los metadatos (EXIF) el GPS
+                # de donde se tomaron, a menudo la casa del cliente. Se quitan
+                # antes de publicarlas.
+                try:
+                    photo_bytes = security.strip_metadata(photo_bytes, ext)
+                except ValueError:
+                    self._send_json({"errors": [{"code": "REVIEW_PHOTO_INVALID"}]}, status=400)
+                    return
                 filename = f"{uuid.uuid4().hex}{ext}"
                 with _lock:
                     photo_url = storage.upload_review_photo(filename, photo_bytes, photo_content_type)
@@ -1073,6 +1089,7 @@ class Handler(BaseHTTPRequestHandler):
                 "photoUrl": photo_url,
                 "status": "pending" if needs_moderation else "approved",
                 "createdAt": _now().isoformat(timespec="seconds"),
+                "consent": {"version": LEGAL_TERMS_VERSION, "at": _now().isoformat(timespec="seconds")},
             }
             with _lock:
                 storage.save_review(review)
@@ -1106,9 +1123,24 @@ class Handler(BaseHTTPRequestHandler):
                 self._too_many()
                 return
             clean, errors = _validate_reservation(payload)
+            # Desde el sitio, el cliente tiene que marcar la casilla de las
+            # condiciones (que incluye el aviso de SMS). Las reservas que el
+            # staff apunta por teléfono no pasan por ese formulario.
+            if not is_staff and payload.get("termsConsent") is not True:
+                errors = (errors or []) + [{"code": "CONSENT_REQUIRED"}]
             if errors:
                 self._send_json({"errors": errors}, status=400)
                 return
+            if is_staff:
+                consent = {"source": "staff"}
+            else:
+                consent = {
+                    "source": "web",
+                    "version": LEGAL_TERMS_VERSION,
+                    "terms": True,
+                    "sms": True,
+                    "at": _now().isoformat(timespec="seconds"),
+                }
             if not is_staff and not RESERVATION_LIMIT.hit(ip):
                 self._too_many()
                 return
@@ -1123,6 +1155,7 @@ class Handler(BaseHTTPRequestHandler):
                 "reminderSent": False,
                 "attendanceReminderSent": False,
                 "attendanceConfirmed": None,
+                "consent": consent,
                 **clean,
             }
             # Comprobar y guardar bajo el mismo candado. Antes eran dos
@@ -1243,8 +1276,11 @@ class Handler(BaseHTTPRequestHandler):
     def _do_PATCH(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/site-settings":
-            if not _is_panel_user(self.headers):
-                self._send_json({"errors": ["No autorizado."]}, status=401)
+            # Con el tope de intentos de _require_staff: este ajuste puede
+            # cerrar el sitio entero, no debe poder adivinarse la contraseña.
+            if not _password_matches(
+                self.headers.get("X-Admin-Password"), ADMIN_PASSWORD
+            ) and not self._require_staff():
                 return
             payload = self._read_json_body()
             if not isinstance(payload, dict):

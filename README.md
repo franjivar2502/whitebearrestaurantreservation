@@ -482,6 +482,13 @@ Lo que el servidor hace solo, sin configurar nada (`security.py` y `server.py`):
   consultas por código tienen tope por conexión.
 - **Fotos de reseñas:** se acepta un archivo solo si su contenido es de
   verdad JPG, PNG, GIF o WebP (no basta con la extensión).
+  Antes de publicarla se le quita la ubicación GPS que guardan los
+  celulares (se conserva la orientación, para que no salga de lado).
+- **Consentimiento:** cada reservación hecha desde el sitio guarda que el
+  cliente aceptó las condiciones y los SMS, con la versión del texto
+  (`LEGAL_TERMS_VERSION` en `server.py`, cambiarla cuando cambie
+  `legal.html`) y la hora. Las reseñas guardan lo mismo. Las reservas que
+  apunta el staff por teléfono quedan marcadas como `"source": "staff"`.
 - **Cabeceras:** política de contenido (solo se ejecutan scripts del propio
   sitio), prohibido meter el sitio en un iframe, `nosniff`, HSTS en https.
 - **Peticiones:** tope de tamaño del cuerpo, conexiones mudas cortadas a los
