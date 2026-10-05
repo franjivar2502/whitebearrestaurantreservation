@@ -649,6 +649,7 @@
       time: f.time.value,
       partySize: Number(f.partySize.value),
       seatingPreference: f.seatingPreference.value,
+      lang: f.lang.value,
       notes: f.notes.value.trim(),
     };
 

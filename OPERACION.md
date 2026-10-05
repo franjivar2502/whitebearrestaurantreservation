@@ -75,6 +75,15 @@ sale nada.
 asistencia; y 15 minutos antes, el aviso de mesa lista. Va por SMS si hay
 teléfono y por correo si el cliente dejó su email.
 
+**Idioma:** cada mensaje sale en el idioma con que el cliente llenó el formulario
+(inglés, español o francés), con la fecha y la hora escritas con claridad
+("lunes 12 de octubre a las 7:00 p.m."). El enlace de confirmación de asistencia
+abre la página en ese mismo idioma. En el alta rápida del panel hay un selector
+**Idioma del mensaje** (inglés por omisión), para las reservas por teléfono. Lo
+que no traiga idioma (reservas anteriores) se envía en inglés. Los SMS van sin
+acentos para que quepan en un solo mensaje; el correo sí los lleva. Los textos
+están en `MESSAGES`, en `notifications.py`.
+
 **SMS (Twilio):**
 1. Crear la cuenta en twilio.com y comprar un número de EE. UU.
 2. **Registrar el envío para EE. UU. antes de enviar** (A2P 10DLC para un

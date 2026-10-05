@@ -15,6 +15,11 @@
 
   const PHONE = "(518) 302-5235";
 
+  // El enlace del SMS/correo trae ?lang=: la página se abre en el mismo idioma
+  // del mensaje, aunque este dispositivo tenga guardado otro.
+  const linkLang = new URLSearchParams(location.search).get("lang");
+  if (linkLang) i18n.setLang(linkLang); // ignora los idiomas que no existen
+
   i18n.applyStaticTranslations();
 
   langSwitcher.addEventListener("click", (e) => {
