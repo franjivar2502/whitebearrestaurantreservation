@@ -39,7 +39,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - **Logo real del oso** (`public/images/bear-logo.jpg` + `public/favicon.png`) en vez del emoji 🐻‍❄️ — un sello circular con el nombre del restaurante, generado específicamente para el negocio (no es foto de stock). Se usa como ícono de marca en las 5 páginas del sitio y como favicon (recortado a la cara del oso para que se lea bien de pequeño). Si se quiere cambiar, basta con reemplazar `bear-logo.jpg` por otra imagen cuadrada.
 - Idiomas: sitio de clientes en EN/ES/FR (inglés por defecto); panel de tablet en EN/ES/SR (inglés por defecto).
 - Fotos del menú con pantalla de bienvenida (fondo de 1 segundo al entrar) y panel de administración para agregar/reordenar/eliminar fotos (`/admin-photos.html`, ver sección más abajo).
-- **Secciones "About us" y "Gallery" y preorden de grupos eliminados del sitio (2026-10-05)**, a pedido del cliente. El sitio público solo muestra la galería "Our Menu"; el panel de admin conserva el campo "Sección", pero las fotos de la sección "gallery" ya no se muestran en ningún lado del sitio público (sí se conservan en la base).
+- **Secciones "About us" y "Gallery" y preorden de grupos eliminados del sitio (2026-10-05)**, a pedido del cliente. El sitio público solo muestra la galería "Our Menu"; el panel de fotos (`/admin-photos.html`) ya solo agrega fotos del menú (sin selector de sección). Las fotos viejas de la sección "gallery" siguen en la base pero no se muestran; el panel las marca como "Sin mostrar en el sitio" y trae un botón "＋ Menú" para pasarlas al menú.
 - **Reseñas de clientes con fotos**, moderadas automáticamente (`public/js/app.js` + `server.py`) — cualquier visitante puede dejar una reseña con calificación de 1 a 5 estrellas y subir una foto directo desde su celular. Cualquier reseña que contenga una palabra clave negativa (lista en `NEGATIVE_REVIEW_KEYWORDS` en `server.py`) no se publica sola: se guarda como pendiente y aparece en la sección "Reseñas de clientes" de `/admin-photos.html`, donde el staff la publica o la oculta (ocultar no la borra). Al cliente se le avisa que el equipo la leerá y se le invita a llamar. El resto se publica al instante; la calificación en estrellas no influye. Las fotos se guardan en Supabase Storage (bucket `review-photos`, ya creado) o en `public/uploads/reviews/` en desarrollo local sin Supabase.
 - **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones, fotos, reseñas y estado de mesas ya no se pierden cuando Render reinicia el servicio.
 - Repositorio en GitHub, desplegado en Render y funcionando en vivo: https://whitebearrestaurantreservation.onrender.com
@@ -487,9 +487,10 @@ restaurante:
 - Si hay al menos una foto cargada, al entrar al sitio aparece una
   **pantalla de bienvenida** de 1 segundo con la primera foto como fondo,
   antes de revelar el resto de la página.
-- Las fotos de la sección **"menu"** se muestran en **"Our Menu"** y en el
-  carrusel junto al formulario. La sección "Gallery" del sitio público se
-  eliminó (2026-10-05): las fotos marcadas como "gallery" no se muestran.
+- Toda foto nueva se agrega como foto del **menú** y se muestra en **"Our Menu"**
+  y en el carrusel junto al formulario, en el orden de la lista. La sección
+  "Gallery" del sitio público se eliminó (2026-10-05); las fotos viejas marcadas
+  como "gallery" no se muestran hasta pasarlas al menú con el botón "＋ Menú".
 - Sin fotos cargadas, el sitio se ve exactamente igual que antes (sin
   pantalla de bienvenida, sin sección de menú).
 
