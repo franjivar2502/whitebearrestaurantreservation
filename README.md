@@ -30,7 +30,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 
 **✅ Ya construido y probado:**
 - Formulario de reservaciones con validación de horario por día, fecha y tamaño de grupo.
-- **Disponibilidad real por asientos** (128 en 25 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
+- **Disponibilidad real por asientos** (130 en 25 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
 - Preferencia de mesa adentro/afuera (opcional) en el formulario de reservación.
 - Panel de tablet en tiempo real (se actualiza solo, sin recargar), con una pestaña nueva "Tables"/"Mesas" para que el staff marque mesas fuera de servicio.
 - Confirmación y recordatorio automático por SMS/correo (modo prueba, sin credenciales reales todavía).
@@ -53,12 +53,11 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
    es público.
    **Falta `STAFF_PASSWORD`** (contraseña del panel de tablet, ver "Acceso del
    staff" más abajo): definirla en Render igual que la de administración.
-3. **Cuadrar los dos asientos que bailan.** El plano se revisó con el cliente
-   el 2026-10-02 (se quitó la mesa 18, las 23/24/25 pasaron a 6 asientos y las
-   9/10 a 4) y queda en **128**. El cliente dice 130 de palabra, así que falta
-   encontrar dos sillas en alguna parte -- o confirmar que su cifra incluye la
-   barra. La numeración tiene un hueco en el 18: queda así a propósito, para no
-   cambiarle el rótulo a ocho mesas si el personal ya las llama por su número.
+3. ~~Cuadrar los dos asientos que bailan~~ — **hecho (2026-10-05).** El cliente
+   aclaró que la mesa 21 es de 6 asientos, no de 4 (la 16 ya lo era): el plano
+   suma **130**, como decía de palabra. La numeración tiene un hueco en el 18:
+   queda así a propósito, para no cambiarle el rótulo a ocho mesas si el
+   personal ya las llama por su número.
 4. **Fotos del comedor y el exterior:** la sección "Gallery" se eliminó del sitio, así que ya no hacen falta. Las **6 del menú ya
    están** subidas (`public/images/menu/`, 2026-10-01) y se ven tanto en
    "Our Menu" como en el carrusel junto al formulario. La de los mejillones
@@ -368,9 +367,9 @@ El sitio ya sabe cuántos asientos hay libres a la hora que alguien está
 reservando -- no deja pasar una reservación que no cabe.
 
 **Inventario de mesas** (en `TABLE_LAYOUT` de `server.py`, revisado con el
-cliente sobre el plano el 2026-10-02): 10 cuadradas de 4, 6 rectangulares de
-4, 7 rectangulares de 6, 1 rectangular de 10 y 1 rectangular de 12 --
-**128 asientos en total** (25 mesas). Las 11 banquetas de la barra se dibujan
+cliente sobre el plano el 2026-10-02): 10 cuadradas de 4, 5 rectangulares de
+4, 8 rectangulares de 6, 1 rectangular de 10 y 1 rectangular de 12 --
+**130 asientos en total** (25 mesas). Las 11 banquetas de la barra se dibujan
 en el plano pero NO suman aforo: la barra se ocupa sin reserva. Cada mesa lleva además en qué salón está y su posición en el
 plano. Si cambia el número de mesas, las sillas, o dónde está una mesa,
 edita `TABLE_LAYOUT` -- es el único lugar.

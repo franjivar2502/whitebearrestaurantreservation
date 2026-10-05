@@ -219,6 +219,11 @@ def _parse_multipart(body, boundary):
 # la entrada (el 2x2 junto a la ventana), que son justo los 8 asientos que
 # faltaban. 130 es ahora el tope que el sitio de clientes puede vender.
 #
+# 2026-10-05: el cliente aclaró que la mesa 21 es de 6 asientos (la 16 ya lo
+# era), no de 4: el plano pasa de 128 a 130 asientos, que es la cifra que el
+# cliente daba de palabra. Su id sigue siendo "rect4-4" a propósito: el estado
+# "no disponible" se guarda por id, y renombrarlo dejaría la mesa desmarcada.
+#
 # PENDIENTE DE CONFIRMAR CON EL CLIENTE -- hasta entonces esto es una lectura
 # del mapa, no un dato verificado:
 #   1. El mapa no trae números. Los asigné en orden de lectura: primero el
@@ -250,7 +255,7 @@ TABLE_LAYOUT = [
     ("rect4-2", "rect", 4, 17, "right", 14, 33),
     ("rect4-3", "rect", 4, 19, "right", 84, 33),
     ("rect10-1", "rect", 10, 20, "right", 48, 48),
-    ("rect4-4", "rect", 4, 21, "right", 16, 63),
+    ("rect4-4", "rect", 6, 21, "right", 16, 63),  # el id conserva "rect4": ver nota abajo
     ("square4-9", "square", 4, 22, "right", 52, 69),
     ("rect6-7", "rect", 6, 23, "right", 82, 68),
     ("rect6-8", "rect", 6, 24, "right", 24, 78),

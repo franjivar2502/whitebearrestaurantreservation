@@ -102,6 +102,13 @@ class CreateReservationTests(ServerTestCase):
             # Unos minutos atrás sí se admite: alguien que acaba de sentarse.
             self.assertEqual(self.book(date=today, time="14:45")[0], 201)
 
+    def test_floor_plan_seats_add_up_to_130(self):
+        # El cliente dice 130 asientos. La mesa 21 es de 6 (no de 4) y la 16 también.
+        by_number = {t["number"]: t for t in server.TABLES}
+        self.assertEqual(by_number[16]["seats"], 6)
+        self.assertEqual(by_number[21]["seats"], 6)
+        self.assertEqual(server.TOTAL_SEATS, 130)
+
     def test_invalid_json_is_rejected(self):
         status, _ = self.request(
             "POST", "/api/reservations", raw=b"{no es json", headers={"Content-Type": "application/json"}
