@@ -195,17 +195,6 @@
       </div>
     </div>
 
-    <div class="group-menu" id="group-menu-section" hidden>
-      <p class="section-title" style="margin-bottom:4px" data-i18n="groupMenu.title">Large group pre-order</p>
-      <p class="hint" id="group-menu-note" style="margin-bottom:14px"></p>
-      <div id="group-menu-items"></div>
-      <div class="field full" style="margin-top:14px">
-        <label for="preOrderNotes" data-i18n="groupMenu.notesLabel">Order notes (allergies, restrictions, etc.)</label>
-        <textarea id="preOrderNotes" name="preOrderNotes" data-i18n-placeholder="groupMenu.notesPlaceholder" placeholder="E.g. 3 people are vegetarian"></textarea>
-      </div>
-      <p class="hint" data-i18n="groupMenu.hint">You can leave this blank and order when you arrive; filling it in ahead just helps us have everything ready sooner.</p>
-    </div>
-
     <!-- Consentimiento: casilla para las condiciones y la privacidad, y aviso
          de SMS (CTIA/TCPA: qué se envía, cuántos, STOP/HELP, tarifas). Los
          enlaces abren en otra pestaña para no perder lo ya escrito. -->
@@ -241,33 +230,6 @@
     <p style="color:var(--text-muted)" data-i18n="confirmation.subtitle">We look forward to seeing you at White Bear Restaurant. We've sent your confirmation by phone/email, and we'll let you know 15 minutes before your time when your table is ready.</p>
     <dl class="details" id="confirmation-details"></dl>
     <button class="btn btn-primary" id="new-reservation-btn" style="max-width:260px;margin:0 auto" data-i18n="confirmation.newReservation">Make another reservation</button>
-  </div>
-
-  <div class="card">
-    <div class="info-header" id="about-header">
-      <p class="section-title" style="margin:0" data-i18n="about.title">About us</p>
-      <button type="button" class="info-toggle-btn" id="about-toggle-btn" aria-expanded="false" aria-controls="about-content">See all ▾</button>
-    </div>
-
-    <div id="about-content" hidden>
-      <p style="margin:16px 0 0;color:var(--text-muted)" data-i18n="about.description">
-        Dine-in · Takeout · Delivery. Guests highlight generous portions, a great variety on the menu, friendly staff and a wonderful atmosphere.
-      </p>
-      <div class="highlights">
-        <span class="highlight-chip">Crispy Calamari with Marinara Sauce</span>
-        <span class="highlight-chip">Tortellini</span>
-        <span class="highlight-chip">Chicken Caesar Salad</span>
-        <span class="highlight-chip">Eggplant Parmigiana</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" id="gallery-card" hidden>
-    <div class="info-header" id="gallery-header">
-      <p class="section-title" style="margin:0" data-i18n="gallery.title">Gallery</p>
-      <button type="button" class="info-toggle-btn" id="gallery-toggle-btn" aria-expanded="false" aria-controls="photo-gallery">See all ▾</button>
-    </div>
-    <div class="photo-gallery" id="photo-gallery" hidden></div>
   </div>
 
   <div class="card" id="menu-card" hidden>

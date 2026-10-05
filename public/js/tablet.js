@@ -28,7 +28,6 @@
     mail: "M4 7h16v11H4zM4 7l8 6 8-6",
     hash: "M6 9h13M5 15h13M11 4 9 20M16 4l-2 16",
     note: "M6 4h8l4 4v12H6zM14 4v4h4M9 13h6M9 16.5h4",
-    dish: "M4 11h16a8 8 0 0 1-16 0M12 4v3M5.5 20h13",
     clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7.5V12l3 2",
   };
 
@@ -565,14 +564,6 @@
             <span>${icon("hash")}${escapeHtml(String(r.id).slice(0, 8))}</span>
           </div>
           ${r.notes ? `<div class="res-notes">${icon("note")}<span>${escapeHtml(r.notes)}</span></div>` : ""}
-          ${
-            r.preOrder && r.preOrder.length
-              ? `<div class="res-preorder">${icon("dish")}<span>${r.preOrder
-                  .map((i) => `${i.quantity}× ${escapeHtml(i.name)}`)
-                  .join(", ")}</span></div>`
-              : ""
-          }
-          ${r.preOrderNotes ? `<div class="res-notes">${icon("dish")}<span>${escapeHtml(r.preOrderNotes)}</span></div>` : ""}
           ${renderAttendanceLine(r)}
         </div>
         <div class="res-actions">${actions}</div>

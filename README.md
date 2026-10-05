@@ -33,35 +33,33 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 - **Disponibilidad real por asientos** (128 en 25 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
 - Preferencia de mesa adentro/afuera (opcional) en el formulario de reservación.
 - Panel de tablet en tiempo real (se actualiza solo, sin recargar), con una pestaña nueva "Tables"/"Mesas" para que el staff marque mesas fuera de servicio.
-- Preorden para grupos de 20+ personas (menú aún placeholder, ver más abajo).
 - Confirmación y recordatorio automático por SMS/correo (modo prueba, sin credenciales reales todavía).
 - Ventana emergente de confirmación de asistencia (24h o 30 min antes).
-- Diseño visual pulido: tipografía real (Fraunces + Inter), favicon propio, meta tags para compartir en redes, mapa embebido, calificación con estrellas, fondo tipo "marca de agua" con foto real del comedor, secciones desplegables (About us/Gallery/Find us/Venue information), micro-interacciones, y un pequeño distintivo "Built with AI" en el pie de página.
+- Diseño visual pulido: tipografía real (Fraunces + Inter), favicon propio, meta tags para compartir en redes, mapa embebido, calificación con estrellas, fondo tipo "marca de agua" con foto real del comedor, secciones desplegables (Our Menu/Reviews/Find us/Venue information), micro-interacciones, y un pequeño distintivo "Built with AI" en el pie de página.
 - **Logo real del oso** (`public/images/bear-logo.jpg` + `public/favicon.png`) en vez del emoji 🐻‍❄️ — un sello circular con el nombre del restaurante, generado específicamente para el negocio (no es foto de stock). Se usa como ícono de marca en las 5 páginas del sitio y como favicon (recortado a la cara del oso para que se lea bien de pequeño). Si se quiere cambiar, basta con reemplazar `bear-logo.jpg` por otra imagen cuadrada.
 - Idiomas: sitio de clientes en EN/ES/FR (inglés por defecto); panel de tablet en EN/ES/SR (inglés por defecto).
-- Galería de fotos con pantalla de bienvenida (fondo de 1 segundo al entrar) y panel de administración para agregar/reordenar/eliminar fotos (`/admin-photos.html`, ver sección más abajo).
-- **Galería separada en dos secciones**: "Gallery" (fotos generales) y "Our Menu"/"Nuestro Menú" (fotos del menú) — el panel de admin ahora tiene un campo "Sección" al agregar una foto, y un botón ⇄ para cambiar la sección de una foto ya existente.
+- Fotos del menú con pantalla de bienvenida (fondo de 1 segundo al entrar) y panel de administración para agregar/reordenar/eliminar fotos (`/admin-photos.html`, ver sección más abajo).
+- **Secciones "About us" y "Gallery" y preorden de grupos eliminados del sitio (2026-10-05)**, a pedido del cliente. El sitio público solo muestra la galería "Our Menu"; el panel de admin conserva el campo "Sección", pero las fotos de la sección "gallery" ya no se muestran en ningún lado del sitio público (sí se conservan en la base).
 - **Reseñas de clientes con fotos**, moderadas automáticamente (`public/js/app.js` + `server.py`) — cualquier visitante puede dejar una reseña con calificación de 1 a 5 estrellas y subir una foto directo desde su celular. Cualquier reseña que contenga una palabra clave negativa (lista en `NEGATIVE_REVIEW_KEYWORDS` en `server.py`) no se publica sola: se guarda como pendiente y aparece en la sección "Reseñas de clientes" de `/admin-photos.html`, donde el staff la publica o la oculta (ocultar no la borra). Al cliente se le avisa que el equipo la leerá y se le invita a llamar. El resto se publica al instante; la calificación en estrellas no influye. Las fotos se guardan en Supabase Storage (bucket `review-photos`, ya creado) o en `public/uploads/reviews/` en desarrollo local sin Supabase.
 - **Persistencia vía Supabase ya conectada y verificada en producción** (`storage.py`) — las reservaciones, fotos, reseñas y estado de mesas ya no se pierden cuando Render reinicia el servicio.
 - Repositorio en GitHub, desplegado en Render y funcionando en vivo: https://whitebearrestaurantreservation.onrender.com
 
 **⏳ Pendiente para que el proyecto esté 100% terminado:**
-1. **Menú real para el preorden de grupos grandes** — hoy son 3 platillos placeholder.
-2. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
-3. ~~Cambiar `ADMIN_PASSWORD`~~ — **hecho (2026-10-03).** La contraseña está
+1. **Credenciales reales de SMS/correo** (Twilio + SMTP) — hoy todo funciona en modo simulado.
+2. ~~Cambiar `ADMIN_PASSWORD`~~ — **hecho (2026-10-03).** La contraseña está
    solo en las variables de entorno de Render y no se escribe en ningún
    archivo del repositorio. Si hace falta consultarla: Render → el servicio →
    Environment → el icono del ojo. **Nunca la pegues aquí**: este repositorio
    es público.
    **Falta `STAFF_PASSWORD`** (contraseña del panel de tablet, ver "Acceso del
    staff" más abajo): definirla en Render igual que la de administración.
-4. **Cuadrar los dos asientos que bailan.** El plano se revisó con el cliente
+3. **Cuadrar los dos asientos que bailan.** El plano se revisó con el cliente
    el 2026-10-02 (se quitó la mesa 18, las 23/24/25 pasaron a 6 asientos y las
    9/10 a 4) y queda en **128**. El cliente dice 130 de palabra, así que falta
    encontrar dos sillas en alguna parte -- o confirmar que su cifra incluye la
    barra. La numeración tiene un hueco en el 18: queda así a propósito, para no
    cambiarle el rótulo a ocho mesas si el personal ya las llama por su número.
-5. **Faltan fotos de "Gallery"** (comedor, exterior). Las **6 del menú ya
+4. **Fotos del comedor y el exterior:** la sección "Gallery" se eliminó del sitio, así que ya no hacen falta. Las **6 del menú ya
    están** subidas (`public/images/menu/`, 2026-10-01) y se ven tanto en
    "Our Menu" como en el carrusel junto al formulario. La de los mejillones
    vino a 384x512, muy por debajo de las otras cinco: si el cliente tiene el
@@ -69,17 +67,17 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
    exportadas desde Fotos.app en macOS son archivos temporales protegidos por
    el sistema y no se pueden leer -- hay que pedirle que las guarde en
    Escritorio o Descargas.
-6. Revisar y ampliar `NEGATIVE_REVIEW_KEYWORDS` en `server.py` si empiezan a
+5. Revisar y ampliar `NEGATIVE_REVIEW_KEYWORDS` en `server.py` si empiezan a
    llegar reseñas reales -- la lista actual es un punto de partida, no es
    exhaustiva. **Importante:** las palabras se buscan por palabra completa, no
    por subcadena. Si se vuelve a buscar por subcadena, "rat" bloquea "trato" y
    se retienen reseñas buenas (pasó, ver DURABILIDAD.md).
-7. Decidir si el panel de tablet necesita más idiomas o queda así.
-8. **Leer `DURABILIDAD.md`** antes de hablar de mantenimiento con el cliente:
+6. Decidir si el panel de tablet necesita más idiomas o queda así.
+7. **Leer `DURABILIDAD.md`** antes de hablar de mantenimiento con el cliente:
    ahí está qué hace falta para que esto siga en pie dentro de diez años, y el
    aviso sobre la norma de la FTC en materia de reseñas.
 
-9. **Políticas legales (`public/legal.html`) — borrador.** Privacidad,
+8. **Políticas legales (`public/legal.html`) — borrador.** Privacidad,
    condiciones de reserva, condiciones de SMS/correo, política de reseñas y
    fotos, y accesibilidad, en EN/ES/FR. Antes de publicarlas: completar cada
    `<mark class="fill">` (razón social, correo de contacto, fecha, plazos),
@@ -298,25 +296,6 @@ reponer la validación en `_validate_reservation` (hoy lleva un comentario
 en el sitio exacto donde iba) y devolver los `min`/`max` al campo de hora
 en `public/js/app.js` y `public/js/tablet.js`.
 
-## Menú de preorden para grupos grandes
-
-A partir de 20 personas, el formulario de reservación muestra automáticamente
-un menú reducido para que el grupo preordene, y el pedido aparece en la
-tarjeta de la tablet (sección "🍽️ Preorden"). Los platillos son un
-**placeholder** por ahora — para poner el menú real, edita la lista
-`RESTAURANT["groupMenu"]["items"]` en `server.py`:
-
-```python
-"items": [
-    {"id": "item-1", "name": "Nombre del platillo", "description": "Opcional"},
-    ...
-],
-```
-
-No hace falta tocar el HTML/JS: el formulario y la tablet leen esta lista
-desde el servidor. El umbral de 20 personas y la nota introductoria también
-se pueden ajustar ahí (`"threshold"` y `"note"`).
-
 ## Persistencia de datos (Supabase)
 
 Render borra el disco local cada vez que el servicio se reinicia (se duerme
@@ -508,10 +487,11 @@ restaurante:
 - Si hay al menos una foto cargada, al entrar al sitio aparece una
   **pantalla de bienvenida** de 1 segundo con la primera foto como fondo,
   antes de revelar el resto de la página.
-- Todas las fotos se muestran además en una sección **"Gallery"** normal
-  dentro de la página.
+- Las fotos de la sección **"menu"** se muestran en **"Our Menu"** y en el
+  carrusel junto al formulario. La sección "Gallery" del sitio público se
+  eliminó (2026-10-05): las fotos marcadas como "gallery" no se muestran.
 - Sin fotos cargadas, el sitio se ve exactamente igual que antes (sin
-  pantalla de bienvenida, sin sección de galería).
+  pantalla de bienvenida, sin sección de menú).
 
 **Panel de administración:** `/admin-photos.html` — protegido por
 contraseña. Ahí puedes **agregar** (pegando la URL de una imagen),

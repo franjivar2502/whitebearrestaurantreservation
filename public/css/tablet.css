@@ -707,7 +707,6 @@ body.tablet-body :focus-visible {
 }
 
 .res-notes,
-.res-preorder,
 .res-attendance {
   display: flex;
   align-items: flex-start;
@@ -719,14 +718,6 @@ body.tablet-body :focus-visible {
 
 .res-notes {
   color: var(--text-muted);
-}
-
-.res-preorder {
-  color: var(--brand-dark);
-  background: var(--surface-alt);
-  border-radius: 8px;
-  padding: 7px 10px;
-  font-weight: 600;
 }
 
 .res-attendance {
@@ -761,7 +752,6 @@ body.tablet-body :focus-visible {
 }
 
 .res-notes .i,
-.res-preorder .i,
 .res-attendance .i {
   margin-top: 2px;
 }

@@ -36,8 +36,7 @@ escrita y probada, no es teoría.
 ### 3. Nada depende de un servicio ajeno para verse bien
 
 Las fotos de los platos, el logo y la imagen para compartir están en el
-repositorio. La única excepción es la foto de la galería, que todavía apunta a
-una URL de Google (ver pendientes).
+repositorio.
 
 Las tipografías vienen de Google Fonts, pero el CSS declara alternativas
 reales: si Google Fonts desaparece, el sitio se ve con Georgia y la sans del

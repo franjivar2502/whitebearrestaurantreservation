@@ -63,40 +63,6 @@ RESTAURANT = {
     # la mesa antes de que cerremos.
     "lastSeatingBufferMinutes": 30,
     "maxPartySize": 40,
-    "highlights": [
-        "Crispy Calamari with Marinara Sauce",
-        "Tortellini",
-        "Chicken Caesar Salad",
-        "Eggplant Parmigiana",
-    ],
-    # Menú reducido para grupos grandes: a partir de "threshold" personas,
-    # el formulario muestra estos platillos para que el grupo preordene.
-    # EDITAR AQUÍ cuando se defina el menú real: basta con reemplazar los
-    # elementos de "items" (id único, nombre, descripción opcional).
-    "groupMenu": {
-        "threshold": 20,
-        "note": (
-            "Para grupos de 20 personas o más ofrecemos un menú reducido. "
-            "Preordena aquí y tendremos tu pedido listo para revisar cuando llegues."
-        ),
-        "items": [
-            {
-                "id": "item-1",
-                "name": "Platillo de grupo 1 (pendiente de definir)",
-                "description": "",
-            },
-            {
-                "id": "item-2",
-                "name": "Platillo de grupo 2 (pendiente de definir)",
-                "description": "",
-            },
-            {
-                "id": "item-3",
-                "name": "Platillo de grupo 3 (pendiente de definir)",
-                "description": "",
-            },
-        ],
-    },
 }
 
 VALID_STATUSES = {"pending", "confirmed", "seated", "completed", "cancelled"}
@@ -122,8 +88,6 @@ MAX_REVIEW_LENGTH = 2000
 MAX_BOOKING_DAYS_AHEAD = 180
 MAX_PHONE_LENGTH = 40
 MAX_EMAIL_LENGTH = 254
-MAX_PREORDER_LINES = 50
-MAX_PREORDER_QUANTITY = 500
 MAX_PHOTO_BYTES = 8 * 1024 * 1024
 
 # Tamaño máximo del cuerpo de una petición. Sin techo, cualquiera manda un
@@ -494,33 +458,6 @@ def _available_seats(res_date, res_time, exclude_id=None):
     return capacity - committed
 
 
-def _validate_preorder(raw_pre_order):
-    """Valida y limpia la lista de platillos preordenados para grupos grandes."""
-    if not raw_pre_order:
-        return [], []
-    if not isinstance(raw_pre_order, list):
-        return [], [{"code": "PREORDER_INVALID"}]
-
-    menu_by_id = {item["id"]: item for item in RESTAURANT["groupMenu"]["items"]}
-    cleaned = []
-    for entry in raw_pre_order[:MAX_PREORDER_LINES]:
-        if not isinstance(entry, dict):
-            continue
-        item = menu_by_id.get(entry.get("itemId"))
-        if not item:
-            continue
-        try:
-            quantity = int(entry.get("quantity"))
-        except (TypeError, ValueError):
-            quantity = 0
-        if quantity <= 0:
-            continue
-        quantity = min(quantity, MAX_PREORDER_QUANTITY)
-        cleaned.append({"itemId": item["id"], "name": item["name"], "quantity": quantity})
-
-    return cleaned, []
-
-
 def _validate_reservation(payload):
     """
     Devuelve (datos_limpios, errores). Cada error es un dict {"code": ...,
@@ -550,15 +487,12 @@ def _validate_reservation(payload):
     seating_preference = text("seatingPreference").lower()
     if seating_preference not in VALID_SEATING_PREFERENCES:
         seating_preference = ""
-    pre_order, pre_order_errors = _validate_preorder(payload.get("preOrder"))
-    pre_order_notes = text("preOrderNotes")
-    errors.extend(pre_order_errors)
 
     # Los topes de longitud no son cosmética: sin ellos cabe un nombre de
     # 5000 caracteres que descuadra la ficha del panel y llena la base.
     if not name or len(name) < 2 or len(name) > MAX_NAME_LENGTH:
         errors.append({"code": "NAME_REQUIRED"})
-    if len(notes) > MAX_NOTES_LENGTH or len(pre_order_notes) > MAX_NOTES_LENGTH:
+    if len(notes) > MAX_NOTES_LENGTH:
         errors.append({"code": "NOTES_TOO_LONG"})
     if not phone or len(re.sub(r"\D", "", phone)) < 7 or len(phone) > MAX_PHONE_LENGTH:
         errors.append({"code": "PHONE_INVALID"})
@@ -636,8 +570,6 @@ def _validate_reservation(payload):
         "partySize": party_size,
         "notes": notes,
         "seatingPreference": seating_preference,
-        "preOrder": pre_order,
-        "preOrderNotes": pre_order_notes,
     }, []
 
 

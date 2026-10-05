@@ -32,9 +32,6 @@
         perPerson: "per person",
         category: "Restaurant",
       },
-      gallery: {
-        title: "Gallery",
-      },
       menu: {
         title: "Our Menu",
       },
@@ -59,11 +56,6 @@
       },
       establishment: "White Bear Restaurant · Lake Placid, NY · Since 2023",
       dishRail: { label: "From our kitchen", pause: "Pause the photos", play: "Play the photos" },
-      about: {
-        title: "About us",
-        description:
-          "Dine-in · Takeout · Delivery. Guests highlight generous portions, a great variety on the menu, friendly staff and a wonderful atmosphere.",
-      },
       info: {
         title: "Venue information",
         seeAll: "See all ▾",
@@ -119,15 +111,6 @@
         consent: "I agree to the <a href=\"legal.html#terms\" target=\"_blank\" rel=\"noopener\">Reservation Terms</a> and the <a href=\"legal.html#privacy\" target=\"_blank\" rel=\"noopener\">Privacy Policy</a>.",
         smsDisclosure: "By booking, you agree to receive automated texts about this reservation at the number above (usually up to 3: confirmation, attendance check and table-ready alert). Not marketing. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help. <a href=\"legal.html#messages\" target=\"_blank\" rel=\"noopener\">Text Message Terms</a>.",
       },
-      groupMenu: {
-        title: "Large group pre-order",
-        badge: "{threshold}+ people",
-        note: "For groups of {threshold} people or more, we offer a limited menu. Pre-order here and we'll have your order ready to review when you arrive.",
-        notesLabel: "Order notes (allergies, restrictions, etc.)",
-        notesPlaceholder: "E.g. 3 people are vegetarian",
-        hint: "You can leave this blank and order when you arrive; filling it in ahead just helps us have everything ready sooner.",
-        emptyMenu: "The group menu isn't set yet; staff will help you decide when you arrive.",
-      },
       confirmation: {
         title: "Reservation received!",
         subtitle:
@@ -140,7 +123,6 @@
         email: "Email",
         code: "Code",
         seating: "Seating",
-        preorder: "Pre-order",
         newReservation: "Make another reservation",
       },
       footer: {
@@ -172,7 +154,6 @@
         REVIEW_PHOTO_INVALID: "That file isn't a valid image.",
         REVIEW_PHOTO_TOO_LARGE: "That photo is too large (max 8MB).",
         REVIEW_INVALID: "Something went wrong sending your review.",
-        PREORDER_INVALID: "The group pre-order isn't valid.",
         REQUEST_BLOCKED: "We received too many requests from your connection. Please wait a few minutes or call us at {phone}.",
         GENERIC: "Something went wrong. Please try again.",
         NETWORK: "Couldn't reach the server. Please try again.",
@@ -214,9 +195,6 @@
         perPerson: "por persona",
         category: "Restaurante",
       },
-      gallery: {
-        title: "Galería",
-      },
       menu: {
         title: "Nuestro Menú",
       },
@@ -241,11 +219,6 @@
       },
       establishment: "White Bear Restaurant · Lake Placid, NY · Desde 2023",
       dishRail: { label: "De nuestra cocina", pause: "Pausar las fotos", play: "Reanudar las fotos" },
-      about: {
-        title: "Sobre nosotros",
-        description:
-          "Consumo en el lugar · Para llevar · Entrega a domicilio. Comensales destacan porciones generosas, gran variedad en el menú, personal amable y un ambiente excelente.",
-      },
       info: {
         title: "Información del lugar",
         seeAll: "Ver todo ▾",
@@ -301,15 +274,6 @@
         consent: "Acepto las <a href=\"legal.html#terms\" target=\"_blank\" rel=\"noopener\">condiciones de reserva</a> y la <a href=\"legal.html#privacy\" target=\"_blank\" rel=\"noopener\">política de privacidad</a>.",
         smsDisclosure: "Al reservar, aceptas recibir mensajes de texto automáticos sobre esta reserva en el número indicado (normalmente hasta 3: confirmación, confirmación de asistencia y aviso de mesa lista). No son publicidad. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para darte de baja o HELP para ayuda. <a href=\"legal.html#messages\" target=\"_blank\" rel=\"noopener\">Condiciones de mensajes</a>.",
       },
-      groupMenu: {
-        title: "Preorden para grupos grandes",
-        badge: "{threshold}+ personas",
-        note: "Para grupos de {threshold} personas o más ofrecemos un menú reducido. Preordena aquí y tendremos tu pedido listo para revisar cuando llegues.",
-        notesLabel: "Notas del pedido (alergias, restricciones, etc.)",
-        notesPlaceholder: "Ej. 3 personas son vegetarianas",
-        hint: "Puedes dejarlo en blanco y ordenar al llegar; llenarlo por adelantado solo nos ayuda a tener todo listo antes.",
-        emptyMenu: "El menú de grupo aún no está disponible; el staff te ayudará a definir el pedido al llegar.",
-      },
       confirmation: {
         title: "¡Reservación recibida!",
         subtitle:
@@ -322,7 +286,6 @@
         email: "Correo",
         code: "Código",
         seating: "Ubicación",
-        preorder: "Preorden",
         newReservation: "Hacer otra reservación",
       },
       footer: {
@@ -354,7 +317,6 @@
         REVIEW_PHOTO_INVALID: "Ese archivo no es una imagen válida.",
         REVIEW_PHOTO_TOO_LARGE: "Esa foto es demasiado grande (máximo 8MB).",
         REVIEW_INVALID: "Algo salió mal al enviar tu reseña.",
-        PREORDER_INVALID: "El preorden del grupo no es válido.",
         REQUEST_BLOCKED: "Recibimos demasiadas solicitudes desde tu conexión. Espera unos minutos o llámanos al {phone}.",
         GENERIC: "Ocurrió un error. Intenta de nuevo.",
         NETWORK: "No se pudo conectar con el servidor. Intenta de nuevo.",
@@ -396,9 +358,6 @@
         perPerson: "par personne",
         category: "Restaurant",
       },
-      gallery: {
-        title: "Galerie",
-      },
       menu: {
         title: "Notre menu",
       },
@@ -423,11 +382,6 @@
       },
       establishment: "White Bear Restaurant · Lake Placid, NY · Depuis 2023",
       dishRail: { label: "De notre cuisine", pause: "Mettre les photos en pause", play: "Relancer les photos" },
-      about: {
-        title: "À propos",
-        description:
-          "Sur place · À emporter · Livraison. Les clients soulignent des portions généreuses, une grande variété au menu, un personnel aimable et une ambiance excellente.",
-      },
       info: {
         title: "Informations sur l'établissement",
         seeAll: "Voir tout ▾",
@@ -483,15 +437,6 @@
         consent: "J'accepte les <a href=\"legal.html#terms\" target=\"_blank\" rel=\"noopener\">conditions de réservation</a> et la <a href=\"legal.html#privacy\" target=\"_blank\" rel=\"noopener\">politique de confidentialité</a>.",
         smsDisclosure: "En réservant, vous acceptez de recevoir des textos automatiques sur cette réservation au numéro indiqué (en général jusqu'à 3 : confirmation, confirmation de présence et avis de table prête). Pas de publicité. Des frais de messagerie et de données peuvent s'appliquer. Répondez STOP pour vous désinscrire, HELP pour de l'aide. <a href=\"legal.html#messages\" target=\"_blank\" rel=\"noopener\">Conditions des textos</a>.",
       },
-      groupMenu: {
-        title: "Précommande pour grands groupes",
-        badge: "{threshold}+ personnes",
-        note: "Pour les groupes de {threshold} personnes ou plus, nous proposons un menu réduit. Précommandez ici et votre commande sera prête à valider à votre arrivée.",
-        notesLabel: "Notes de commande (allergies, restrictions, etc.)",
-        notesPlaceholder: "Ex. 3 personnes sont végétariennes",
-        hint: "Vous pouvez laisser ce champ vide et commander à votre arrivée ; le remplir à l'avance nous aide simplement à tout préparer plus tôt.",
-        emptyMenu: "Le menu de groupe n'est pas encore défini ; le personnel vous aidera à votre arrivée.",
-      },
       confirmation: {
         title: "Réservation reçue !",
         subtitle:
@@ -504,7 +449,6 @@
         email: "E-mail",
         code: "Code",
         seating: "Emplacement",
-        preorder: "Précommande",
         newReservation: "Faire une autre réservation",
       },
       footer: {
@@ -536,7 +480,6 @@
         REVIEW_PHOTO_INVALID: "Ce fichier n'est pas une image valide.",
         REVIEW_PHOTO_TOO_LARGE: "Cette photo est trop volumineuse (8 Mo maximum).",
         REVIEW_INVALID: "Une erreur s'est produite lors de l'envoi de votre avis.",
-        PREORDER_INVALID: "La précommande du groupe n'est pas valide.",
         REQUEST_BLOCKED: "Nous avons reçu trop de demandes depuis votre connexion. Patientez quelques minutes ou appelez-nous au {phone}.",
         GENERIC: "Une erreur s'est produite. Veuillez réessayer.",
         NETWORK: "Impossible de contacter le serveur. Veuillez réessayer.",
