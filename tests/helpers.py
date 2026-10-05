@@ -81,7 +81,6 @@ class ServerTestCase(unittest.TestCase):
         shutil.rmtree(cls.data_dir, ignore_errors=True)
 
     def setUp(self):
-        server._site_settings_cache.update(value=None, at=0.0)
         # Los topes por conexión (todas las pruebas salen de 127.0.0.1) se
         # vacían para que una prueba no herede los intentos de otra.
         for limiter in (

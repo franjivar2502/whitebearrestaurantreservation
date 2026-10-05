@@ -29,7 +29,7 @@ de `localhost` (correr `ipconfig getifaddr en0` para obtenerla).
 (repo: https://github.com/franjivar2502/whitebearrestaurantreservation)
 
 **✅ Ya construido y probado:**
-- Formulario de reservaciones con validación de horario por día y tamaño de grupo.
+- Formulario de reservaciones (a cualquier hora, 24/7) con validación de fecha y tamaño de grupo.
 - **Disponibilidad real por asientos** (128 en 25 mesas) — una reservación se rechaza si no hay suficientes asientos libres a esa fecha/hora, considerando reservaciones ya activas y mesas que el staff marcó fuera de servicio. Ver sección "Mesas y disponibilidad real" más abajo.
 - Preferencia de mesa adentro/afuera (opcional) en el formulario de reservación.
 - Panel de tablet en tiempo real (se actualiza solo, sin recargar), con una pestaña nueva "Tables"/"Mesas" para que el staff marque mesas fuera de servicio.

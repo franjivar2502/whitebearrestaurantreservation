@@ -51,12 +51,6 @@ class CreateReservationTests(ServerTestCase):
         self.assertRejected("PARTY_SIZE_INVALID", partySize="muchos")
         self.assertRejected("NOTES_TOO_LONG", notes="x" * (server.MAX_NOTES_LENGTH + 1))
 
-    def test_opening_hours_apply_when_24_7_is_off(self):
-        server._save_site_settings({"bookingAlwaysOpen": False})
-        self.assertRejected("TIME_OUT_OF_HOURS", time="08:00")
-        self.assertRejected("TIME_OUT_OF_HOURS", time="21:00")  # pasada la última hora
-        self.assertEqual(self.book(time="18:00")[0], 201)
-
     def test_any_time_is_accepted_24_7(self):
         for t in ("00:00", "03:30", "08:00", "23:45"):
             self.assertEqual(self.book(time=t)[0], 201, t)

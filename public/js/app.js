@@ -332,35 +332,13 @@
       .join("");
   }
 
-  function subtractMinutes(hhmm, minutes) {
-    const [h, m] = hhmm.split(":").map(Number);
-    let total = h * 60 + m - minutes;
-    total = Math.max(total, 0);
-    const hh = String(Math.floor(total / 60)).padStart(2, "0");
-    const mm2 = String(total % 60).padStart(2, "0");
-    return `${hh}:${mm2}`;
-  }
-
-  /* Con "Reservas 24/7" encendido en el panel (lo normal) el campo de hora
-     no lleva min/max. Apagado, se limita al horario de ese día. */
+  /* Se reservan mesas a cualquier hora de cualquier día (24/7): el campo de
+     hora no lleva min/max. El horario del restaurante se muestra arriba solo
+     como información. */
   function updateTimeConstraints() {
-    const dayKey = i18n.dayKeyForDate(dateInput.value);
-    // Reservas 24/7 (se activa desde el panel del staff): cualquier hora vale.
-    if (restaurantInfo.bookingAlwaysOpen) {
-      timeInput.removeAttribute("min");
-      timeInput.removeAttribute("max");
-      timeHint.textContent = i18n.t("form.timeHintAnyTime");
-      return;
-    }
-    const dayHours = restaurantInfo.hours[dayKey];
-    const lastSeating = subtractMinutes(dayHours.close, restaurantInfo.lastSeatingBufferMinutes);
-    timeInput.min = dayHours.open;
-    timeInput.max = lastSeating;
-    timeHint.textContent = i18n.t("form.timeHint", {
-      day: i18n.dayName(dayKey),
-      open: i18n.formatTime(dayHours.open),
-      close: i18n.formatTime(lastSeating),
-    });
+    timeInput.removeAttribute("min");
+    timeInput.removeAttribute("max");
+    timeHint.textContent = i18n.t("form.timeHintAnyTime");
   }
 
   dateInput.addEventListener("change", updateTimeConstraints);

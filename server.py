@@ -38,8 +38,6 @@ PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 # desplegar, define PUBLIC_BASE_URL (p. ej. https://tu-sitio.onrender.com).
 PUBLIC_BASE_URL = None
 
-DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-
 RESTAURANT = {
     "name": "White Bear Restaurant",
     "address": "2793 Wilmington Rd, Lake Placid, NY 12946",
@@ -58,10 +56,6 @@ RESTAURANT = {
         "sat": {"open": "11:00", "close": "21:30"},
         "sun": {"open": "11:00", "close": "21:00"},
     },
-    # Última hora para reservar cuando "Reservas 24/7" está apagado: unos
-    # minutos antes del cierre, para que los comensales alcancen a disfrutar
-    # la mesa antes de que cerremos.
-    "lastSeatingBufferMinutes": 30,
     "maxPartySize": 40,
 }
 
@@ -354,69 +348,6 @@ def _today():
     return _now().date()
 
 
-# ---------------------------------------------------------------------------
-# Ajustes del sitio que el staff cambia desde el panel (pestaña "Sitio web"):
-#
-#   publicSiteOffline  -- cierra el sitio de clientes: la portada muestra un
-#                         aviso de "cerrado temporalmente" y no se aceptan
-#                         reservas ni reseñas nuevas por internet. El panel,
-#                         la confirmación de asistencia de reservas ya hechas
-#                         y /healthz siguen funcionando.
-#   bookingAlwaysOpen  -- acepta reservas para cualquier hora, cualquier día
-#                         (24/7), sin limitarlas al horario del restaurante.
-# ---------------------------------------------------------------------------
-SITE_SETTINGS_DEFAULTS = {"publicSiteOffline": False, "bookingAlwaysOpen": True}
-_SITE_SETTINGS_TTL_SECONDS = 10
-_site_settings_cache = {"value": None, "at": 0.0}
-
-
-def _site_settings():
-    """Ajustes vigentes. Se guardan unos segundos en memoria para no
-    consultar Supabase en cada visita a la portada."""
-    cached = _site_settings_cache["value"]
-    if cached is not None and time.time() - _site_settings_cache["at"] < _SITE_SETTINGS_TTL_SECONDS:
-        return dict(cached)
-    try:
-        stored = storage.get_site_settings()
-    except Exception as exc:  # noqa: BLE001
-        # Si no se pueden leer, mejor seguir con lo último conocido que dejar
-        # el sitio caído o abrirlo por error.
-        print(f"[ERROR] No se pudieron leer los ajustes del sitio: {exc!r}")
-        return dict(cached if cached is not None else SITE_SETTINGS_DEFAULTS)
-    value = {**SITE_SETTINGS_DEFAULTS, **{k: v for k, v in stored.items() if k in SITE_SETTINGS_DEFAULTS}}
-    _site_settings_cache.update(value=value, at=time.time())
-    return dict(value)
-
-
-def _save_site_settings(changes):
-    with _lock:
-        value = {**_site_settings(), **changes}
-        storage.save_site_settings(value)
-        _site_settings_cache.update(value=value, at=time.time())
-    return dict(value)
-
-
-# Quién cuenta como personal: la contraseña de administración o la del staff
-# (STAFF_PASSWORD, que sin configurar es la misma de administración).
-def _is_panel_user(headers):
-    staff = headers.get("X-Staff-Password")
-    return (
-        _password_matches(headers.get("X-Admin-Password"), ADMIN_PASSWORD)
-        or _password_matches(staff, STAFF_PASSWORD)
-        or _password_matches(staff, ADMIN_PASSWORD)
-    )
-
-
-def _hours_for_date(d):
-    """Devuelve (hora_apertura, hora_cierre, última_hora_para_reservar) para la fecha dada."""
-    day_hours = RESTAURANT["hours"][DAY_KEYS[d.weekday()]]
-    open_t = datetime.strptime(day_hours["open"], "%H:%M").time()
-    close_t = datetime.strptime(day_hours["close"], "%H:%M").time()
-    last_seating_dt = datetime.combine(d, close_t) - timedelta(
-        minutes=RESTAURANT["lastSeatingBufferMinutes"]
-    )
-    return open_t, close_t, last_seating_dt.time()
-
 _lock = threading.Lock()
 
 
@@ -530,18 +461,10 @@ def _validate_reservation(payload):
     ):
         errors.append({"code": "TIME_PAST"})
 
-    if parsed_date and parsed_time and not _site_settings()["bookingAlwaysOpen"]:
-        open_t, _close_t, last_t = _hours_for_date(parsed_date)
-        if not (open_t <= parsed_time <= last_t):
-            errors.append(
-                {
-                    "code": "TIME_OUT_OF_HOURS",
-                    "params": {
-                        "open": open_t.strftime("%H:%M"),
-                        "close": last_t.strftime("%H:%M"),
-                    },
-                }
-            )
+    # A propósito no se valida que la hora caiga dentro del horario de
+    # apertura: se aceptan reservaciones para cualquier hora de cualquier día
+    # (24/7). El horario de RESTAURANT["hours"] se publica como información
+    # para el cliente, no como una regla que rechace la reserva.
 
     try:
         if isinstance(party_size, bool):
@@ -787,9 +710,6 @@ class Handler(BaseHTTPRequestHandler):
     def _serve_static(self, path):
         if path == "/":
             path = "/index.html"
-        if path == "/index.html" and _site_settings()["publicSiteOffline"]:
-            self._serve_maintenance()
-            return
         full_path = _static_file(path)
         if not full_path:
             self.send_response(404)
@@ -813,28 +733,6 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _serve_maintenance(self, head_only=False):
-        with open(os.path.join(PUBLIC_DIR, "maintenance.html"), "rb") as f:
-            body = f.read()
-        # 503 + Retry-After: así Google entiende que es temporal y no saca
-        # el sitio de los resultados.
-        self.send_response(503)
-        self.send_header("Content-Type", "text/html; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Retry-After", "3600")
-        self.send_header("Cache-Control", "no-store")
-        self.end_headers()
-        if not head_only:
-            self.wfile.write(body)
-
-    def _reject_if_site_offline(self):
-        """Con el sitio público cerrado, rechaza altas desde internet. El
-        personal (con su contraseña) sí puede seguir creando reservas."""
-        if _site_settings()["publicSiteOffline"] and not _is_panel_user(self.headers):
-            self._send_json({"errors": [{"code": "SITE_OFFLINE"}]}, status=503)
-            return True
-        return False
-
     # ---------- routing ----------
     def do_GET(self):
         self._handle("GET", self._do_GET)
@@ -851,16 +749,7 @@ class Handler(BaseHTTPRequestHandler):
             # agenda está cerrada antes de que el cliente llene todo.
             with _lock:
                 booking_enabled = _bookings_open()
-            self._send_json(
-                {
-                    **RESTAURANT,
-                    "bookingEnabled": booking_enabled,
-                    "bookingAlwaysOpen": _site_settings()["bookingAlwaysOpen"],
-                }
-            )
-            return
-        if parsed.path == "/api/site-settings":
-            self._send_json(_site_settings())
+            self._send_json({**RESTAURANT, "bookingEnabled": booking_enabled})
             return
         if parsed.path == "/api/photos":
             with _lock:
@@ -938,8 +827,6 @@ class Handler(BaseHTTPRequestHandler):
     def _do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/reviews":
-            if self._reject_if_site_offline():
-                return
             if REVIEW_LIMIT.blocked(self._client_ip()):
                 self._too_many()
                 return
@@ -1029,8 +916,6 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/api/reservations":
-            if self._reject_if_site_offline():
-                return
             # El staff (tablet) no tiene tope: un sábado puede cargar decenas
             # de reservaciones por teléfono desde la misma conexión.
             is_staff = self._is_staff()
@@ -1208,25 +1093,6 @@ class Handler(BaseHTTPRequestHandler):
 
     def _do_PATCH(self):
         parsed = urlparse(self.path)
-        if parsed.path == "/api/site-settings":
-            # Con el tope de intentos de _require_staff: este ajuste puede
-            # cerrar el sitio entero, no debe poder adivinarse la contraseña.
-            if not _password_matches(
-                self.headers.get("X-Admin-Password"), ADMIN_PASSWORD
-            ) and not self._require_staff():
-                return
-            payload = self._read_json_body()
-            if not isinstance(payload, dict):
-                self._send_json({"errors": ["JSON inválido."]}, status=400)
-                return
-            changes = {k: v for k, v in payload.items() if k in SITE_SETTINGS_DEFAULTS}
-            if not changes or not all(isinstance(v, bool) for v in changes.values()):
-                self._send_json({"errors": ["Ajuste inválido."]}, status=400)
-                return
-            settings = _save_site_settings(changes)
-            print(f"[INFO] Ajustes del sitio cambiados desde el panel: {changes}")
-            self._send_json(settings)
-            return
         m = re.match(r"^/api/admin/photos/([a-f0-9]+)$", parsed.path)
         if m:
             if not self._require_admin():
@@ -1372,9 +1238,6 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/":
                 path = "/index.html"
-            if path == "/index.html" and _site_settings()["publicSiteOffline"]:
-                self._serve_maintenance(head_only=True)
-                return
             full_path = _static_file(path)
             if full_path:
                 ext = os.path.splitext(full_path)[1].lower()
