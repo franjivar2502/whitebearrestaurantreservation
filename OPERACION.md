@@ -31,22 +31,18 @@ el *cómo*.
 
 ---
 
-## 1b. Ajustes desde el panel del staff (pestaña "Sitio web")
+## 1b. Apagar las reservaciones desde el panel del staff
 
-- **Cerrar el sitio web público.** La portada pasa a mostrar "Volvemos
-  enseguida" con el teléfono, y se dejan de aceptar reservas y reseñas por
-  internet. Siguen funcionando el panel (el personal puede seguir apuntando
-  reservas telefónicas), la confirmación de reservas ya hechas y `/healthz`.
-  Mientras está cerrado, el panel muestra una franja roja arriba para que
-  nadie lo olvide.
-- **Reservas 24/7.** Activado (es lo predeterminado), se aceptan reservas
-  para cualquier hora de cualquier día. Desactivado, solo dentro del horario
-  del restaurante.
+En la barra del panel (junto a "Nueva reservación") hay un botón con un punto
+de color: **Reservaciones activas** / **Reservaciones apagadas**. Apagado, el
+formulario del sitio de clientes se deshabilita con el teléfono del local y el
+servidor rechaza las reservaciones nuevas que vengan de internet. El alta
+rápida del panel y las reservaciones ya tomadas no se tocan. Pide
+confirmación antes de cambiar, y el estado se guarda en la tabla `settings`
+de Supabase, así que sobrevive a reinicios y lo ven todas las tablets.
 
-Cambiar cualquiera de los dos pide la contraseña de administración
-(`ADMIN_PASSWORD`) o la del staff (`STAFF_PASSWORD`). Los ajustes se guardan
-en Supabase (como una fila `site-settings` de la tabla `table_status`), así
-que sobreviven a reinicios y valen para todas las tablets.
+El sitio siempre está en línea y se aceptan reservaciones a cualquier hora
+(24/7); ya no hay pestaña "Sitio web" ni modo "cerrado temporalmente".
 
 ---
 
@@ -210,7 +206,7 @@ Las reseñas y las fotos de la galería no se borran nunca solas.
 | Los clientes no reciben SMS ni correos | Credenciales sin configurar, caducadas o sin saldo | Render → Logs, buscar `ERROR SMS` o `ERROR EMAIL`. Revisar saldo de Twilio y la contraseña de aplicación del correo. |
 | Los recordatorios salen a la hora equivocada | Zona horaria | `/healthz` muestra la hora que cree el servidor. Si no es la de Lake Placid, revisar `RESTAURANT_TIMEZONE`. |
 | "Error interno" al reservar | Un fallo de código o de Supabase | Render → Logs, buscar `[ERROR] POST /api/reservations`. Con ese texto cualquier programador sabe por dónde empezar. |
-| La portada dice "Volvemos enseguida" | Alguien cerró el sitio desde el panel | Panel → Sitio web → *Reabrir sitio web público*. |
+| El formulario de reservas sale gris con un aviso rojo | Alguien apagó las reservaciones desde el panel | Panel → botón *Reservaciones apagadas* (barra de arriba) → confirmar. |
 | Se borraron datos por error | — | Restaurar el respaldo más reciente (sección 5). |
 | Una actualización de Python en Render rompió algo | Render cambió la versión por defecto | Fijar la versión que funcionaba con la variable `PYTHON_VERSION` en Render (por ejemplo `3.13.5`). |
 

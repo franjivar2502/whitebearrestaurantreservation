@@ -48,17 +48,9 @@
   </div>
 </header>
 
-<!-- Aviso fijo mientras el sitio de clientes está cerrado: que nadie del
-     turno lo deje cerrado sin darse cuenta. -->
-<div class="site-offline-banner" id="site-offline-banner" role="status" hidden>
-  <span data-i18n="site.banner">The public website is CLOSED.</span>
-  <button type="button" id="site-banner-manage" data-i18n="site.bannerAction">Manage</button>
-</div>
-
 <nav class="view-tabs" id="view-tabs">
   <button type="button" class="view-tab active" data-view="reservations" data-i18n="views.reservations">Reservations</button>
   <button type="button" class="view-tab" data-view="tables" data-i18n="views.tables">Tables</button>
-  <button type="button" class="view-tab" data-view="site" data-i18n="views.site">Website</button>
 
   <!-- Interruptor de reservaciones. Apagado, el sitio de clientes deja de
        aceptar reservaciones nuevas (noche de evento privado, cocina
@@ -164,25 +156,6 @@
     <span class="floor-legend-item"><i class="floor-swatch unavailable"></i><span data-i18n="tables.unavailable">Unavailable</span></span>
   </div>
   <div class="floor-plan" id="floor-plan"></div>
-</section>
-
-<section id="site-view" hidden>
-  <div class="site-card">
-    <div class="site-card-head">
-      <h2 data-i18n="site.publicTitle">Customer website</h2>
-      <span class="site-pill" id="site-public-state"></span>
-    </div>
-    <p class="site-help" data-i18n="site.publicHelp"></p>
-    <button type="button" class="site-toggle" id="site-public-toggle"></button>
-  </div>
-  <div class="site-card">
-    <div class="site-card-head">
-      <h2 data-i18n="site.anyTimeTitle">Reservations 24/7</h2>
-      <span class="site-pill" id="site-anytime-state"></span>
-    </div>
-    <p class="site-help" data-i18n="site.anyTimeHelp"></p>
-    <button type="button" class="site-toggle" id="site-anytime-toggle"></button>
-  </div>
 </section>
 
 <div class="toast" id="toast"></div>
